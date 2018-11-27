@@ -20,16 +20,16 @@ extras_require = {
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
 
 setup(
-    name='pyhf',
+    name='excursion',
     version='0.0.1',
     description='excursion set estimation',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/diana-hep/pyhf',
-    author='Lukas Heinrich, Gilles Louppe',
+    url='https://github.com/diana-hep/excursion',
+    author='Lukas Heinrich',
     author_email='lukas.heinrich@cern.ch',
     license='Apache',
-    keywords='bayesian optimization excursion set contour finding',
+    keywords='bayesian optimization excursion set estimation',
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
@@ -39,8 +39,9 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*",
     install_requires=[
         'sklearn',
-        'scipy',  # requires numpy, which is required by pyhf, tensorflow, and mxnet
-        'click>=6.0',  # for console scripts,
+        'scipy',
+        'click>=6.0',
+        'sklearn'
     ],
     extras_require=extras_require,
     entry_points={'console_scripts': ['excursion=excursion.commandline:excursion']},
