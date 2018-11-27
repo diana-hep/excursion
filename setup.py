@@ -12,10 +12,15 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as readme_md
 
 extras_require = {
     'develop': [
+        'jupyter',
+        'matplotlib',
         'pyflakes',
         'pytest>=3.5.1',
         'pytest-cov>=2.5.1',
     ],
+    'plots': [
+      'matplotlib'
+    ]
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
 

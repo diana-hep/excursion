@@ -12,11 +12,11 @@ def plot_current_estimate(ax, gp, X, y, prediction, scandetails, funcindex, batc
 
     vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
 
-    # print ('WHAT',vmin,vmax)
-
     ax.contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
     ax.contour(xv, yv, prediction,thresholds, colors='white',linestyles='solid')
     ax.contour(xv, yv, truthv,thresholds, colors='white', linestyles='dotted')
+    ax.scatter(X[:-batchsize, 0], X[:-batchsize, 1], s=20)
+
     ax.scatter(X[:-batchsize, 0], X[:-batchsize, 1], s=20, c=y[:-batchsize], edgecolor='white',vmin=vmin, vmax=vmax)
     ax.scatter(X[-batchsize:, 0], X[-batchsize:, 1], s=20, c='r')
 
@@ -29,7 +29,6 @@ def plot_current_entropies(ax, gp, X, entropies, scandetails, batchsize=1):
 
     vmin, vmax = getminmax(entropies)
 
-    # print ('MINMAX',vmin, vmax)
 
     entropies = values2mesh(entropies, scandetails.plot_rangedef, scandetails.invalid_region)
     ax.contourf(xv, yv, entropies, np.linspace(vmin, vmax, 100))
@@ -51,10 +50,31 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         prediction, prediction_std = gp.predict(newX, return_std=True)
         mu_stds.append([prediction, prediction_std])
 
-        prediction = values2mesh(prediction, scandetails.plot_rangedef, scandetails.invalid_region)
-        prediction_std = values2mesh(prediction_std, scandetails.plot_rangedef, scandetails.invalid_region)
+        prediction = values2mesh(
+            prediction,
+            scandetails.plot_rangedef,
+            scandetails.invalid_region
+        )
+        prediction_std = values2mesh(
+            prediction_std,
+            scandetails.plot_rangedef,
+            scandetails.invalid_region
+        )
 
-        plot_current_estimate(axarr[i], gp, X, y, prediction, scandetails,funcindex=i, batchsize = batchsize)
+        axarr[i].set_title('GP #{}'.format(i))
+        
+        plot_current_estimate(
+            axarr[i], gp, X, y,
+            prediction,
+            scandetails,
+            funcindex=i,
+            batchsize = batchsize
+        )
 
     entropies = point_entropy(mu_stds, scandetails.thresholds)
-    plot_current_entropies(axarr[len(gps)], gp, X, entropies, scandetails, batchsize = batchsize)
+    axarr[-1].set_title('Entropies')
+    plot_current_entropies(
+        axarr[-1],
+        gp, X, entropies, scandetails,
+        batchsize = batchsize
+    )

@@ -1,11 +1,12 @@
 import numpy as np
-import levelset
 import datetime
-from skopt import gp_minimize
+
+from . import core
+
 
 def gridsearch(gps, X, scandetails):
     thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
-    acqval     = np.array([levelset.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
+    acqval     = np.array([core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
 
     newx = None
     for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
@@ -45,16 +46,3 @@ def batched_gridsearch(gps, X, scandetails, gp_maker = None, batchsize=1):
         print('build fake gps')
         my_gps = [gp_maker(myX,my_y) for my_y in my_y_list]
 
-
-def gpsearch(gps, X, scandetails):
-    thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
-
-    ranges = list(zip(scandetails.plot_rangedef[:,0],scandetails.plot_rangedef[:,1]))
-
-
-    def objective(xtest):
-        return levelset.info_gain(xtest, gps, thresholds, scandetails.meanX)
-    res = gp_minimize(objective, ranges, noise=1e-7, n_calls=350, n_random_starts=350)
-    newx = np.asarray(res.x)
-    print('returning {}'.format(newx))
-    return newx,None
