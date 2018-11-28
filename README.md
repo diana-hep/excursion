@@ -3,5 +3,5 @@
 Excursion Set Estimation
 
 
-![example](./example.gif "Finding Excursion Sets")
+![example](./assets/example.gif "Finding Excursion Sets")
 
