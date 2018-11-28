@@ -1,7 +1,8 @@
 from skimage import measure
 import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import levelset.utils as utils
+
+from .. import utils
 
 def contour_3d(v, rangedef, level, alpha = None, facecolors = None, edgecolors = None):
     verts, faces, normals, values = measure.marching_cubes(v, level=level, step_size=1)
