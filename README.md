@@ -3,5 +3,5 @@
 Excursion Set Estimation
 
 
-<img src="./assets/example.gif" style="width:500px;"/>
+<img src="./assets/example.gif" width=600/>
 
