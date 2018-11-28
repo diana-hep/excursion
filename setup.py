@@ -46,9 +46,10 @@ setup(
         'sklearn',
         'scipy',
         'click>=6.0',
-        'sklearn'
+        'sklearn',
+        'pyyaml'
     ],
     extras_require=extras_require,
-    entry_points={'console_scripts': ['excursion=excursion.commandline:excursion']},
+    entry_points={'console_scripts': ['excursion=excursion.commandline:main']},
     dependency_links=[],
 )
