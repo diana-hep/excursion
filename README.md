@@ -4,7 +4,9 @@
 
 This package implements a Bayesian Optimization procedure based on Gaussian Processes to efficiently determine excursion sets (or equivalently iso-surfaces) of one or many expensive black-box functions.
 
-## Example
+## Installation and Example
+
+Install via `pip install excursion==0.0.1a0` and run: 
 
 ```python
 for index in range(N_UPDATES):
