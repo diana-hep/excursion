@@ -19,7 +19,8 @@ extras_require = {
         'pytest-cov>=2.5.1',
     ],
     'plots': [
-      'matplotlib'
+      'matplotlib',
+      'scikit-image'
     ]
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
