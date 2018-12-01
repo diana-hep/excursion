@@ -42,6 +42,10 @@ Typically two simultaneous labels can be assigned, the *expected* and *observed*
 
 <img src="./assets/example.gif" width=600/>
 
+## Talks:
+
+* 4th Reinterpretation Workshop [Slides](https://indico.cern.ch/event/702612/contributions/2958660/attachments/1649620/2638023/Contours.pdf)
+
 ## Authors
 
 * Lukas Heinrich, CERN
