@@ -6,13 +6,22 @@ This package implements a Bayesian Optimization procedure based on Gaussian Proc
 
 ## Installation and Example
 
-Install via `pip install excursion==0.0.1a0` and run: 
+Install via `pip install excursion==0.0.1a0`.
+
+To estimate excursion sets for `N_FUNCS=2` functions simultaneously run:
 
 ```python
 for index in range(N_UPDATES):
-    gps = [excursion.get_gp(X,y_list[i]) for i in range(N_FUNCS)]
+	# construct an estimate for each of the functions
+	gps = [excursion.get_gp(X,y_list[i]) for i in range(N_FUNCS)]
+
+    # determine new point(s) at which to evaluate
     newx, acqvals = excursion.optimize.gridsearch(gps, X, scandetails)
+
+    # evaluate each black-box function
     newys_list = [expensive_functions[i](np.asarray([newx])) for i in range(N_FUNCS)]
+
+    # update data
     for i,newys in enumerate(newys_list):
         y_list[i] = np.concatenate([y_list[i],newys])
     X = np.concatenate([X,np.array([newx])])
