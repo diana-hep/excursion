@@ -31,10 +31,10 @@ for index in range(N_UPDATES):
 
 In this example, modeled after typical exclusion contours of high-energy physics searches, we are insterested in estimating two excursion sets
 
-1. the **excluded** set of points -- theories of physics incomptaible with the data
+1. the **excluded** set of points -- theories of physics incompatible with the data
 2. the **non-excluded** set of points -- theories that are still viable.
 
-Typically two simultaneous labels can be assigned, the *expected* and *observed* status of a given theory. The label can be computed through computationally expensive Monte Carlo simulation. Points to be simulated are therefor picked to most efficiently estimate both the *expected* and *observed* excursion sets.
+Typically two simultaneous labels can be assigned, the *expected* and *observed* status of a given theory. The label can be computed through computationally expensive Monte Carlo simulation. Points to be simulated are therefore picked to most efficiently estimate both the *expected* and *observed* excursion sets.
 
 <img src="./assets/truth.png" width=200/>
 
