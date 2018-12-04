@@ -1,6 +1,7 @@
 # `excursion` — Efficient Excursion Set Estimation 
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1634427.svg)](https://zenodo.org/badge/latestdoi/146087019)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/diana-hep/excursion/master?filepath=examples%2FBinder.ipynb)
 
 This package implements a Bayesian Optimization procedure based on Gaussian Processes to efficiently determine excursion sets (or equivalently iso-surfaces) of one or many expensive black-box functions.
 
