@@ -10,7 +10,7 @@ def _gridsearch(gps, X, scandetails):
     acqval     = np.array([
         core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX]
     )
-
+    
     newx = None
     for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
         if cacq.tolist() not in X.tolist():
@@ -21,6 +21,15 @@ def _gridsearch(gps, X, scandetails):
             log.info('{} is good but already there'.format(cacq))
     log.warning('returning None.. something must be wrong')
     return None,None
+
+def init(scandetails, n_init = 5, seed = None, gp_maker = get_gp):
+    ndim = scandetails.acqX.shape[-1]
+    nfuncs = len(scandetails.truth_functions)
+    np.random.seed(seed)
+    X = np.random.uniform(scandetails.plot_rangedef[:,0],scandetails.plot_rangedef[:,1], size = (n_init,ndim))
+    y_list = [np.array([scandetails.truth_functions[i](np.asarray([x]))[0] for x in X]) for i in range(nfuncs)]
+    gps = [get_gp(X,y_list[i]) for i in range(nfuncs)]
+    return X,y_list,gps
 
 def gridsearch(
     gps, X, scandetails,
