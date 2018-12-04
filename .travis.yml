@@ -8,6 +8,7 @@ install:
   - pip freeze
 script:
   - pyflakes excursion
+  - pytest tests
 
 # always test (on both 'push' and 'pr' builds in Travis)
 # test docs on 'pr' builds and 'push' builds on master

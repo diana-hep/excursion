@@ -30,7 +30,7 @@ def gridsearch(
     if batchsize > 1 and not gp_maker:
         raise RuntimeError('need a gp maker for batched acq')
     resample = int(batchsize * resampling_frac)
-    log.info('resample up to', resample)
+    log.info('resample up to %s', resample)
     newX = np.empty((0,X.shape[-1]))
     my_gps    = gps
     orig_gps    = gps
@@ -40,7 +40,7 @@ def gridsearch(
     acqinfos = []
     n_orig  = myX.shape[0]
 
-    log.info('base X is ',myX.shape)
+    log.info('base X is %s',myX.shape)
 
     while True:
         newx,acqinfo = _gridsearch(my_gps, myX, scandetails)
@@ -50,7 +50,7 @@ def gridsearch(
         if(len(newX)) == batchsize:
             log.info('we got our batch')
             return newX, acqinfos
-        log.info('do the fake update on ',myX.shape,newX.shape)
+        log.info('do the fake update on %s %s',myX.shape,newX.shape)
         # newy_list = [gp.predict(newX) for gp in my_gps]
         newy_list = [gp.sample_y([newx], n_samples = 1)[:,0] for gp in orig_gps]
 
@@ -59,16 +59,16 @@ def gridsearch(
             log.info('new y i: {} {}'.format(i,newy))
             my_y_list[i] = np.concatenate([my_y_list[i],newy])
 
-            log.info('resampling', resample, np.arange(n_orig,len(myX)))
-            new_indices = np.random.choice(
-                np.arange(n_orig,len(myX)), resample, replace = False
-            )
-            log.info('indices',new_indices)
-            resampleX = myX[new_indices]
-            log.info('resampling shape',resampleX.shape)
-            my_y_list[i][new_indices] = gps[i].sample_y(resampleX, n_samples = 1)[:,0]
+            if resample:
+                log.info('resampling %s %s', resample, np.arange(n_orig,len(myX)))
+                new_indices = np.random.choice(
+                    np.arange(n_orig,len(myX)), resample, replace = False
+                )
+                log.info('indices %s',new_indices)
+                resampleX = myX[new_indices]
+                log.info('resampling shape %s',resampleX.shape)
+                my_y_list[i][new_indices] = gps[i].sample_y(resampleX, n_samples = 1)[:,0]
 
             log.info(my_y_list[i].shape)
         log.info('build fake gps')
         my_gps = [gp_maker(myX,my_y) for my_y in my_y_list]
-
