@@ -21,7 +21,6 @@ def test_2d():
 
     gps = [excursion.get_gp(X,y_list[i]) for i in range(N_FUNCS)]
 
-
     index = 0
     for index in range(1,N_UPDATES+1):
         newX, acqvals = excursion.optimize.gridsearch(gps, X, scandetails, batchsize=N_BATCH)
