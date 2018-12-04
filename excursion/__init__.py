@@ -1,11 +1,8 @@
-import numpy as np
-from scipy.linalg import cho_solve
-from scipy.stats import norm
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import ConstantKernel
 from sklearn.gaussian_process.kernels import WhiteKernel
-from sklearn.gaussian_process.kernels import Matern
+# from sklearn.gaussian_process.kernels import Matern
 
 
 def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):

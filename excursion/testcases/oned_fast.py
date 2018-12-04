@@ -25,5 +25,3 @@ mean_rangedef = np.asarray([
 meanX = np.linspace(*mean_rangedef[0]).reshape(-1,1)
 ndims = 1
 y_lim = [-5,30]
-    
-    

@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import point_entropy, mesh2points, points2mesh, values2mesh
+from ..utils import point_entropy, values2mesh
 
 def getminmax(ndarray):
     return np.min(ndarray), np.max(ndarray)

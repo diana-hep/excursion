@@ -1,0 +1,22 @@
+# test matrix
+language: python
+cache: pip
+python:
+  - '3.6'
+install:
+  - pip install --ignore-installed -U -q -e .[complete]
+  - pip freeze
+script:
+  - pyflakes excursion
+  - pytest tests
+
+# always test (on both 'push' and 'pr' builds in Travis)
+# test docs on 'pr' builds and 'push' builds on master
+# benchmark and deploy to PyPI only when merged into master (those mereges are 'push' builds)
+stages:
+  - test
+  - name: docs
+    if: (branch = master)
+  - name: deploy
+    if: (tag =~ v[0-9\.]*)
+

@@ -44,17 +44,6 @@ def approx_mi_vec(mu, cov, thresholds):
     return h
 
 def info_gain(x_candidate, gps, thresholds, meanX):
-    # Slow
-    # mus, covs = [], []
-    # for x in meanX:
-    #     mu, cov = gp.predict(np.array([x_candidate, x]), return_cov=True)
-    #     mus.append(mu)
-    #     covs.append(cov)
-    #
-    # mus = np.array(mus)
-    # covs = np.array(covs)
-
-    # Fast
     n_samples = len(meanX)
     X_all = np.concatenate([np.array([x_candidate]), meanX]).reshape(1 + n_samples, -1)
     tocat = []

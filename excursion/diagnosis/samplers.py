@@ -1,7 +1,10 @@
 import numpy as np
 import itertools
+import logging
 
 from .. import  utils
+
+log = logging.getLogger(__name__)
 
 def regular_grid_generator(scandetails, central_range = [5,20], nsamples_per_grid = 15, min_points_per_dim = 2):
     ndim = len(scandetails.plot_rangedef[:,2])
@@ -29,7 +32,7 @@ def latin_hypercube_generator(scandetails, nsamples_per_npoints = 50, point_rang
         for s in range(nsamples_per_npoints):
             sample_n = npoints
             while True:
-                print('sampling',sample_n)
+                log.info('sampling',sample_n)
                 X = pyDOE.lhs(ndim, samples=sample_n)
 
                 for i in range(ndim):
@@ -40,7 +43,7 @@ def latin_hypercube_generator(scandetails, nsamples_per_npoints = 50, point_rang
                 len_after = len(X)
                 if not len_after >= npoints: #invalid might throw out points, so sample until we get what we want
                     sample_n = int(sample_n * float(len_before)/float(len_after))
-                    print('increasing to %s' % sample_n)
+                    log.info('increasing to %s' % sample_n)
                     continue
                 break
             yield X[:npoints],None

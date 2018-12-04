@@ -1,11 +1,14 @@
 import numpy as np
 import itertools
+import logging
 from .. import utils
+
+log = logging.getLogger(__name__)
 
 def classlabels(values,thresholds):
     labels = np.zeros(values.shape)
     for j in range(len(thresholds) - 1):
-        print('[{}, {}]'.format(thresholds[j], thresholds[j+1]))
+        log.info('[{}, {}]'.format(thresholds[j], thresholds[j+1]))
         within = np.logical_and(thresholds[j] < values, values < thresholds[j+1])
         labels[within] = j+1
     return labels
@@ -27,11 +30,11 @@ def confusion_matrix(gps, scandetails):
 
         confusion_matrix = np.zeros((len(labels),len(labels)))
         for pred,true in itertools.product(labels,labels):
-            print('pred {}/true {}'.format(pred,true))
+            log.info('pred {}/true {}'.format(pred,true))
             predlabels_when_true = predlabels[truelabels==true]
             numerator = np.sum(np.where(predlabels_when_true==pred,1,0))
             denominator = len(predlabels_when_true)
-            print('{}/{}'.format(numerator,denominator))
+            log.info('{}/{}'.format(numerator,denominator))
             confusion_matrix[true-1,pred-1] = numerator/denominator
 
         predlabels_list.append(predlabels)
