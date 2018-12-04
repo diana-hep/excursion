@@ -33,7 +33,7 @@ def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, view_init  = (70
         mesh = contour_3d(vals,scandetails.plot_rangedef,val,alpha=0.1, facecolors=c, edgecolors=c)
         ax.add_collection3d(mesh)
 
-    scatplot = ax.scatter(X[:,0],X[:,1],X[:,2], c = 'r', s = 100, alpha = 0.2)
+    ax.scatter(X[:,0],X[:,1],X[:,2], c = 'r', s = 100, alpha = 0.2)
 
     # scatplot = ax.scatter(X[:,0],X[:,1],X[:,2], c = Y, alpha = 0.05, s = 200)
     ax.set_xlim(scandetails.plot_rangedef[0][0],scandetails.plot_rangedef[0][1])

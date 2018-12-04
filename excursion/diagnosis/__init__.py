@@ -1,6 +1,9 @@
 import numpy as np
 import itertools
+import logging
 from .. import utils
+
+log = logging.getLogger(__name__)
 
 def classlabels(values,thresholds):
     labels = np.zeros(values.shape)

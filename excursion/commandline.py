@@ -28,7 +28,6 @@ def diagnosis_set(gps,scandetails, X, y_list):
     }
 
 def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', acqopts = None, gpopts = None):
-    ndim = len(scandetails.plot_rangedef[:,0])
 
     initX = np.random.choice(range(len(scandetails.acqX)), size = n_initialize, replace=False)
     initX = scandetails.acqX[initX]

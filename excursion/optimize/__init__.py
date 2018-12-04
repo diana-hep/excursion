@@ -1,5 +1,4 @@
 import numpy as np
-import datetime
 import logging
 from . import core
 from .. import get_gp

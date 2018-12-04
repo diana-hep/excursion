@@ -1,5 +1,4 @@
 import json
-import numpy
 import numpy as np
 import pkg_resources
 import pickle
