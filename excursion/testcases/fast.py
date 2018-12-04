@@ -31,10 +31,10 @@ plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
 
 thresholds = [0.0]
 
-acq_rd = np.array([[0.0,1.5,41],[0.0,1.5,41]])
+acq_rd = np.array([[0.0,1.5,21],[0.0,1.5,21]])
 acqG = utils.mgrid(acq_rd)
 acqX = utils.mesh2points(acqG,acq_rd[:,2])
 
-mn_rd = np.array([[0.0,1.5,41],[0,1.5,41]])
+mn_rd = np.array([[0.0,1.5,21],[0,1.5,21]])
 mnG   = utils.mgrid(mn_rd)
 meanX  = utils.mesh2points(mnG,mn_rd[:,2])
