@@ -32,3 +32,4 @@ def test_2d():
         gps = [excursion.get_gp(X,y_list[i]) for i in range(N_FUNCS)]
     print(X,X.shape)
     assert X.shape == (N_INIT + N_BATCH * N_UPDATES,N_DIM)
+    assert np.allclose(X[0],[6.25533007e-01, 1.08048674e+00])
