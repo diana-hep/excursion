@@ -14,19 +14,6 @@ import logging
 
 log = logging.getLogger(__name__)
 
-def diagnosis_set(gps,scandetails, X, y_list):
-    confusion_list, predlabels_list, truelabels_list, diagX, labels = diagnosis.confusion_matrix(gps,scandetails)
-
-    pct_correct = []
-    for i in range(len(gps)):
-        t = truelabels_list[i]
-        c = confusion_list[i]
-        pct_correct.append(np.sum([c[l-1][l-1]*len(t[t==l]) for l in labels ])/len(t))
-    return {
-        'pct_correct': pct_correct,
-        'confusion_matrices': confusion_list
-    }
-
 def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', acqopts = None, gpopts = None):
 
     initX = np.random.choice(range(len(scandetails.acqX)), size = n_initialize, replace=False)
@@ -73,7 +60,7 @@ def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', 
             log.info('new y i: {} {}'.format(i,newy))
             y_list[i] = np.concatenate([y_list[i],newy])
 
-        update_diagnoses.append(diagnosis_set(gps, scandetails, X, y_list))
+        update_diagnoses.append(diagnosis.diagnosis_set(gps, scandetails, X, y_list))
 
         all_results =  {
             'loop_spec': loop_spec,

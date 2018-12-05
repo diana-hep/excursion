@@ -4,7 +4,7 @@ from ..utils import point_entropy, values2mesh
 def getminmax(ndarray):
     return np.min(ndarray), np.max(ndarray)
 
-def plot_current_estimate(ax, gp, X, y, prediction, scandetails, funcindex, batchsize = 1):
+def plot_current_estimate(ax, gp, X, y, prediction, scandetails, funcindex, batchsize = 1, plot_truth = True):
     thresholds = scandetails.thresholds
     xv, yv = scandetails.plotG
     truthv = scandetails.truth_functions[funcindex](scandetails.plotX)
@@ -14,7 +14,8 @@ def plot_current_estimate(ax, gp, X, y, prediction, scandetails, funcindex, batc
 
     ax.contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
     ax.contour(xv, yv, prediction,thresholds, colors='white',linestyles='solid')
-    ax.contour(xv, yv, truthv,thresholds, colors='white', linestyles='dotted')
+    if plot_truth:
+        ax.contour(xv, yv, truthv,thresholds, colors='white', linestyles='dotted')
     ax.scatter(X[:-batchsize, 0], X[:-batchsize, 1], s=20)
 
     ax.scatter(X[:-batchsize, 0], X[:-batchsize, 1], s=20, c=y[:-batchsize], edgecolor='white',vmin=vmin, vmax=vmax)
@@ -62,7 +63,7 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         )
 
         axarr[i].set_title('GP #{}'.format(i))
-        
+
         plot_current_estimate(
             axarr[i], gp, X, y,
             prediction,

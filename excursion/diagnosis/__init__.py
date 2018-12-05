@@ -41,3 +41,16 @@ def confusion_matrix(gps, scandetails):
         truelabels_list.append(truelabels)
         confusion_list.append(confusion_matrix.tolist())
     return confusion_list, predlabels_list, truelabels_list, diagX, labels
+
+def diagnosis_set(gps,scandetails, X, y_list):
+    confusion_list, predlabels_list, truelabels_list, diagX, labels = confusion_matrix(gps,scandetails)
+
+    pct_correct = []
+    for i in range(len(gps)):
+        t = truelabels_list[i]
+        c = confusion_list[i]
+        pct_correct.append(np.sum([c[l-1][l-1]*len(t[t==l]) for l in labels ])/len(t))
+    return {
+        'pct_correct': pct_correct,
+        'confusion_matrices': confusion_list
+    }
