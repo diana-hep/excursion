@@ -17,6 +17,7 @@ extras_require = {
         'pyflakes',
         'pytest>=3.5.1',
         'pytest-cov>=2.5.1',
+        'papermill'
     ],
     'plots': [
       'matplotlib',

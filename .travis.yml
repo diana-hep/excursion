@@ -6,6 +6,7 @@ python:
 install:
   - pip install --ignore-installed -U -q -e .[complete]
   - pip freeze
+  - papermill examples/TwoCircles.ipynb examples/TwoCircles.ipynb
 script:
   - pyflakes excursion
   - pytest tests
@@ -19,4 +20,3 @@ stages:
     if: (branch = master)
   - name: deploy
     if: (tag =~ v[0-9\.]*)
-
