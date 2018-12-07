@@ -7,7 +7,7 @@ install:
   - pip install --ignore-installed -U -q -e .[complete]
   - pip freeze
   - papermill examples/TwoCircles.ipynb examples/TwoCircles.ipynb
-  - papermill examples/2DMultipleFunctions.ipynb examples/2DMultipleFunctions.ipynb
+  - papermill examples/Binder.ipynb examples/Binder.ipynb
 script:
   - pyflakes excursion
   - pytest tests
