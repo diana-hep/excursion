@@ -41,7 +41,7 @@ def truth_exp(X):
     return 2*d['exp'].predict(X)
 
 thresholds = [modify(0.05)]
-truth_functions = [truth_obs, truth_exp]
+functions = [truth_obs, truth_exp]
 
 def invalid_region(x):
     oX = scaler.inverse_transform(x)

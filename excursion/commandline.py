@@ -29,9 +29,10 @@ def diagnosis_set(gps,scandetails, X, y_list):
 
 def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', acqopts = None, gpopts = None):
 
-    initX = np.random.choice(range(len(scandetails.acqX)), size = n_initialize, replace=False)
-    initX = scandetails.acqX[initX]
-    nfuncs = len(scandetails.truth_functions)
+    acqX  = scandetails.acqX()
+    initX = np.random.choice(range(len(acqX)), size = n_initialize, replace=False)
+    initX = acqX[initX]
+    nfuncs = len(scandetails.functions)
 
     log.info("running loop for {} functions at thresholds {}".format(nfuncs, scandetails.thresholds))
 
@@ -49,7 +50,7 @@ def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', 
     update_diagnoses = []
 
     X = initX
-    y_list = [func(initX) for func in scandetails.truth_functions]
+    y_list = [func(initX) for func in scandetails.functions]
 
     gp_maker = lambda X,y: get_gp(X,y,**gpopts)
 
@@ -68,7 +69,7 @@ def runloop(n_initialize, scandetails, n_updates, acq_optimizer = 'gridsearch', 
         log.info('new X {}'.format(newX))
 
         X = np.concatenate([X,newX])
-        newy_list = [func(newX) for func in scandetails.truth_functions]
+        newy_list = [func(newX) for func in scandetails.functions]
         for i,newy in enumerate(newy_list):
             log.info('new y i: {} {}'.format(i,newy))
             y_list[i] = np.concatenate([y_list[i],newy])
@@ -143,7 +144,7 @@ def compare_samplers(example,sampler_type,outputfile,gpopts,sampleropts):
     all_results = []
     log.info(sampleropts)
     for X,sample_info in sampler(scandetails, **sampleropts):
-        y_list  = [func(X) for func in scandetails.truth_functions]
+        y_list  = [func(X) for func in scandetails.functions]
         try:
             gps = [get_gp(X,y,**gpopts) for y in y_list]
 

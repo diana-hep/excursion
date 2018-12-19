@@ -21,7 +21,7 @@ def truth(x):
 
 
 
-truth_functions = [truth]
+functions = [truth]
 
 def invalid_region(x):
     return np.array([False]*len(x))

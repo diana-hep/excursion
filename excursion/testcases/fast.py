@@ -18,10 +18,6 @@ def truth(x):
 
     return 3*(np.log(analysis(xv,yv)) - np.log(0.05))
 
-
-
-truth_functions = [truth]
-
 def invalid_region(x):
     return np.array([False]*len(x))
 
@@ -29,12 +25,19 @@ plot_rangedef = np.array([[0.0,1.5,101],[0.0,1.5,101]])
 plotG = utils.mgrid(plot_rangedef)
 plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
 
+functions = [truth]
 thresholds = [0.0]
 
-acq_rd = np.array([[0.0,1.5,21],[0.0,1.5,21]])
-acqG = utils.mgrid(acq_rd)
-acqX = utils.mesh2points(acqG,acq_rd[:,2])
 
-mn_rd = np.array([[0.0,1.5,21],[0,1.5,21]])
-mnG   = utils.mgrid(mn_rd)
-meanX  = utils.mesh2points(mnG,mn_rd[:,2])
+def acqX():
+    print('requested acqX')
+    return np.random.uniform(plot_rangedef[:,0],plot_rangedef[:,1], size = (500,2))
+
+def meanX():
+    print('requested meanX')
+    return np.random.uniform(plot_rangedef[:,0],plot_rangedef[:,1], size = (500,2))
+
+def test_data():
+    X = plotX
+    y_list = [func(X) for func in functions]
+    return X,y_list

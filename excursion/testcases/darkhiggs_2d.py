@@ -41,7 +41,7 @@ def truth(denseX):
     return griddata(truthX,truthy,w)
 
 
-truth_functions = [truth]
+functions = [truth]
 
 plot_rangedef = np.array([[0.1,0.9,101],[0.1,0.9,101]])
 plotG = utils.mgrid(plot_rangedef)

@@ -39,7 +39,7 @@ def truth(denseX):
     return griddata(truthX,truthy,denseX)
 
 
-truth_functions = [truth]
+functions = [truth]
 
 plot_rangedef = np.array([[0.1,0.9,41],[0.1,0.9,41],[0.1,0.9,41]])
 thresholds = [-9.5]

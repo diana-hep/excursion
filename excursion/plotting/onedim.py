@@ -18,7 +18,7 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         ax.fill_between(scandetails.plotX[:,0],prediction - prediction_std, prediction + prediction_std)
 
     
-        for func in scandetails.truth_functions:
+        for func in scandetails.functions:
             ax.plot(scandetails.plotX.ravel(),func(scandetails.plotX).ravel(), c = 'k', linestyle = 'dashed')
 
         for thr in scandetails.thresholds:

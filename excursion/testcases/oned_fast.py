@@ -4,7 +4,7 @@ def truthfunc(X):
     f = 15
     return 10-10*(np.tanh(X*2) + 0.15*np.sin(X*f))
 
-truth_functions = [truthfunc]
+functions = [truthfunc]
 thresholds = [0.7]
 
 plot_rangedef = np.asarray([

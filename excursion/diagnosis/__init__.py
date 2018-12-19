@@ -24,7 +24,7 @@ def confusion_matrix(gps, scandetails):
     confusion_list, predlabels_list, truelabels_list= [], [], []
     for i,gp in enumerate(gps):
         predy  = gps[i].predict(diagX)
-        truthy = scandetails.truth_functions[i](diagX)
+        truthy = scandetails.functions[i](diagX)
         predlabels = classlabels(predy,thresholds)
         truelabels = classlabels(truthy,thresholds)
 

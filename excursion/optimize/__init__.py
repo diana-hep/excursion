@@ -1,18 +1,38 @@
 import numpy as np
 import logging
+import time
 from . import core
 from .. import get_gp
 
 log = logging.getLogger(__name__)
 
-def _gridsearch(gps, X, scandetails):
-    thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
-    acqval     = np.array([
-        core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX]
+def run_all_acpoints(acqX, gps, thresholds, meanX):
+    return np.array([
+        core.info_gain(xtest, gps, thresholds, meanX) for xtest in acqX]
     )
+
+def run_all_acpoints(acqX, gps, thresholds, meanX):
+    nparallel = 4
+    log.info('analyzing {} candidate acquisition points in {} parallel workers'.format(
+        len(acqX),nparallel)
+    )
+    start = time.time()
+    from joblib import Parallel, delayed
+    result = Parallel(nparallel)(
+        delayed(core.info_gain)(xtest, gps, thresholds, meanX) for xtest in acqX
+    )
+    delta = time.time()-start
+    log.info('acquisition analysis took in {:.3f} seconds'.format(delta))
+    return np.asarray(result)
+
+def _gridsearch(gps, X, scandetails):
+    acqX  = scandetails.acqX()
+    meanX = scandetails.meanX()
+    thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
+    acqval     = run_all_acpoints(acqX, gps, thresholds, meanX)
     
     newx = None
-    for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
+    for i,cacq in enumerate(acqX[np.argsort(acqval)]):
         if cacq.tolist() not in X.tolist():
             log.info('taking new x. the best non-existent index {} {}'.format(i,cacq))
             newx = cacq
@@ -23,18 +43,36 @@ def _gridsearch(gps, X, scandetails):
     return None,None
 
 def init(scandetails, n_init = 5, seed = None, gp_maker = get_gp):
-    ndim = scandetails.acqX.shape[-1]
-    nfuncs = len(scandetails.truth_functions)
+    ndim = scandetails.plot_rangedef.shape[0]
+    nfuncs = len(scandetails.functions)
     np.random.seed(seed)
     X = np.random.uniform(scandetails.plot_rangedef[:,0],scandetails.plot_rangedef[:,1], size = (n_init,ndim))
-    y_list = [np.array([scandetails.truth_functions[i](np.asarray([x]))[0] for x in X]) for i in range(nfuncs)]
+    y_list = [np.array([scandetails.functions[i](np.asarray([x]))[0] for x in X]) for i in range(nfuncs)]
     gps = [get_gp(X,y_list[i]) for i in range(nfuncs)]
     return X,y_list,gps
+
+
+def default_evaluator(X,y_list,newX,scandetails):
+    newys_list = [func(newX) for func in scandetails.functions]
+    for i,newys in enumerate(newys_list):
+        log.info('Evaluted function {} to values: {}'.format(i,newys))
+        y_list[i] = np.concatenate([y_list[i],newys])
+    X = np.concatenate([X,newX])
+    return X, y_list
+
+def evaluate_and_refine(
+    X, y_list, newX, scandetails,
+    evaluator = default_evaluator, gp_maker = get_gp
+    ):
+    X, y_list = evaluator(X,y_list, newX, scandetails)
+    gps = [get_gp(X,y_list[i]) for i in range(len(scandetails.functions))]
+    return X, y_list, gps
+
 
 def gridsearch(
     gps, X, scandetails,
     gp_maker = get_gp, batchsize=1,
-    resampling_frac = 0.30
+    resampling_frac = 0.30,
     ):
     if batchsize > 1 and not gp_maker:
         raise RuntimeError('need a gp maker for batched acq')

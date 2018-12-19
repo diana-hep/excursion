@@ -3,9 +3,12 @@ from sklearn.gaussian_process.kernels import RBF
 from sklearn.gaussian_process.kernels import ConstantKernel
 from sklearn.gaussian_process.kernels import WhiteKernel
 # from sklearn.gaussian_process.kernels import Matern
-
+import logging
+import time
+log = logging.getLogger(__name__)
 
 def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
+    start = time.time()
     if kernel_name == 'const_rbf':
         length_scale = [1.]*X.shape[-1]
         kernel = ConstantKernel() * RBF(length_scale_bounds=[0.1, 100.0], length_scale = length_scale)
@@ -22,5 +25,7 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
                                   alpha=alpha,
                                   random_state=1234)
     gp.fit(X, y.ravel())
+    delta = time.time()-start
+    log.info('made a GP for {} training points in {:.3f} seconds'.format(len(X),delta))
     return gp
 
