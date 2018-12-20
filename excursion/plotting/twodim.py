@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import point_entropy, values2mesh
+from ..utils import point_entropy, values2mesh, values2mesh_masked
 
 def getminmax(ndarray):
     return np.min(ndarray), np.max(ndarray)
@@ -10,7 +10,7 @@ def plot_current_estimate(ax, gp, X, y, prediction, scandetails, funcindex, batc
 
     if evaluate_truth:
         truthv = scandetails.functions[funcindex](scandetails.plotX)
-        truthv = values2mesh(truthv, scandetails.plot_rangedef, scandetails.invalid_region)
+        truthv = values2mesh_masked(truthv, scandetails.plot_rangedef, scandetails.invalid_region)
 
     vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
 
@@ -33,16 +33,16 @@ def plot_current_entropies(ax, gp, X, entropies, scandetails, batchsize=1, evalu
     thresholds = scandetails.thresholds
     xv, yv = scandetails.plotG
 
-    vmin, vmax = getminmax(entropies)
+    vmin, vmax = getminmax(entropies[~np.isnan(entropies)])
 
 
-    entropies = values2mesh(entropies, scandetails.plot_rangedef, scandetails.invalid_region)
+    entropies = values2mesh_masked(entropies, scandetails.plot_rangedef, scandetails.invalid_region)
     ax.contourf(xv, yv, entropies, np.linspace(vmin, vmax, 100))
 
     if evaluate_truth:
         for truth_func in  scandetails.functions:
             truthv = truth_func(scandetails.plotX)
-            truthv = values2mesh(truthv, scandetails.plot_rangedef, scandetails.invalid_region)
+            truthv = values2mesh_masked(truthv, scandetails.plot_rangedef, scandetails.invalid_region)
             ax.contour(xv, yv, truthv, thresholds, colors='white', linestyles='dotted')
     if batchsize:
         ax.scatter(X[:-batchsize, 0], X[:-batchsize, 1], s=20, c='w')
@@ -60,12 +60,12 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1, evaluate_truth = Fal
         prediction, prediction_std = gp.predict(newX, return_std=True)
         mu_stds.append([prediction, prediction_std])
 
-        prediction = values2mesh(
+        prediction = values2mesh_masked(
             prediction,
             scandetails.plot_rangedef,
             scandetails.invalid_region
         )
-        prediction_std = values2mesh(
+        prediction_std = values2mesh_masked(
             prediction_std,
             scandetails.plot_rangedef,
             scandetails.invalid_region

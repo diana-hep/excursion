@@ -39,3 +39,13 @@ def values2mesh(values, rangedef, invalid, invalid_value = np.nan):
     if np.any(inv):
         allv[inv]  = invalid_value
     return allv.reshape(*map(int,rangedef[:,2]))
+
+def values2mesh_masked(values, rangedef, invalid, invalid_value = np.nan):
+    grid = mgrid(rangedef)
+    allX = mesh2points(grid,rangedef[:,2])
+    allv = np.zeros(len(allX))
+    inv  = invalid(allX)
+    allv = values
+    if np.any(inv):
+        allv[inv]  = invalid_value
+    return allv.reshape(*map(int,rangedef[:,2]))

@@ -26,3 +26,5 @@ shifted_truth = lambda X: truth(X-0.05)
 bounding_box = [[0,1.5],[0,1.5]]
 single_function = ExcursionProblem([truth],[0.0],ndim = 2, bounding_box = bounding_box)
 two_functions = ExcursionProblem([truth,shifted_truth],[0.0],ndim = 2, bounding_box = bounding_box)
+
+masked_single = ExcursionProblem([truth],[0.0],ndim = 2, bounding_box = bounding_box, invalid_region = lambda X: X[:,0] < X[:,1])

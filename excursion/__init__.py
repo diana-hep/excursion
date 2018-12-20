@@ -33,7 +33,8 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
     return gp
 
 class ExcursionProblem(object):
-    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None):
+    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None, invalid_region = None):
+        self._invalid_region = invalid_region
         self.functions = functions
         self.thresholds = thresholds
         self.bounding_box = np.asarray(bounding_box or [[0,1]]*ndim)
@@ -45,15 +46,22 @@ class ExcursionProblem(object):
         self.plotX = utils.mesh2points(self.plotG,self.plot_rangedef[:,2])
 
     def invalid_region(self,X):
-        return np.zeros_like(X[:,0], dtype = 'bool')
+        allvalid = lambda X: np.zeros_like(X[:,0], dtype = 'bool')
+        return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
     def random_points(self,N, seed = None):
         np.random.seed(seed)
-        return np.random.uniform(
+        in_bounding = np.random.uniform(
             self.bounding_box[:,0],
             self.bounding_box[:,1],
-            size = (N,self.ndim)
+            size = (N if not self._invalid_region else N*50,self.ndim)
         )
+        if not self._invalid_region: return in_bounding
+        valid = in_bounding[~self.invalid_region(in_bounding)]
+        idx = np.random.choice(np.arange(0,len(valid)),size = N)
+        points = valid[idx]
+        assert len(points) == N
+        return points
 
     def acqX(self):
         return self.random_points(500)
