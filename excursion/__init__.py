@@ -6,6 +6,8 @@ from sklearn.gaussian_process.kernels import WhiteKernel
 import logging
 import time
 import numpy as np
+from . import utils
+
 log = logging.getLogger(__name__)
 
 def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
