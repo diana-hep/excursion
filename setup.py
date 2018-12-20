@@ -47,6 +47,7 @@ setup(
     install_requires=[
         'sklearn',
         'scipy',
+        'pyDOE,
         'click>=6.0',
         'sklearn',
         'pyyaml'

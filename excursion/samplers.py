@@ -1,12 +1,12 @@
 import numpy as np
 import itertools
 import logging
+import pyDOE
 
 from . import  utils
 
 log = logging.getLogger(__name__)
 
-import itertools
 
 def sample_grid(scandetails,ndim,sizes):
     los = np.random.uniform(0,0.1, size = ndim)
@@ -19,20 +19,7 @@ def sample_grid(scandetails,ndim,sizes):
     X = X[~scandetails.invalid_region(X)]
     return X
 
-def regular_grid_generator(scandetails, central_range = [5,20], nsamples_per_grid = 15, min_points_per_dim = 2):
-    ndim = len(scandetails.plot_rangedef[:,2])
-    grids = set(x for y in range(*central_range) for x in itertools.combinations_with_replacement([y,y-1,y-2],ndim))
-    grids = [g for g in grids if np.all(np.array(g) >= min_points_per_dim)]
-    grids = sorted(grids, key=lambda k: np.product(k))
-    def makegrids(sizes):
-        for s in range(nsamples_per_grid):
-            yield sample_grid(scandetails,ndim,sizes)
-    for g in grids:
-        for X in makegrids(g):
-            yield X,g
-
 def latin_sample_n(scandetails,npoints,ndim):
-    import pyDOE
     sample_n = npoints
     while True:
         X = pyDOE.lhs(ndim, samples=sample_n)
@@ -47,6 +34,22 @@ def latin_sample_n(scandetails,npoints,ndim):
             sample_n = int(sample_n * float(len_before)/float(len_after))
             continue
         return X[:npoints]
+
+def regular_grid_generator(
+    scandetails,
+    central_range = [5,20],
+    nsamples_per_grid = 15,
+    min_points_per_dim = 2):
+    ndim = len(scandetails.plot_rangedef[:,2])
+    grids = set(x for y in range(*central_range) for x in itertools.combinations_with_replacement([y,y-1,y-2],ndim))
+    grids = [g for g in grids if np.all(np.array(g) >= min_points_per_dim)]
+    grids = sorted(grids, key=lambda k: np.product(k))
+    def makegrids(sizes):
+        for s in range(nsamples_per_grid):
+            yield sample_grid(scandetails,ndim,sizes)
+    for g in grids:
+        for X in makegrids(g):
+            yield X,g
 
 def latin_hypercube_generator(scandetails, nsamples_per_npoints = 50, point_range = [4, 100]):
     ndim = len(scandetails.plot_rangedef[:,2])

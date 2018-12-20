@@ -1,31 +1,33 @@
 import numpy as np
 import logging
 import time
+import os
 from . import core
-from .. import get_gp
+from .gaussian_process import get_gp
 
 log = logging.getLogger(__name__)
 
 def run_all_acpoints(acqX, gps, thresholds, meanX):
-    return np.array([
-        core.info_gain(xtest, gps, thresholds, meanX) for xtest in acqX]
-    )
+    try:
+        from joblib import Parallel, delayed
+        nparallel = os.cpu_count()
+        log.debug('analyzing {} candidate acquisition points in {} parallel workers'.format(
+            len(acqX),nparallel)
+        )
+        start = time.time()
+        result = Parallel(nparallel)(
+            delayed(core.info_gain)(xtest, gps, thresholds, meanX) for xtest in acqX
+        )
+        delta = time.time()-start
+        log.debug('acquisition analysis took in {:.3f} seconds'.format(delta))
+        return np.asarray(result)
+    except ImportError:
+        log.debug('joblib not found. falling back to serial')
+        return np.array([
+            core.info_gain(xtest, gps, thresholds, meanX) for xtest in acqX]
+        )
 
-def run_all_acpoints(acqX, gps, thresholds, meanX):
-    nparallel = 4
-    log.info('analyzing {} candidate acquisition points in {} parallel workers'.format(
-        len(acqX),nparallel)
-    )
-    start = time.time()
-    from joblib import Parallel, delayed
-    result = Parallel(nparallel)(
-        delayed(core.info_gain)(xtest, gps, thresholds, meanX) for xtest in acqX
-    )
-    delta = time.time()-start
-    log.info('acquisition analysis took in {:.3f} seconds'.format(delta))
-    return np.asarray(result)
-
-def _gridsearch(gps, X, scandetails):
+def _search_single(gps, X, scandetails):
     acqX  = scandetails.acqX()
     meanX = scandetails.meanX()
     thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
@@ -34,11 +36,11 @@ def _gridsearch(gps, X, scandetails):
     newx = None
     for i,cacq in enumerate(acqX[np.argsort(acqval)]):
         if cacq.tolist() not in X.tolist():
-            log.info('taking new x. the best non-existent index {} {}'.format(i,cacq))
+            log.debug('taking new x. the best non-existent index {} {}'.format(i,cacq))
             newx = cacq
             return newx,acqX,acqval
         else:
-            log.info('{} is good but already there'.format(cacq))
+            log.debug('{} is good but already there'.format(cacq))
     log.warning('returning None.. something must be wrong')
     return None,None
 
@@ -54,17 +56,20 @@ def init(
     gps = [gp_maker(X,yl) for yl in y_list]
     return X,y_list,gps
 
+def tell(X, y_list, scandetails, newX, newys_list, gp_maker):
+    for i,newys in enumerate(newys_list):
+        log.debug('Evaluted function {} to values: {}'.format(i,newys))
+        y_list[i] = np.concatenate([y_list[i],newys])
+    X = np.concatenate([X,newX])
+    gps = [gp_maker(X,y_list[i]) for i in range(len(scandetails.functions))]
+    return X,y_list,gps
 
 def evaluate_and_refine(
     X, y_list, newX, scandetails,
     evaluator = default_evaluator, gp_maker = get_gp
     ):
     newys_list = evaluator(scandetails,newX)
-    for i,newys in enumerate(newys_list):
-        log.info('Evaluted function {} to values: {}'.format(i,newys))
-        y_list[i] = np.concatenate([y_list[i],newys])
-    X = np.concatenate([X,newX])
-    gps = [get_gp(X,y_list[i]) for i in range(len(scandetails.functions))]
+    X, y_list, gps = tell(X, y_list, scandetails, newX, newys_list, gp_maker)
     return X, y_list, gps
 
 def suggest(
@@ -75,7 +80,7 @@ def suggest(
     if batchsize > 1 and not gp_maker:
         raise RuntimeError('need a gp maker for batched acq')
     resample = int(batchsize * resampling_frac)
-    log.info('resample up to %s', resample)
+    log.debug('resample up to %s', resample)
     newX = np.empty((0,X.shape[-1]))
     my_gps    = gps
     orig_gps    = gps
@@ -85,36 +90,37 @@ def suggest(
     acqinfos = []
     n_orig  = myX.shape[0]
 
-    log.info('base X is %s',myX.shape)
+    log.debug('base X is %s',myX.shape)
 
     while True:
-        newx,acqX,acqinfo = _gridsearch(my_gps, myX, scandetails)
+        newx,acqX,acqinfo = _search_single(my_gps, myX, scandetails)
         newX = np.concatenate([newX,np.asarray([newx])])
         myX  = np.concatenate([myX,np.asarray([newx])])
         acqinfos.append({'acqX': acqX, 'acqinfo': acqinfo})
         if(len(newX)) == batchsize:
-            log.info('we got our batch')
+            log.debug('we got our batch')
             if return_acqvals:
                 return newX, acqinfos
             return newX
-        log.info('do the fake update on %s %s',myX.shape,newX.shape)
+        log.debug('do the fake update on %s %s',myX.shape,newX.shape)
         newy_list = [gp.sample_y([newx], n_samples = 1)[:,0] for gp in orig_gps]
 
         resample = min(len(newX),resample)
         for i,newy in enumerate(newy_list):
-            log.info('new y i: {} {}'.format(i,newy))
+            log.debug('new y i: {} {}'.format(i,newy))
             my_y_list[i] = np.concatenate([my_y_list[i],newy])
 
             if resample:
-                log.info('resampling %s %s', resample, np.arange(n_orig,len(myX)))
+                log.debug('resampling %s %s', resample, np.arange(n_orig,len(myX)))
                 new_indices = np.random.choice(
                     np.arange(n_orig,len(myX)), resample, replace = False
                 )
-                log.info('indices %s',new_indices)
+                log.debug('indices %s',new_indices)
                 resampleX = myX[new_indices]
-                log.info('resampling shape %s',resampleX.shape)
+                log.debug('resampling shape %s',resampleX.shape)
                 my_y_list[i][new_indices] = gps[i].sample_y(resampleX, n_samples = 1)[:,0]
 
-            log.info(my_y_list[i].shape)
-        log.info('build fake gps')
+            log.debug(my_y_list[i].shape)
+        log.debug('build fake gps')
         my_gps = [gp_maker(myX,my_y) for my_y in my_y_list]
+

@@ -43,6 +43,6 @@ def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, evaluate_truth =
     ax.set_zlim(scandetails.plot_rangedef[2][0],scandetails.plot_rangedef[2][1])
     ax.view_init(*view_init)
 
-def plot(axarr,gps,X,y_list,scandetails, evaluate_truth = False, **kwargs):
+def plot(axarr,gps,X,y_list,scandetails, **kwargs):
     ax = axarr[0]
     plot_current_estimate(ax, gps[0],X,y_list[0],scandetails,0,**kwargs)

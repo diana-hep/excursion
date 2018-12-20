@@ -1,40 +1,15 @@
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.gaussian_process.kernels import ConstantKernel
-from sklearn.gaussian_process.kernels import WhiteKernel
-# from sklearn.gaussian_process.kernels import Matern
 import logging
 import time
 import numpy as np
 from . import utils
+from . import optimize
+from . import diagnosis
 from .samplers import latin_sample_n
 
 log = logging.getLogger(__name__)
 
-def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
-    start = time.time()
-    if kernel_name == 'const_rbf':
-        length_scale = [1.]*X.shape[-1]
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[0.1, 100.0], length_scale = length_scale)
-    elif kernel_name == 'tworbf_white':
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[1e-2,100]) + \
-                 ConstantKernel() * RBF(length_scale_bounds=[100., 1000.0]) + \
-                 WhiteKernel(noise_level_bounds=[1e-7,1e-4])
-    elif kernel_name == 'onerbf_white':
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[1e-2,100]) + WhiteKernel(noise_level_bounds=[1e-7,1e-1])
-    else:
-        raise RuntimeError('unknown kernel')
-    gp = GaussianProcessRegressor(kernel=kernel,
-                                  n_restarts_optimizer=10,
-                                  alpha=alpha,
-                                  random_state=1234)
-    gp.fit(X, y.ravel())
-    delta = time.time()-start
-    log.info('made a GP for {} training points in {:.3f} seconds'.format(len(X),delta))
-    return gp
-
 class ExcursionProblem(object):
-    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None, invalid_region = None):
+    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None, invalid_region = None, testdata = None, n_acq = 500, n_mean = 500):
         self._invalid_region = invalid_region
         self.functions = functions
         self.thresholds = thresholds
@@ -45,6 +20,17 @@ class ExcursionProblem(object):
         self.plot_rangedef = np.concatenate([self.bounding_box,np.asarray(plot_npoints).reshape(-1,1)],axis=-1)
         self.plotG = utils.mgrid(self.plot_rangedef)
         self.plotX = utils.mesh2points(self.plotG,self.plot_rangedef[:,2])
+        self._testdata = testdata
+        self._nmean = 500
+        self._nacq = 500
+    
+    def testdata(self):
+        if self._testdata:
+            return self._testdata
+        testX = self.plotX[~self.invalid_region(self.plotX)]
+        testy_list = [func(testX) for func in self.functions]
+        testdata = testX, testy_list
+        return testdata
 
     def invalid_region(self,X):
         allvalid = lambda X: np.zeros_like(X[:,0], dtype = 'bool')
@@ -55,7 +41,42 @@ class ExcursionProblem(object):
         return latin_sample_n(self, N, self.ndim)
 
     def acqX(self):
-        return self.random_points(500)
+        return self.random_points(self._nacq)
         
     def meanX(self):
-        return self.random_points(500)
+        return self.random_points(self._nmean)
+
+class Learner(object):
+    def __init__(self, scandetails, gp_maker =  optimize.get_gp, evaluator = optimize.default_evaluator):
+        self.scandetails = scandetails
+        self.gp_maker = gp_maker
+        self.evaluator = evaluator
+        self.metrics = []
+
+    def evaluate_metrics(self):
+        return diagnosis.diagnose(self.X,self.y_list,self.gps, self.scandetails)
+
+    def initialize(self,n_init = 5, seed = None):
+        self.X, self.y_list, self.gps = optimize.init(
+            self.scandetails, n_init, seed, self.evaluator,self.gp_maker
+        )
+        self.metrics.append(self.evaluate_metrics())
+
+    def suggest(self, batchsize = 1, resampling_frac = 0.30):
+        return optimize.suggest(
+            self.gps, self.X, self.scandetails,
+            gp_maker = self.gp_maker, batchsize=batchsize,
+            resampling_frac = resampling_frac, return_acqvals = False
+        )
+
+    def tell(self, newX, newys_list):
+        self.X,self.y_list,self.gps = optimize.tell(
+            self.X, self.y_list, self.scandetails,
+            newX, newys_list, self.gp_maker
+        )
+        self.metrics.append(self.evaluate_metrics())
+        
+
+    def evaluate_and_tell(self,newX):
+        newys_list = self.evaluator(self.scandetails,newX)
+        self.tell(newX,newys_list)
