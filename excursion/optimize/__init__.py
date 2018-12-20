@@ -36,43 +36,41 @@ def _gridsearch(gps, X, scandetails):
         if cacq.tolist() not in X.tolist():
             log.info('taking new x. the best non-existent index {} {}'.format(i,cacq))
             newx = cacq
-            return newx,acqval
+            return newx,acqX,acqval
         else:
             log.info('{} is good but already there'.format(cacq))
     log.warning('returning None.. something must be wrong')
     return None,None
 
-def init(scandetails, n_init = 5, seed = None, gp_maker = get_gp):
-    ndim = scandetails.plot_rangedef.shape[0]
-    nfuncs = len(scandetails.functions)
-    np.random.seed(seed)
-    X = np.random.uniform(scandetails.plot_rangedef[:,0],scandetails.plot_rangedef[:,1], size = (n_init,ndim))
-    y_list = [np.array([scandetails.functions[i](np.asarray([x]))[0] for x in X]) for i in range(nfuncs)]
-    gps = [get_gp(X,y_list[i]) for i in range(nfuncs)]
+def default_evaluator(scandetails,newX):
+    return [func(newX) for func in scandetails.functions]
+
+def init(
+    scandetails, n_init = 5, seed = None,
+    evaluator = default_evaluator, gp_maker = get_gp
+    ):
+    X = scandetails.random_points(n_init, seed = seed)
+    y_list = evaluator(scandetails,X)
+    gps = [gp_maker(X,yl) for yl in y_list]
     return X,y_list,gps
 
-
-def default_evaluator(X,y_list,newX,scandetails):
-    newys_list = [func(newX) for func in scandetails.functions]
-    for i,newys in enumerate(newys_list):
-        log.info('Evaluted function {} to values: {}'.format(i,newys))
-        y_list[i] = np.concatenate([y_list[i],newys])
-    X = np.concatenate([X,newX])
-    return X, y_list
 
 def evaluate_and_refine(
     X, y_list, newX, scandetails,
     evaluator = default_evaluator, gp_maker = get_gp
     ):
-    X, y_list = evaluator(X,y_list, newX, scandetails)
+    newys_list = evaluator(scandetails,newX)
+    for i,newys in enumerate(newys_list):
+        log.info('Evaluted function {} to values: {}'.format(i,newys))
+        y_list[i] = np.concatenate([y_list[i],newys])
+    X = np.concatenate([X,newX])
     gps = [get_gp(X,y_list[i]) for i in range(len(scandetails.functions))]
     return X, y_list, gps
 
-
-def gridsearch(
+def suggest(
     gps, X, scandetails,
     gp_maker = get_gp, batchsize=1,
-    resampling_frac = 0.30,
+    resampling_frac = 0.30, return_acqvals = False
     ):
     if batchsize > 1 and not gp_maker:
         raise RuntimeError('need a gp maker for batched acq')
@@ -90,15 +88,16 @@ def gridsearch(
     log.info('base X is %s',myX.shape)
 
     while True:
-        newx,acqinfo = _gridsearch(my_gps, myX, scandetails)
+        newx,acqX,acqinfo = _gridsearch(my_gps, myX, scandetails)
         newX = np.concatenate([newX,np.asarray([newx])])
         myX  = np.concatenate([myX,np.asarray([newx])])
-        acqinfos.append(acqinfo)
+        acqinfos.append({'acqX': acqX, 'acqinfo': acqinfo})
         if(len(newX)) == batchsize:
             log.info('we got our batch')
-            return newX, acqinfos
+            if return_acqvals:
+                return newX, acqinfos
+            return newX
         log.info('do the fake update on %s %s',myX.shape,newX.shape)
-        # newy_list = [gp.predict(newX) for gp in my_gps]
         newy_list = [gp.sample_y([newx], n_samples = 1)[:,0] for gp in orig_gps]
 
         resample = min(len(newX),resample)

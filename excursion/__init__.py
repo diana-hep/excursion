@@ -5,6 +5,7 @@ from sklearn.gaussian_process.kernels import WhiteKernel
 # from sklearn.gaussian_process.kernels import Matern
 import logging
 import time
+import numpy as np
 log = logging.getLogger(__name__)
 
 def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
@@ -29,3 +30,31 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
     log.info('made a GP for {} training points in {:.3f} seconds'.format(len(X),delta))
     return gp
 
+class ExcursionProblem(object):
+    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None):
+        self.functions = functions
+        self.thresholds = thresholds
+        self.bounding_box = np.asarray(bounding_box or [[0,1]]*ndim)
+        assert len(self.bounding_box) == ndim
+        self.ndim = ndim
+        plot_npoints = plot_npoints or [[101 if ndim < 3 else 31]]*ndim
+        self.plot_rangedef = np.concatenate([self.bounding_box,np.asarray(plot_npoints).reshape(-1,1)],axis=-1)
+        self.plotG = utils.mgrid(self.plot_rangedef)
+        self.plotX = utils.mesh2points(self.plotG,self.plot_rangedef[:,2])
+
+    def invalid_region(self,X):
+        return np.zeros_like(X[:,0], dtype = 'bool')
+
+    def random_points(self,N, seed = None):
+        np.random.seed(seed)
+        return np.random.uniform(
+            self.bounding_box[:,0],
+            self.bounding_box[:,1],
+            size = (N,self.ndim)
+        )
+
+    def acqX(self):
+        return self.random_points(500)
+        
+    def meanX(self):
+        return self.random_points(500)

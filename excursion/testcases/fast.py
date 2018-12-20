@@ -1,5 +1,6 @@
 import numpy as np
 from .. import utils
+from .. import ExcursionProblem
 
 def truth(x):
     xv, yv = x[:,0],x[:,1]
@@ -18,26 +19,10 @@ def truth(x):
 
     return 3*(np.log(analysis(xv,yv)) - np.log(0.05))
 
-def invalid_region(x):
-    return np.array([False]*len(x))
 
-plot_rangedef = np.array([[0.0,1.5,101],[0.0,1.5,101]])
-plotG = utils.mgrid(plot_rangedef)
-plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
+#shift to simulate mismatch between exp / obs
+shifted_truth = lambda X: truth(X-0.05)
 
-functions = [truth]
-thresholds = [0.0]
-
-
-def acqX():
-    print('requested acqX')
-    return np.random.uniform(plot_rangedef[:,0],plot_rangedef[:,1], size = (500,2))
-
-def meanX():
-    print('requested meanX')
-    return np.random.uniform(plot_rangedef[:,0],plot_rangedef[:,1], size = (500,2))
-
-def test_data():
-    X = plotX
-    y_list = [func(X) for func in functions]
-    return X,y_list
+bounding_box = [[0,1.5],[0,1.5]]
+single_function = ExcursionProblem([truth],[0.0],ndim = 2, bounding_box = bounding_box)
+two_functions = ExcursionProblem([truth,shifted_truth],[0.0],ndim = 2, bounding_box = bounding_box)
