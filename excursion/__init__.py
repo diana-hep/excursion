@@ -7,6 +7,7 @@ import logging
 import time
 import numpy as np
 from . import utils
+from .samplers import latin_sample_n
 
 log = logging.getLogger(__name__)
 
@@ -51,17 +52,7 @@ class ExcursionProblem(object):
 
     def random_points(self,N, seed = None):
         np.random.seed(seed)
-        in_bounding = np.random.uniform(
-            self.bounding_box[:,0],
-            self.bounding_box[:,1],
-            size = (N if not self._invalid_region else N*50,self.ndim)
-        )
-        if not self._invalid_region: return in_bounding
-        valid = in_bounding[~self.invalid_region(in_bounding)]
-        idx = np.random.choice(np.arange(0,len(valid)),size = N)
-        points = valid[idx]
-        assert len(points) == N
-        return points
+        return latin_sample_n(self, N, self.ndim)
 
     def acqX(self):
         return self.random_points(500)
