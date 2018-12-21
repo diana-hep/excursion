@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 def run_all_acpoints(acqX, gps, thresholds, meanX):
     try:
         from joblib import Parallel, delayed
-        nparallel = os.cpu_count()
+        nparallel = int(os.environ.get('EXCURSION_NPARALLEL',os.cpu_count()))
         log.debug('analyzing {} candidate acquisition points in {} parallel workers'.format(
             len(acqX),nparallel)
         )

@@ -21,8 +21,8 @@ class ExcursionProblem(object):
         self.plotG = utils.mgrid(self.plot_rangedef)
         self.plotX = utils.mesh2points(self.plotG,self.plot_rangedef[:,2])
         self._testdata = testdata
-        self._nmean = 500
-        self._nacq = 500
+        self._nmean = n_acq
+        self._nacq = n_mean
     
     def testdata(self):
         if self._testdata:

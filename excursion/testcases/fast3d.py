@@ -22,5 +22,5 @@ def truth(x):
 
 
 bounding_box = [[0,1.5],[0,1.5],[0,1.5]]
-npoints = [50,50,50]
-single_function = ExcursionProblem([truth],[0.0],ndim = 3, bounding_box = bounding_box, plot_npoints=npoints)
+npoints = [75,75,75]
+single_function = ExcursionProblem([truth],[0.0],ndim = 3, bounding_box = bounding_box, plot_npoints=npoints, n_acq=1000, n_mean=1000)

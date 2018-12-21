@@ -22,6 +22,9 @@ extras_require = {
     'plots': [
       'matplotlib',
       'scikit-image'
+    ],
+    'parallel': [
+      'joblib'
     ]
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
@@ -47,7 +50,7 @@ setup(
     install_requires=[
         'sklearn',
         'scipy',
-        'pyDOE,
+        'pyDOE',
         'click>=6.0',
         'sklearn',
         'pyyaml'
