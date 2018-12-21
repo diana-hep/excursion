@@ -27,10 +27,9 @@ def load_example(example):
     elif example == 'stopsearch':
         m = importlib.import_module('excursion.testcases.checkmate')
         return m.exp_and_obs
-    # elif example == 'darkhiggs':
-    #     scandetails = importlib.import_module('excursion.testcases.darkhiggs')
-    # elif example == '3dfoursheets':
-    #     scandetails = importlib.import_module('excursion.testcases.toy3d_foursheets')
+    elif example == 'darkhiggs':
+        m = importlib.import_module('excursion.testcases.darkhiggs')
+        return m.iso_xsec
     else:
         raise RuntimeError('unnkown test case')
     return scandetails

@@ -32,19 +32,16 @@ scaler = sklearn.preprocessing.MinMaxScaler()
 scaler.fit(truthX)
 truthX = scaler.transform(truthX)
 
-def invalid_region(x):
-    return np.array([False]*len(x))
+def invalid_region(X):
+    return np.isnan(truth(X))
 
 def truth(denseX):
     from scipy.interpolate import griddata
     return griddata(truthX,truthy,denseX)
 
-functions = [truth]
-
-plot_rangedef = np.array([[0.1,0.9,41],[0.1,0.9,41],[0.1,0.9,41]])
-thresholds = [-9.5]
-
+npoints = [50,50,50]
 iso_xsec = ExcursionProblem(
-    functions, thresholds, ndim = 3,
-    plot_npoints=[50,50,50]
+    [truth], [-9.5], ndim = 3,
+    plot_npoints=[50,50,50],
+    invalid_region=invalid_region
 )
