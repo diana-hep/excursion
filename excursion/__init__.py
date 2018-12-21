@@ -76,7 +76,7 @@ class Learner(object):
         )
         self.metrics.append(self.evaluate_metrics())
         
-
     def evaluate_and_tell(self,newX):
         newys_list = self.evaluator(self.scandetails,newX)
         self.tell(newX,newys_list)
+

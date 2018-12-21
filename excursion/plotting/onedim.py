@@ -24,7 +24,6 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         for thr in scandetails.thresholds:
             ax.hlines(thr, np.min(scandetails.plotX),np.max(scandetails.plotX), colors = 'grey')
         ax.set_xlim(np.min(scandetails.plotX),np.max(scandetails.plotX))
-        ax.set_ylim(*scandetails.y_lim)
 
     entraxis = axarr[-1]
     entropies = point_entropy(mu_stds, scandetails.thresholds)
