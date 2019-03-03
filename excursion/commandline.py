@@ -17,6 +17,7 @@ formatter = logging.Formatter(LOGFORMAT)
 
 log = logging.getLogger(__name__)
 
+EXAMPLES = ['2Dtoyanalysis', '3Dtoyanalysis', 'stopsearch', 'darkhiggs']
 def load_example(example):
     if example == '2Dtoyanalysis':
         m = importlib.import_module('excursion.testcases.fast')
@@ -61,7 +62,7 @@ def setup_logging(logfile):
     root.addHandler(fh)
 
 @click.command()
-@click.argument('example')
+@click.argument('example', type = click.Choice(EXAMPLES))
 @click.argument('outputfile')
 @click.option('--ninit', default = 10)
 @click.option('--nbatch', default = 1)

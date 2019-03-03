@@ -25,6 +25,9 @@ extras_require = {
     ],
     'parallel': [
       'joblib'
+    ],
+    'baselines': [
+      'pyDOE'
     ]
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
