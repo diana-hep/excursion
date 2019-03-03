@@ -1,5 +1,6 @@
 import json
 import base64
+import pickle
 import pkg_resources
 import numpy as np
 from .. import utils
@@ -32,16 +33,21 @@ scaler = sklearn.preprocessing.MinMaxScaler()
 scaler.fit(truthX)
 truthX = scaler.transform(truthX)
 
-def invalid_region(X):
-    return np.isnan(truth(X))
+# def invalid_region(X):
+#     return np.isnan(truth(X))
 
-def truth(denseX):
-    from scipy.interpolate import griddata
-    return griddata(truthX,truthy,denseX)
+# def truth(denseX):
+#     from scipy.interpolate import griddata
+#     return griddata(truthX,truthy,denseX)
+
+gpfile = pkg_resources.resource_filename('excursion','testcases/data/darkhiggsgp.pickle')
+
+gp = pickle.load(open(gpfile,'rb'))
+
+truth = lambda X: gp.predict(X)
 
 npoints = [50,50,50]
 iso_xsec = ExcursionProblem(
     [truth], [-9.5], ndim = 3,
     plot_npoints=[50,50,50],
-    invalid_region=invalid_region
 )
