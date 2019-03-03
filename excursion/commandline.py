@@ -7,6 +7,7 @@ import time
 import yaml
 import logging
 from . import Learner
+
 import os
 
 np.warnings.filterwarnings('ignore')
@@ -84,10 +85,46 @@ def main(example, outputfile, logfile, ninit, nbatch, nupdates):
             outputfile
         )
         log.info(msg)
-        json.dump({'metrics': learner.metrics, 'X': learner.X.tolist(), 'y_list': [x.tolist() for x in learner.y_list]},open(outputfile,'w'))
-    # gpopts  = yaml.load(gpopts)
-    # acqopts = yaml.load(acqopts)
-    # log.debug(gpopts,acqopts)
-    # for i,(gps, acqinfo, r) in enumerate(runloop(ninit, scandetails, nupdates, acq_optimizer=acqtype, gpopts = gpopts, acqopts = acqopts)):
-    #     log.debug('dumping iteration {}'.format(i))
-    #     json.dump(r,open(outputfile,'w'))
+    with open(outputfile,'w') as outfile:
+        json.dump({'metrics': learner.metrics, 'X': learner.X.tolist(), 'y_list': [x.tolist() for x in learner.y_list]},outfile)
+
+from . import samplers
+@click.command()
+@click.argument('example', type = click.Choice(EXAMPLES))
+@click.argument('outputfile')
+@click.option('--baseline', default = 'latin', type = click.Choice(['latin','grids']))
+@click.option('--logfile', default = 'excursion.log')
+def baseline(example, outputfile, baseline, logfile):
+    setup_logging(logfile)
+    oneshot_generator = getattr(samplers, {
+        'latin': 'latin_hypercube_generator',
+        'grids': 'regular_grid_generator'
+    }[baseline])
+
+    oneshot_options = {
+        'latin': dict(nsamples_per_npoints=10, point_range=[4,10]),
+        'grids': dict(central_range = [5,20], nsamples_per_grid = 10, min_points_per_dim = 2)
+    }[baseline]
+
+    example = load_example(example)
+    metrics = {'metrics': [], 'X': [], 'y_list': []}
+
+    for X,info in oneshot_generator(example, **oneshot_options):
+        start = time.time()
+        l = Learner(example)
+        y_list  = l.evaluator(l.scandetails,X)
+        l.tell(X,y_list)
+        delta = time.time()-start
+        metrics['X'].append(X.tolist())
+        metrics['y_list'].append([y.tolist() for y in y_list])
+        metrics['metrics'].append(l.metrics[0])
+        msg = 'baseline type {} {} | misclass {:.3E} | npoints {:5.0f} | time {:10.2f} s | {}'.format(
+            baseline, info or '',
+            1-l.metrics[-1]['confusion']['t'],
+            l.metrics[-1]['npoints'],
+            delta,
+            outputfile
+        )
+        log.info(msg)
+    with open(outputfile,'w') as outfile:
+        json.dump(metrics,outfile)

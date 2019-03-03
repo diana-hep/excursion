@@ -52,6 +52,8 @@ class Learner(object):
         self.gp_maker = gp_maker
         self.evaluator = evaluator
         self.metrics = []
+        self.X = np.empty((0,scandetails.ndim))
+        self.y_list = [np.empty((0,)) for f in scandetails.functions ]
 
     def evaluate_metrics(self):
         return diagnosis.diagnose(self.X,self.y_list,self.gps, self.scandetails)
