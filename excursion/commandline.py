@@ -105,7 +105,7 @@ def baseline(example, outputfile, baseline, logfile):
     metrics = {'metrics': [], 'X': [], 'y_list': []}
 
     oneshot_options = {
-        'latin': dict(nsamples_per_npoints=10, point_range=[1,10**example.ndim]),
+        'latin': dict(nsamples_per_npoints=1, point_range=[1,10**example.ndim]),
         'grids': dict(central_range = [5,12], nsamples_per_grid = 1, min_points_per_dim = 2)
     }[baseline]
 
