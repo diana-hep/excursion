@@ -101,13 +101,15 @@ def baseline(example, outputfile, baseline, logfile):
         'grids': 'regular_grid_generator'
     }[baseline])
 
-    oneshot_options = {
-        'latin': dict(nsamples_per_npoints=10, point_range=[4,10]),
-        'grids': dict(central_range = [5,20], nsamples_per_grid = 10, min_points_per_dim = 2)
-    }[baseline]
-
     example = load_example(example)
     metrics = {'metrics': [], 'X': [], 'y_list': []}
+
+    oneshot_options = {
+        'latin': dict(nsamples_per_npoints=10, point_range=[1,10**example.ndim]),
+        'grids': dict(central_range = [5,12], nsamples_per_grid = 1, min_points_per_dim = 2)
+    }[baseline]
+
+    log.info(oneshot_options)
 
     for X,info in oneshot_generator(example, **oneshot_options):
         start = time.time()
