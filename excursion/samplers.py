@@ -31,7 +31,8 @@ def latin_sample_n(scandetails,npoints,ndim):
         X = X[~scandetails.invalid_region(X)]
         len_after = len(X)
         if not len_after >= npoints: #invalid might throw out points, so sample until we get what we want
-            sample_n = int(sample_n * float(len_before)/float(len_after))
+            factor = float(len_before)/float(len_after) if len_after else 2
+            sample_n = int(sample_n * factor)
             continue
         return X[:npoints]
 

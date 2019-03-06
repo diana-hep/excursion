@@ -51,8 +51,12 @@ def init(
     scandetails, n_init = 5, seed = None,
     evaluator = default_evaluator, gp_maker = get_gp
     ):
-    X = scandetails.random_points(n_init, seed = seed)
-    y_list = evaluator(scandetails,X)
+    if n_init == 0:
+        X = np.empty((0,scandetails.ndim))
+        y_list = [np.empty((0,)) for f in scandetails.functions]
+    else:
+        X = scandetails.random_points(n_init, seed = seed)
+        y_list = evaluator(scandetails,X)
     gps = [gp_maker(X,yl) for yl in y_list]
     return X,y_list,gps
 
@@ -79,12 +83,14 @@ def suggest(
     ):
     if batchsize > 1 and not gp_maker:
         raise RuntimeError('need a gp maker for batched acq')
-    resample = int(batchsize * resampling_frac)
-    log.debug('resample up to %s', resample)
+
+
+    nresample = int(batchsize * resampling_frac)
+    log.debug('resample up to %s', nresample)
     newX = np.empty((0,X.shape[-1]))
     my_gps    = gps
     orig_gps    = gps
-    my_y_list = [np.copy(gp.y_train_) for gp in my_gps]
+    my_y_list = [np.copy(gp.y_train_) if hasattr(gp,'y_train_') else np.empty((0,)) for gp in my_gps ]
     myX       = np.copy(X)
 
     acqinfos = []
@@ -93,19 +99,30 @@ def suggest(
     log.debug('base X is %s',myX.shape)
 
     while True:
-        newx,acqX,acqinfo = _search_single(my_gps, myX, scandetails)
+        if myX.shape[0]:
+            newx,acqX,acqinfo = _search_single(my_gps, myX, scandetails)
+            acqinfos.append({'acqX': acqX, 'acqinfo': acqinfo})
+        else:
+            newx = scandetails.random_points(1)[0]
+
         newX = np.concatenate([newX,np.asarray([newx])])
         myX  = np.concatenate([myX,np.asarray([newx])])
-        acqinfos.append({'acqX': acqX, 'acqinfo': acqinfo})
+
         if(len(newX)) == batchsize:
             log.debug('we got our batch')
             if return_acqvals:
                 return newX, acqinfos
             return newX
-        log.debug('do the fake update on %s %s',myX.shape,newX.shape)
-        newy_list = [gp.sample_y([newx], n_samples = 1)[:,0] for gp in orig_gps]
 
-        resample = min(len(newX),resample)
+        def random_state():
+            import random
+            return random.randint(0,100000)
+
+
+        log.debug('do the fake update on %s %s w/ new x %s',myX.shape,newX.shape, newx)
+        newy_list = [gp.sample_y([newx], n_samples = 1, random_state = random_state())[:,0] for gp in orig_gps]
+
+        resample = min(len(newX),nresample)
         for i,newy in enumerate(newy_list):
             log.debug('new y i: {} {}'.format(i,newy))
             my_y_list[i] = np.concatenate([my_y_list[i],newy])
@@ -118,8 +135,9 @@ def suggest(
                 log.debug('indices %s',new_indices)
                 resampleX = myX[new_indices]
                 log.debug('resampling shape %s',resampleX.shape)
-                my_y_list[i][new_indices] = gps[i].sample_y(resampleX, n_samples = 1)[:,0]
-
+                resampled_y = gps[i].sample_y(resampleX, n_samples = 1, random_state = random_state())[:,0]
+                log.debug('resampled y: %s', resampled_y)
+                my_y_list[i][new_indices] = resampled_y
             log.debug(my_y_list[i].shape)
         log.debug('build fake gps')
         my_gps = [gp_maker(myX,my_y) for my_y in my_y_list]

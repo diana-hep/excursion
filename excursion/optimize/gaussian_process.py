@@ -25,7 +25,8 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
                                   n_restarts_optimizer=10,
                                   alpha=alpha,
                                   random_state=1234)
-    gp.fit(X, y.ravel())
+    if X.shape[0]:
+        gp.fit(X, y.ravel())
     delta = time.time()-start
     log.debug('made a GP for {} training points in {:.3f} seconds'.format(len(X),delta))
     return gp

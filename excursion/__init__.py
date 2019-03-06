@@ -9,7 +9,7 @@ from .samplers import latin_sample_n
 log = logging.getLogger(__name__)
 
 class ExcursionProblem(object):
-    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None, invalid_region = None, testdata = None, n_acq = 500, n_mean = 500):
+    def __init__(self, functions, thresholds = [0.0], ndim = 1, bounding_box = None, plot_npoints = None, invalid_region = None, testdata = None, n_acq = 2000, n_mean = 2000):
         self._invalid_region = invalid_region
         self.functions = functions
         self.thresholds = thresholds
@@ -58,11 +58,17 @@ class Learner(object):
     def evaluate_metrics(self):
         return diagnosis.diagnose(self.X,self.y_list,self.gps, self.scandetails)
 
-    def initialize(self,n_init = 5, seed = None):
-        self.X, self.y_list, self.gps = optimize.init(
-            self.scandetails, n_init, seed, self.evaluator,self.gp_maker
-        )
-        self.metrics.append(self.evaluate_metrics())
+    def initialize(self,n_init = 5, seed = None, snapshot = None):
+        if not snapshot:
+            self.X, self.y_list, self.gps = optimize.init(
+                self.scandetails, n_init, seed, self.evaluator,self.gp_maker
+            )
+            self.metrics.append(self.evaluate_metrics())
+        else:
+            self.X = np.asarray(snapshot['X'])
+            self.y_list = [np.asarray(y) for y in snapshot['y_list']]
+            self.gps = [self.gp_maker(self.X,yl) for yl in self.y_list]
+            self.metrics = snapshot['metrics']
 
     def suggest(self, batchsize = 1, resampling_frac = 0.30):
         return optimize.suggest(

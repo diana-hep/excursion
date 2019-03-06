@@ -38,17 +38,27 @@ def load_example(example):
 
 def run_loop(learner,n_batch, n_updates):
     for index in range(n_updates):
-        newX =  learner.suggest(batchsize=n_batch)
-        learner.evaluate_and_tell(newX)
-        yield learner
+        try:
+            newX =  learner.suggest(batchsize=n_batch)
+            learner.evaluate_and_tell(newX)
+            yield learner
+        except:
+            log.warning('suggestion failed. ending generator.')
+            return
 
-def load_learner(inputfile = None, init_config = None):
+def load_learner(example, inputfile = None, init_config = None):
     if not inputfile:
-        example, n_init = init_config
+        n_init = init_config
         log.debug('initializing')
         assert n_init
         learner = Learner(load_example(example))
         learner.initialize(n_init = n_init)
+        return learner
+    else:
+        log.info('load snapshot')
+        intputdata = json.load(open(inputfile))
+        learner = Learner(load_example(example))
+        learner.initialize(snapshot = intputdata)
         return learner
 
 def setup_logging(logfile):
@@ -62,6 +72,15 @@ def setup_logging(logfile):
     fh.setFormatter(formatter)
     root.addHandler(fh)
 
+import signal
+INTERRUPT = False
+def signal_handler(sig, frame):
+    global INTERRUPT
+    log.warning('SIG_INT caught. Interrupting at next possible opportunity')
+    INTERRUPT = True
+signal.signal(signal.SIGINT, signal_handler)
+
+
 @click.command()
 @click.argument('example', type = click.Choice(EXAMPLES))
 @click.argument('outputfile')
@@ -69,10 +88,12 @@ def setup_logging(logfile):
 @click.option('--nbatch', default = 1)
 @click.option('--nupdates', default = 100)
 @click.option('--logfile', default = 'excursion.log')
-def main(example, outputfile, logfile, ninit, nbatch, nupdates):
+@click.option('--snapshot', default = None)
+def main(example, outputfile, logfile, ninit, nbatch, nupdates, snapshot):
+    global INTERRUPT
     setup_logging(logfile)
 
-    learner = load_learner(init_config = (example, ninit))
+    learner = load_learner(example, inputfile = snapshot, init_config = ninit)
     start = time.time()
     for idx,l in enumerate(run_loop(learner, nbatch, nupdates)):
         delta = time.time()-start
@@ -85,8 +106,13 @@ def main(example, outputfile, logfile, ninit, nbatch, nupdates):
             outputfile
         )
         log.info(msg)
-    with open(outputfile,'w') as outfile:
-        json.dump({'metrics': learner.metrics, 'X': learner.X.tolist(), 'y_list': [x.tolist() for x in learner.y_list]},outfile)
+        log.debug('dump to: %s', outputfile)
+        with open(outputfile,'w') as outfile:
+            json.dump({'metrics': learner.metrics, 'X': learner.X.tolist(), 'y_list': [x.tolist() for x in learner.y_list]},outfile)
+        log.debug('interrupt?: %s', INTERRUPT)
+        if INTERRUPT:
+            log.warning('run was interrupted. exiting gracefully')
+            break
 
 from . import samplers
 @click.command()
@@ -105,7 +131,7 @@ def baseline(example, outputfile, baseline, logfile):
     metrics = {'metrics': [], 'X': [], 'y_list': []}
 
     oneshot_options = {
-        'latin': dict(nsamples_per_npoints=1, point_range=[1,10**example.ndim]),
+        'latin': dict(nsamples_per_npoints=10, point_range=[10**example.ndim,11**example.ndim]),
         'grids': dict(central_range = [5,12], nsamples_per_grid = 1, min_points_per_dim = 2)
     }[baseline]
 
