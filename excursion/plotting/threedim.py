@@ -21,7 +21,7 @@ def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, evaluate_truth =
     denseX = utils.mesh2points(denseGrid,scandetails.plot_rangedef[:,2])
 
     prediction, prediction_std = gp.predict(denseX, return_std=True)
-    ax.scatter(denseX[:,0],denseX[:,1],denseX[:,2], c = prediction, alpha = 0.05)
+    ax.scatter(denseX[:,0],denseX[:,1],denseX[:,2], c = prediction, alpha = 0.02)
 
     for val,c in zip(scandetails.thresholds,['r','g','y']):
         vals  = prediction.reshape(*map(int,scandetails.plot_rangedef[:,2]))
@@ -35,7 +35,7 @@ def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, evaluate_truth =
             mesh = contour_3d(vals,scandetails.plot_rangedef,val,alpha=0.1, facecolors=c, edgecolors=c)
             ax.add_collection3d(mesh)
 
-    ax.scatter(X[:,0],X[:,1],X[:,2], c = 'r', s = 100, alpha = 0.2)
+    ax.scatter(X[:,0],X[:,1],X[:,2], c = 'steelblue', s = 50, alpha = 0.2)
 
     # scatplot = ax.scatter(X[:,0],X[:,1],X[:,2], c = Y, alpha = 0.05, s = 200)
     ax.set_xlim(scandetails.plot_rangedef[0][0],scandetails.plot_rangedef[0][1])

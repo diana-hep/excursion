@@ -48,18 +48,20 @@ def run_loop(learner,n_batch, n_updates):
 
 def load_learner(example, inputfile = None, init_config = None):
     if not inputfile:
-        n_init = init_config
+        n_init = init_config['ninit']
         log.debug('initializing')
         assert n_init
         learner = Learner(load_example(example))
         learner.initialize(n_init = n_init)
-        return learner
     else:
         log.info('load snapshot')
         intputdata = json.load(open(inputfile))
         learner = Learner(load_example(example))
         learner.initialize(snapshot = intputdata)
-        return learner
+
+    learner.scandetails._nacq = init_config['nacq']
+    learner.scandetails._nmean = init_config['nmean']
+    return learner
 
 def setup_logging(logfile):
     if os.path.exists(logfile):
@@ -85,15 +87,19 @@ signal.signal(signal.SIGINT, signal_handler)
 @click.argument('example', type = click.Choice(EXAMPLES))
 @click.argument('outputfile')
 @click.option('--ninit', default = 10)
+@click.option('--nacq', default = 1000)
+@click.option('--nmean', default = 1000)
 @click.option('--nbatch', default = 1)
 @click.option('--nupdates', default = 100)
 @click.option('--logfile', default = 'excursion.log')
 @click.option('--snapshot', default = None)
-def main(example, outputfile, logfile, ninit, nbatch, nupdates, snapshot):
+def main(example, outputfile, logfile, ninit, nacq, nmean, nbatch, nupdates, snapshot):
     global INTERRUPT
     setup_logging(logfile)
 
-    learner = load_learner(example, inputfile = snapshot, init_config = ninit)
+    learneropts = {'ninit': ninit, 'nacq': nacq, 'nmean': nmean}
+
+    learner = load_learner(example, inputfile = snapshot, init_config = learneropts)
     start = time.time()
     for idx,l in enumerate(run_loop(learner, nbatch, nupdates)):
         delta = time.time()-start
@@ -131,8 +137,8 @@ def baseline(example, outputfile, baseline, logfile):
     metrics = {'metrics': [], 'X': [], 'y_list': []}
 
     oneshot_options = {
-        'latin': dict(nsamples_per_npoints=10, point_range=[10**example.ndim,11**example.ndim]),
-        'grids': dict(central_range = [5,12], nsamples_per_grid = 1, min_points_per_dim = 2)
+        'latin': dict(nsamples_per_npoints=1, point_range=[2**example.ndim,11**example.ndim]),
+        'grids': dict(central_range = [5,15], nsamples_per_grid = 1, min_points_per_dim = 2)
     }[baseline]
 
     log.info(oneshot_options)
@@ -154,5 +160,5 @@ def baseline(example, outputfile, baseline, logfile):
             outputfile
         )
         log.info(msg)
-    with open(outputfile,'w') as outfile:
-        json.dump(metrics,outfile)
+        with open(outputfile,'w') as outfile:
+            json.dump(metrics,outfile)

@@ -11,8 +11,8 @@ def run_all_acpoints(acqX, gps, thresholds, meanX):
     try:
         from joblib import Parallel, delayed
         nparallel = int(os.environ.get('EXCURSION_NPARALLEL',os.cpu_count()))
-        log.debug('analyzing {} candidate acquisition points in {} parallel workers'.format(
-            len(acqX),nparallel)
+        log.debug('analyzing {} candidate acquisition points with {}-point interal using {} parallel workers'.format(
+            len(acqX), len(meanX),nparallel)
         )
         start = time.time()
         result = Parallel(nparallel)(
