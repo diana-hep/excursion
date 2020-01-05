@@ -1,12 +1,31 @@
 import numpy as np
 import datetime
+import torch
 
 from . import core
 
 
 def gridsearch(gps, X, scandetails):
     thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
-    acqval     = np.array([core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
+    print('info_gain')
+    acqval = np.array([core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
+
+    newx = None
+    for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
+        if cacq.tolist() not in X.tolist():
+            print('taking new x. best non-existent index {} {}'.format(i,cacq))
+            newx = cacq
+            return newx,acqval
+        else:
+            print('{} is good but already there'.format(cacq))
+    print('returning None.. something must be wrong')
+    return None,None
+
+
+def gridsearch_gpytorch(gps, X, scandetails):
+    thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
+    print('info_gain')
+    acqval = np.array([core.info_gain_gpytorch(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
 
     newx = None
     for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):

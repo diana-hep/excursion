@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import point_entropy
+from utils import point_entropy
 
 def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
     gp_axes = axarr[:len(y_list)]
