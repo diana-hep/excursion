@@ -30,7 +30,7 @@ def gridsearch_gpytorch(gps, X, scandetails):
     
     newx = None
     for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
-        if(cacq not in X.tolist()):
+        if(cacq.tolist() not in X.tolist()):
             print('taking new x. best non-existent index {} {}'.format(i,cacq))
             newx = cacq
             return newx,acqval

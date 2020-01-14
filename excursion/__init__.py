@@ -29,7 +29,6 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
     else:
         raise RuntimeError('unknown kernel')
 
-    #IRINA optimizer
     gp = GaussianProcessRegressor(kernel=kernel,
                                   n_restarts_optimizer=0,
                                   optimizer=None,
@@ -42,21 +41,21 @@ def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
 
 
 
-def get_gp_gpytorch(X, y, alpha=10**-7, kernel_name='const_rbf'):
-    if kernel_name == 'const_rbf':
-        length_scale = [1.]*X.shape[-1]
-        kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior = length_scale))
+# def get_gp_gpytorch(X, y, alpha=10**-7, kernel_name='const_rbf'):
+#     if kernel_name == 'const_rbf':
+#         length_scale = [1.]*X.shape[-1]
+#         kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior = length_scale))
 
-    else:
-        raise RuntimeError('unknown kernel')
+#     else:
+#         raise RuntimeError('unknown kernel')
 
 
-    likelihood = gpytorch.likelihoods.GaussianLikelihood()
-    model = ExactGPModel(X y.ravel(), likelihood)
+#     likelihood = gpytorch.likelihoods.GaussianLikelihood()
+#     model = ExactGPModel(X, y.ravel(), likelihood)
     
-    #train
-    model.train()
-    likelihood.train()
+#     #train
+#     model.train()
+#     likelihood.train()
     
-    return ????
+#     return ????
 

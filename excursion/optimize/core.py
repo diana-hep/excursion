@@ -140,8 +140,6 @@ def info_gain(x_candidate, gps, thresholds, meanX):
         y_mean_all = K_trans_all.dot(gp.alpha_) + gp._y_train_mean
         v_all = cho_solve((gp.L_, True), K_trans_all.T)
 
-        print('cholesky is nan ', np.isnan(gp.L_))
-
         mus = np.zeros((n_samples, 2))
         mus[:, 0] = y_mean_all[0]
         mus[:, 1] = y_mean_all[1:]
