@@ -1,6 +1,5 @@
 import numpy as np
-from ..utils import point_entropy, point_entropy_gpytorch, mesh2points, points2mesh, values2mesh
-import torch
+from ..utils import point_entropy, mesh2points, points2mesh, values2mesh
 
 def getminmax(ndarray):
     return np.min(ndarray), np.max(ndarray)
@@ -80,16 +79,17 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         batchsize = batchsize
     )
 
+
 def plot_gpytorch(axarr, gps, likelihood,  X, y_list, scandetails, batchsize = 1):
     newX = scandetails.plotX
 
     mu_stds = []
     for i,(gp,y) in enumerate(zip(gps,y_list)):
-        gp = gps[i]
+
         #prediction
-        gp.eval()
+        gps.eval()
         likelihood.eval()
-        observed_pred = likelihood(gp(torch.tensor(scandetails.plotX)))
+        observed_pred = likelihood(gps(torch.tensor(scandetails.plotX)))
         # Get upper and lower confidence bounds
         lower, upper = observed_pred.confidence_region()
         
@@ -102,7 +102,7 @@ def plot_gpytorch(axarr, gps, likelihood,  X, y_list, scandetails, batchsize = 1
             scandetails.invalid_region
         )
         prediction_std = values2mesh(
-            observed_pred.stddev.detach().numpy(),
+            observed_pred.std.detach().numpy(),
             scandetails.plot_rangedef,
             scandetails.invalid_region
         )
@@ -117,14 +117,10 @@ def plot_gpytorch(axarr, gps, likelihood,  X, y_list, scandetails, batchsize = 1
             batchsize = batchsize
         )
 
-    entropies = point_entropy_gpytorch(mu_stds, scandetails.thresholds)
+    entropies = point_entropy(mu_stds, scandetails.thresholds)
     axarr[-1].set_title('Entropies')
     plot_current_entropies(
         axarr[-1],
         gp, X, entropies, scandetails,
         batchsize = batchsize
     )
-
-
-def my_func(x):
-    return x
