@@ -1,0 +1,3 @@
+[console_scripts]
+excursion = excursion.commandline:main
+

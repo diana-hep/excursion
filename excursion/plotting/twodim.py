@@ -80,51 +80,67 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         batchsize = batchsize
     )
 
-def plot_gpytorch(axarr, gps, likelihood,  X, y_list, scandetails, batchsize = 1):
-    newX = scandetails.plotX
 
-    mu_stds = []
-    for i,(gp,y) in enumerate(zip(gps,y_list)):
-        gp = gps[i]
-        #prediction
-        gp.eval()
-        likelihood.eval()
-        observed_pred = likelihood(gp(torch.tensor(scandetails.plotX)))
-        # Get upper and lower confidence bounds
-        lower, upper = observed_pred.confidence_region()
-        
-        mu_stds.append(observed_pred)
 
-        #FALTA
-        prediction = values2mesh(
-            observed_pred.mean.detach().numpy(),
-            scandetails.plot_rangedef,
-            scandetails.invalid_region
-        )
-        prediction_std = values2mesh(
-            observed_pred.stddev.detach().numpy(),
-            scandetails.plot_rangedef,
-            scandetails.invalid_region
-        )
 
-        axarr[i].set_title('GP #{}'.format(i))
-        
-        plot_current_estimate(
-            axarr[i], gp, X, y,
-            prediction,
-            scandetails,
-            funcindex=i,
-            batchsize = batchsize
-        )
+def plot_GP(ax, gp, testcase, batchsize=1):
+    """
+    Plot GP posterior fit to data with the option of plotting side by side acquisition function
+    """
 
-    entropies = point_entropy_gpytorch(mu_stds, scandetails.thresholds)
-    axarr[-1].set_title('Entropies')
-    plot_current_entropies(
-        axarr[-1],
-        gp, X, entropies, scandetails,
-        batchsize = batchsize
+    X_train = gp.train_inputs[0]
+    y_train = gp.train_targets
+
+    xv, yv = testcase.plot_meshgrid
+    thresholds = testcase.thresholds
+
+    #true function + thresholds
+    truthv = testcase.true_functions[0](testcase.X_plot)
+    truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
+    line0 = ax.contour(xv, yv, truthv,thresholds, colors='white', linestyles='dotted', label='true contour')
+
+    
+    ##mean 
+    X_plot = torch.from_numpy(testcase.X_plot)
+
+    gp.eval()
+    likelihood = gp.likelihood
+    likelihood.eval()
+    prediction = likelihood(gp(X_plot))
+
+    prediction = values2mesh(
+            prediction.mean.detach().numpy(),
+            testcase.rangedef,
+            testcase.invalid_region
     )
+
+    vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
+    
+    ax1 = ax.contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
+    line1 = ax.contour(xv, yv, prediction,thresholds, colors='white',linestyles='solid')
+
+    ##train points
+    old_points = ax.scatter(X_train[:-batchsize, 0], X_train[:-batchsize, 1], s=20, edgecolor='white',  label='true sample')
+    new_point = ax.scatter(X_train[-batchsize:, 0], X_train[-batchsize:, 1], s=20, c='r', label='last added')
+        
+
+    ax.xlabel('x')
+    ax.ylabel('y')
+    ax.xlim(*testcase.rangedef[0][:2])
+    ax.ylim(*testcase.rangedef[1][:2])
+    ax.colorbar(ax1)
+    ax.legend(loc=0)
+    l0,_ = line0.legend_elements()
+    l1,_ = line1.legend_elements()
+
+
+    ax.legend([l0[0], l1[0], old_points, new_point], 
+        ['True excursion set', 'E [GP | data]', 'Observed points', 'Next point'])
+    ax.show()
+
+
+
 
 
 def my_func(x):
-    return x
+    return 

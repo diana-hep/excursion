@@ -49,6 +49,7 @@ def mgrid(rangedef):
     slices = [slice(*_r) for _r in _rangedef]
     return np.mgrid[slices]
 
+
 def values2mesh(values, rangedef, invalid, invalid_value = np.nan):
     grid = mgrid(rangedef)
     allX = mesh2points(grid,rangedef[:,2])

@@ -67,51 +67,5 @@ def batched_gridsearch(gps, X, scandetails, gp_maker = None, batchsize=1):
         my_gps = [gp_maker(myX,my_y) for my_y in my_y_list]
 
 
-def train_hyperparameters(model, train_x, train_y, likelihood, optimizer):
-    training_iter = 50
-    
-    # Find optimal model hyperparameters
-    model.train()
-    likelihood.train()
-
-    if(optimizer=='LBFGS'):
-        optimizer = torch.optim.LBFGS([
-            {'params': model.parameters()},  # Includes GaussianLikelihood parameters
-        ], lr=0.1, line_search_fn='strong_wolfe')
-
-        # "Loss" for GPs - the marginal log likelihood
-        mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
-        
-        def closure():
-            # Zero gradients from previous iteration
-            optimizer.zero_grad()
-            # Output from model
-            output = model(train_x)
-            # Calc loss and backprop gradients
-            loss = -mll(output, train_y)
-            loss.backward()
-            return loss
-
-        for i in range(training_iter):
-            optimizer.step(closure)
 
 
-    if(optimizer=='Adam'):
-        optimizer = torch.optim.Adam([
-            {'params': model.parameters()},  # Includes GaussianLikelihood parameters
-        ], lr=0.1)
-
-        # "Loss" for GPs - the marginal log likelihood
-        mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
-
-        for i in range(training_iter):
-            # Zero gradients from previous iteration
-            optimizer.zero_grad()
-            # Output from model
-            output = model(train_x)
-            # Calc loss and backprop gradients
-            loss = -mll(output, train_y)
-            loss.backward()
-            optimizer.step()
-
-        

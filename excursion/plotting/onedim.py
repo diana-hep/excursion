@@ -181,6 +181,7 @@ def plot_GP(gp, testcase, **kwargs):
 
         #ACQ plot
         ax0 = plt.subplot(axes[0])
+
         ax0.set_xticks([], [])
         #eliminate -inf
         acq = np.array(acq)
