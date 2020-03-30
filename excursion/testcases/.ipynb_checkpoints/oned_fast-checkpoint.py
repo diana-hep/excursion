@@ -18,12 +18,12 @@ acq_rangedef = np.asarray([
 acqX = np.linspace(*acq_rangedef[0]).reshape(-1,1)
 
 
+
 mean_rangedef = np.asarray([
     [-1,1,100]
 ])
 meanX = np.linspace(*mean_rangedef[0]).reshape(-1,1)
 ndims = 1
 y_lim = [-5,30]
-
-
-
+    
+    
