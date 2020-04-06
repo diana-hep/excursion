@@ -134,11 +134,14 @@ def plot_GP(ax, gp, testcase, batchsize=1):
     l1,_ = line1.legend_elements()
 
 
-    ax.legend([l0[0], l1[0], old_points, new_point], 
-        ['True excursion set', 'E [GP | data]', 'Observed points', 'Next point'])
-    ax.show()
+    ax.legend([l0[0], l1[0], old_points, new_point], \
+        ['True excursion set (thr=0)', 'Estimation', 'Observed points', 'Next point'],\
+        loc='bottom center',\
+        bbox_to_anchor=(1.10, -0.1), ncol=2, facecolor='grey', framealpha=0.20)
+    
 
 
+    return ax
 
 
 

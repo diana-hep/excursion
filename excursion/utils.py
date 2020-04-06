@@ -65,7 +65,7 @@ def get_first_max_index(gp, new_index, testcase):
     X_train = gp.train_inputs[0]
 
     for i in new_index:
-        if(testcase.X[i] not in X_train):
+        if(testcase.X.tolist()[i] not in X_train.tolist()):
             new_first = i
             break
             
@@ -84,14 +84,14 @@ def truncated_std_conditional(Y_pred_all, a, b):
     std_grid = Y_pred_all.variance[1:]**0.5
     mu_candidate = Y_pred_all.mean[0]
     std_candidate = Y_pred_all.variance[0]**0.5
-    rho = Y_pred_all.covariance_matrix[0,1]/ (std_candidate*std_grid)
+    rho = Y_pred_all.covariance_matrix[0,1:] / (std_candidate*std_grid)
 
     #norm needs to be a normal distribution but in python
     normal = torch.distributions.Normal(loc=0, scale=1)
     alpha = (a - mu_grid) / std_grid
     beta = (b - mu_grid) / std_grid
     c = normal.cdf(beta) - normal.cdf(alpha)
-
+    
     # phi(beta) = normal(0,1) at x = beta
     beta_phi_beta = beta*normal_pdf(beta)
     beta_phi_beta[~torch.isfinite(beta_phi_beta)] = 0.
