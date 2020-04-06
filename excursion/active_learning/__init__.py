@@ -23,6 +23,38 @@ def acq(gp, testcase, x_candidate, acquisition: str):
         info_gain = PES(gp, testcase, thresholds, x_candidate)
         return info_gain
 
+    if acquisition == "MES":
+        thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
+        info_gain = MES(gp, testcase, thresholds, x_candidate)
+        return info_gain
+
+def MES(gp, testcase, thresholds, x_candidate):
+   
+    # compute predictive posterior of Y(x) | train data
+    kernel = gp.covar_module
+    likelihood = gp.likelihood
+    gp.eval()
+    likelihood.eval()
+    
+    Y_pred_candidate = likelihood(gp(x_candidate))
+
+    normal_candidate = torch.distributions.Normal(
+        loc=Y_pred_candidate.mean, scale=Y_pred_candidate.variance ** 0.5
+    )
+    
+    # entropy of S(x_candidate)
+    entropy_candidate = torch.Tensor([0.])
+
+    for j in range(len(thresholds) - 1):
+        # p(S(x)=j)
+        p_j = normal_candidate.cdf(thresholds[j + 1]) - normal_candidate.cdf(thresholds[j])
+        
+        if(p_j > 0.0):
+            entropy_candidate -= p_j * torch.log(p_j)  
+
+    return float(entropy_candidate.detach().numpy())
+
+
 
 def PES(gp, testcase, thresholds, x_candidate):
     """
@@ -50,11 +82,13 @@ def PES(gp, testcase, thresholds, x_candidate):
     E_S_H1 = torch.zeros(len(X_grid))
 
     for j in range(len(thresholds) - 1):
+
         # vector of sigma(Y(x_candidate)|S(x)=j) truncated
         trunc_std_j = truncated_std_conditional(
             Y_pred_all, thresholds[j], thresholds[j + 1]
         )
         H1_j = h_normal(trunc_std_j)
+
 
         # vector of p(S(x)=j)
         p_j = Y_pred_grid.cdf(thresholds[j + 1]) - Y_pred_grid.cdf(thresholds[j])
@@ -62,11 +96,13 @@ def PES(gp, testcase, thresholds, x_candidate):
         H1_j[mask] = 0.0
         E_S_H1 += p_j * H1_j  # expected value of H1 under S(x)
 
+
     # entropy of Y(x_candidate)
     H0 = h_normal(Y_pred_all.variance[0] ** 0.5)
 
     # info grain on the grid, vector
     info_gain = H0 - E_S_H1
+
 
     info_gain[~torch.isfinite(info_gain)] = 0.0  # just to avoid NaN
 
@@ -74,3 +110,4 @@ def PES(gp, testcase, thresholds, x_candidate):
     cumulative_info_gain = info_gain.sum()
 
     return cumulative_info_gain.item()
+

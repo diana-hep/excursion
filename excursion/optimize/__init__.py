@@ -10,7 +10,7 @@ def gridsearch(gps, X, scandetails):
     thresholds = [-np.inf] + scandetails.thresholds + [np.inf]
     print('info_gain')
     acqval = np.array([core.info_gain(xtest, gps, thresholds, scandetails.meanX) for xtest in scandetails.acqX])
-
+    print(acqval)
     newx = None
     for i,cacq in enumerate(scandetails.acqX[np.argsort(acqval)]):
         if cacq.tolist() not in X.tolist():

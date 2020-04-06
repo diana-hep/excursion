@@ -18,7 +18,7 @@ thresholds = torch.Tensor([0.7])
 n_dims = 1
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef_1 = [-1,1,100]
+rangedef_1 = [-1,1,101]
 rangedef = torch.Tensor([rangedef_1])
 
 grid_1 = torch.linspace(start=rangedef_1[0], end=rangedef_1[1], steps=rangedef_1[2])
