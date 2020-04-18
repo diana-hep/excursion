@@ -50,7 +50,8 @@ def MES(gp, testcase, thresholds, x_candidate):
         p_j = normal_candidate.cdf(thresholds[j + 1]) - normal_candidate.cdf(thresholds[j])
         
         if(p_j > 0.0):
-            entropy_candidate -= p_j * torch.log(p_j)  
+            #print(x_candidate, p_j,j)
+            entropy_candidate -= torch.logsumexp(p_j,0) * torch.logsumexp(torch.log(p_j) , 0) 
 
     return float(entropy_candidate.detach().numpy())
 
@@ -75,7 +76,7 @@ def PES(gp, testcase, thresholds, x_candidate):
     X_all = torch.cat((x_candidate, X_grid))
     Y_pred_all = likelihood(gp(X_all))
     Y_pred_grid = torch.distributions.Normal(
-        loc=Y_pred_all.mean[1:], scale=Y_pred_all.variance[1:] ** 0.5
+        loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:] ) ** 0.5
     )
 
     # vector of expected value H1 under S(x) for each x in X_grid
