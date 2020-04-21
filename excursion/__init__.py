@@ -1,39 +1,63 @@
 import numpy as np
-from scipy.linalg import cho_solve
-from scipy.stats import norm
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.gaussian_process.kernels import ConstantKernel
-from sklearn.gaussian_process.kernels import WhiteKernel
-from sklearn.gaussian_process.kernels import Matern
 import torch
 import gpytorch 
+import excursion
 
 
-def get_gp(X, y, alpha=10**-7, kernel_name='const_rbf'):
-    if kernel_name == 'const_rbf':
-        length_scale = [1.]*X.shape[-1]
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[0.1, 100.0], length_scale = length_scale)
+def get_gp(X, y, **kwargs):
 
-    elif kernel_name == 'tworbf_white':
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[1e-2,100]) + \
-                 ConstantKernel() * RBF(length_scale_bounds=[100., 1000.0]) + \
-                 WhiteKernel(noise_level_bounds=[1e-7,1e-4])
-                 
-    elif kernel_name == 'onerbf_white':
-        kernel = ConstantKernel() * RBF(length_scale_bounds=[1e-2,100]) + WhiteKernel(noise_level_bounds=[1e-7,1e-1])
- 
+    likelihoodopts = kwargs['likelihood']['type']
+    modelopts = kwargs['model']['type']
+    kernelopts = kwargs['model']['kernel']
+
+    #
+    #LIKELIHOOD
+    #
+    epsilon = kwargs['likelihood']['epsilon']
+
+    if(likelihoodopts == 'GaussianLikelihood'):
+        likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([epsilon])) 
+    #TODO: more types
     else:
-        raise RuntimeError('unknown kernel')
+        raise RuntimeError('unknown likelihood')
 
-    gp = GaussianProcessRegressor(kernel=kernel,
-                                  n_restarts_optimizer=100, #IRINA
-                                  alpha=alpha,
-                                  random_state=1234)
+    #
+    #GAUSSIAN PROCESS
+    #
 
-    gp.fit(X, y.ravel())
-    print('mll', gp.log_marginal_likelihood_value_)
-    return gp
+    if(modelopts == 'ExactGP' and kernelopts =='RBF'):
+        model = ExactGPModel(X, y, likelihood)
+    #TODO: more types
+    else:
+        raise RuntimeError('unknown gpytorch model')
+
+    model.train()
+    likelihood.train()
+    excursion.fit_hyperparams(model, likelihood)
+    return model
+
+
+def init_traindata(testcase, init_type, n_initialize):
+    #init training data: number and how to select init points
+    X_grid = testcase.X_plot
+    print('x_grid', X_grid.shape)
+
+    if(init_type=='random'):
+        indexs = np.random.choice(range(len(X_grid)), size = n_initialize, replace=False)
+        X_train = [X_grid[i] for i in indexs]
+        X_train = np.vstack(X_train)
+        return torch.from_numpy(X_train)
+
+    elif(init_type=='worstcase'):
+        X_train = X_grid[0]
+        return X_train
+
+    elif(init_type=='custom'):
+        raise NotImplementedError('Not implemented yet')
+
+    else:
+        RuntimeError('No init data specification found')
+
 
 
 def fit_hyperparams(gp, likelihood, optimizer: str='Adam'):
@@ -91,25 +115,24 @@ def fit_hyperparams(gp, likelihood, optimizer: str='Adam'):
             #gp.covar_module. outputscale.item(),
             #gp.likelihood.noise.item()
             #))
+
+
+
+
+#
+# TYPES OF MODEL GAUSSIAN PROCESS
+#
+
+class ExactGPModel(gpytorch.models.ExactGP):
+            def __init__(self, train_x, train_y, likelihood):
+                super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+                self.mean_module = gpytorch.means.ConstantMean()
+                self.covar_module = gpytorch.kernels.ScaleKernel(\
+                                      gpytorch.kernels.RBFKernel(\
+                                      lengthscale_constraint=gpytorch.constraints.GreaterThan(lower_bound=0.1)
+                                      ))                                               
+            def forward(self, x):
+                mean_x = self.mean_module(x)
+                covar_x = self.covar_module(x)
+                return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
         
-
-
-
-# def get_gp_gpytorch(X, y, alpha=10**-7, kernel_name='const_rbf'):
-#     if kernel_name == 'const_rbf':
-#         length_scale = [1.]*X.shape[-1]
-#         kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(lengthscale_prior = length_scale))
-
-#     else:
-#         raise RuntimeError('unknown kernel')
-
-
-#     likelihood = gpytorch.likelihoods.GaussianLikelihood()
-#     gp = ExactGPModel(X, y.ravel(), likelihood)
-    
-#     #train
-#     gp.train()
-#     likelihood.train()
-    
-#     return ????
-

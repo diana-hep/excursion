@@ -10,6 +10,7 @@ from excursion.utils import truncated_std_conditional
 
 
 def acq(gp, testcase, x_candidate, acquisition: str):
+
     """
     Acquisition function
     Inputs:
