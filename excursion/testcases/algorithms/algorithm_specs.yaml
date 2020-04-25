@@ -1,0 +1,28 @@
+#
+# ALGORITHM OPTS
+#
+
+
+##Define the init training data type
+init_type: 'random'
+
+#if init_type == 'custom' then fill in the lines below
+X_train:
+  [0.,0.]
+
+#likelihood
+
+likelihood:
+  type: 'GaussianLikelihood'
+  epsilon: 0.
+
+#model
+model:
+  type: 'ExactGP'
+  kernel: 'RBF'
+
+
+#acquisition function
+acq:
+  acq_type: 'MES'
+
