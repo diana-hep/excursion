@@ -6,7 +6,7 @@ from scipy.stats import norm
 from scipy.linalg import cho_solve
 from excursion.utils import h_normal
 from torch.distributions import normal
-from excursion.utils import truncated_std_conditional
+from excursion.utils import truncated_std_conditional, get_first_max_index
 
 
 def acq(gp, testcase, x_candidate, acquisition: str):
