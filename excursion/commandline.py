@@ -14,6 +14,7 @@ import time
 import torch
 import os
 import datetime
+import argparse
 
 np.warnings.filterwarnings('ignore')
 
@@ -43,7 +44,13 @@ def load_example(example):
 @click.option('--ninit', default = 10)
 @click.option('--nupdates', default = 100)
 @click.option('--algorithm_specs', default = '')
+#@click.option('--cuda', default = False)
 def main(example,outputfolder,ninit,nupdates,algorithm_specs):
+    #if(not cuda and torch.cuda.is_available()):
+    #    args.device = torch.device('cuda')
+    #else:
+    #    args.device = torch.device('cpu')
+
     testcase = load_example(example)
 
     algorithmopts = yaml.safe_load(open(algorithm_specs,'r'))
