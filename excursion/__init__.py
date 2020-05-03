@@ -4,7 +4,7 @@ import gpytorch
 import excursion
 import time
 import simplejson
-from excursion.models import ExactGP_RBF
+from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 from excursion.active_learning import acq
 from excursion.utils import get_first_max_index
 import excursion.plotting.onedim as plots_1D
@@ -57,11 +57,16 @@ def init_gp(testcase, algorithmopts, ninit):
     #
     #GAUSSIAN PROCESS
     #
-
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
         model = ExactGP_RBF(X_init, y_init, likelihood)
-        
-    #TODO: more types
+    elif(modelopts == 'GridGP' and kernelopts =='RBF'):
+        grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
+        grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
+        grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
+        for i in range(len(grid_bounds)):
+            grid[:, i] = torch.linspace(grid_bounds[i][0] , grid_bounds[i][1], int(grid_size), dtype=torch.double)
+
+        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood)
     else:
         raise RuntimeError('unknown gpytorch model')
 
@@ -76,7 +81,7 @@ def init_gp(testcase, algorithmopts, ninit):
 
 
 
-def get_gp(X, y, likelihood, algorithmopts):
+def get_gp(X, y, likelihood, algorithmopts, testcase):
     modelopts = algorithmopts['model']['type']
     kernelopts = algorithmopts['model']['kernel']
     #
@@ -85,7 +90,15 @@ def get_gp(X, y, likelihood, algorithmopts):
 
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
         model = ExactGP_RBF(X, y, likelihood)
-    #TODO: more types
+    elif(modelopts == 'GridGP' and kernelopts =='RBF'):
+        grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
+        grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
+        grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
+        for i in range(len(grid_bounds)):
+            grid[:, i] = torch.linspace(grid_bounds[i][0] , grid_bounds[i][1], int(grid_size), dtype=torch.double)
+
+        model = GridGPRegression_RBF(grid, X, y, likelihood)
+        
     else:
         raise RuntimeError('unknown gpytorch model')
 
@@ -247,7 +260,7 @@ class ExcursionSetEstimator():
             targets_i = torch.cat((model.train_targets, self.y_new),0).flatten()
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts)
+        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts, testcase)
 
         likelihood.train()
         model.train()
@@ -322,7 +335,6 @@ class ExcursionSetEstimator():
             simplejson.dump(self.walltime_step, g)
         with open(filename_walltime_posterior,'w') as h:
             simplejson.dump(self.walltime_posterior, h)
-
 
 
         return None
