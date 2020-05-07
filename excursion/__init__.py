@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 
-def init_gp(testcase, algorithmopts, ninit):
+def init_gp(testcase, algorithmopts, ninit, device):
     likelihood_type = algorithmopts['likelihood']['type']
     modelopts = algorithmopts['model']['type']
     kernelopts = algorithmopts['model']['kernel']
@@ -23,7 +23,7 @@ def init_gp(testcase, algorithmopts, ninit):
     #
     # TRAIN DATA
     #
-    X_grid = testcase.X_plot
+    X_grid = torch.Tensor(testcase.X_plot).to(device)
     init_type = algorithmopts['init_type']
 
     if(init_type=='random'):
@@ -32,11 +32,17 @@ def init_gp(testcase, algorithmopts, ninit):
         X_init = torch.Tensor(X_init).double()
         noises = epsilon*np.random.multivariate_normal(np.zeros(ninit), np.eye(ninit))
         y_init = testcase.true_functions[0](X_init) + torch.from_numpy(noises).double()
+        #CUDA
+        X_init = X_init.to(device)
+        y_init = y_init.to(device)
     elif(init_type=='worstcase'):
         X_init = [X_grid[0]]
         X_init = torch.Tensor(X_init).double()
         noises = epsilon*np.random.multivariate_normal(np.zeros(1), np.eye(1))
         y_init = testcase.true_functions[0](X_init) + torch.from_numpy(noises).double()
+        #CUDA
+        X_init = X_init.to(device)
+        y_init = y_init.to(device)
     elif(init_type=='custom'):
         raise NotImplementedError('Not implemented yet')
     else:
@@ -47,9 +53,9 @@ def init_gp(testcase, algorithmopts, ninit):
     #
     if(likelihood_type=='GaussianLikelihood'):
         if(epsilon > 0.):
-            likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([epsilon])) 
+            likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([epsilon])).to(device)
         elif(epsilon == 0.):
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])) 
+            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device) 
 
     else:
         raise RuntimeError('unknown likelihood')
@@ -58,7 +64,7 @@ def init_gp(testcase, algorithmopts, ninit):
     #GAUSSIAN PROCESS
     #
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
-        model = ExactGP_RBF(X_init, y_init, likelihood)
+        model = ExactGP_RBF(X_init, y_init, likelihood).to(device)
     elif(modelopts == 'GridGP' and kernelopts =='RBF'):
         grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
         grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
@@ -66,7 +72,7 @@ def init_gp(testcase, algorithmopts, ninit):
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(grid_bounds[i][0] , grid_bounds[i][1], int(grid_size), dtype=torch.double)
 
-        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood)
+        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood).to(device)
     else:
         raise RuntimeError('unknown gpytorch model')
 
@@ -81,15 +87,19 @@ def init_gp(testcase, algorithmopts, ninit):
 
 
 
-def get_gp(X, y, likelihood, algorithmopts, testcase):
+def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     modelopts = algorithmopts['model']['type']
     kernelopts = algorithmopts['model']['kernel']
     #
     #GAUSSIAN PROCESS
     #
 
+    #to
+    X = X.to(device)
+    y = y.to(device)
+
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
-        model = ExactGP_RBF(X, y, likelihood)
+        model = ExactGP_RBF(X, y, likelihood).to(device)
     elif(modelopts == 'GridGP' and kernelopts =='RBF'):
         grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
         grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
@@ -97,7 +107,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase):
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(grid_bounds[i][0] , grid_bounds[i][1], int(grid_size), dtype=torch.double)
 
-        model = GridGPRegression_RBF(grid, X, y, likelihood)
+        model = GridGPRegression_RBF(grid, X, y, likelihood).to(device)
         
     else:
         raise RuntimeError('unknown gpytorch model')
@@ -171,7 +181,7 @@ def fit_hyperparams(gp, likelihood, optimizer: str='Adam'):
 
 class ExcursionSetEstimator():
 
-    def __init__(self, testcase, algorithmopts, model, likelihood):
+    def __init__(self, testcase, algorithmopts, model, likelihood, device):
         self.x_new = torch.zeros(1, testcase.n_dims,  dtype=torch.float64)
         self.y_new = torch.zeros(1,1, dtype=torch.float64)
         self.acq_values = []
@@ -249,7 +259,7 @@ class ExcursionSetEstimator():
         return new_indexs, acquisition_values_grid
 
 
-    def update_posterior(self, testcase, algorithmopts, model, likelihood):
+    def update_posterior(self, testcase, algorithmopts, model, likelihood, device):
         #track wall time
         start_time = time.process_time()
         if(self._n_dims==1):
@@ -260,7 +270,7 @@ class ExcursionSetEstimator():
             targets_i = torch.cat((model.train_targets, self.y_new),0).flatten()
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts, testcase)
+        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts, testcase, device)
 
         likelihood.train()
         model.train()
