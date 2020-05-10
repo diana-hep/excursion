@@ -1,5 +1,7 @@
 import matplotlib
 matplotlib.use('PS')
+sys.path.append(os.getcwd()) 
+
 
 from excursion import init_gp
 from excursion.utils import get_first_max_index
@@ -46,7 +48,7 @@ def load_example(example):
 @click.option('--algorithm_specs', default = '')
 @click.option('--cuda', default = False)
 def main(example,outputfolder,ninit,nupdates,algorithm_specs,cuda):
-    if(not cuda and torch.cuda.is_available()):
+    if(cuda and torch.cuda.is_available()):
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
