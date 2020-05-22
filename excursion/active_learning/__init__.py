@@ -74,7 +74,7 @@ def PES(gp, testcase, thresholds, x_candidate):
     likelihood.eval()
 
     X_grid = testcase.X
-    X_all = torch.cat((x_candidate, X_grid))
+    X_all = torch.cat((x_candidate, X_grid)).cuda()
     Y_pred_all = likelihood(gp(X_all))
     Y_pred_grid = torch.distributions.Normal(
         loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:] ) ** 0.5

@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.distributions.multivariate_normal import MultivariateNormal
 import gpytorch 
 import excursion
 import time
@@ -23,23 +24,26 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     # TRAIN DATA
     #
-    X_grid = torch.Tensor(testcase.X_plot).to(device)
+    X_grid = torch.Tensor(testcase.X_plot).cuda()
     init_type = algorithmopts['init_type']
+    noise_dist= MultivariateNormal(torch.zeros(ninit).double(), torch.eye(ninit).double())
 
     if(init_type=='random'):
         indexs = np.random.choice(range(len(X_grid)), size = ninit, replace=False)
-        X_init = X_grid[indexs] 
-        X_init = torch.Tensor(X_init).double()
-        noises = epsilon*np.random.multivariate_normal(np.zeros(ninit), np.eye(ninit))
-        y_init = testcase.true_functions[0](X_init) + torch.from_numpy(noises).double()
+        X_init = X_grid[indexs].double()
+        #X_init = torch.Tensor(X_init).double().cuda()
+        X_init = X_grid[indexs].double()
+        noises = epsilon*noise_dist.sample(torch.Size([])).double()
+        print('epsilon ', type(epsilon))
+        y_init = testcase.true_functions[0](X_init).double() #+ noises
         #CUDA
         X_init = X_init.to(device)
         y_init = y_init.to(device)
     elif(init_type=='worstcase'):
         X_init = [X_grid[0]]
         X_init = torch.Tensor(X_init).double()
-        noises = epsilon*np.random.multivariate_normal(np.zeros(1), np.eye(1))
-        y_init = testcase.true_functions[0](X_init) + torch.from_numpy(noises).double()
+        noises = epsilon*noise_dist.sample(torch.Size([])).double()
+        y_init = testcase.true_functions[0](X_init) + noises
         #CUDA
         X_init = X_init.to(device)
         y_init = y_init.to(device)
@@ -201,7 +205,9 @@ class ExcursionSetEstimator():
     def get_diagnostics(self, testcase, model, likelihood):
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         X_eval = testcase.X
-        y_true = testcase.true_functions[0](X_eval)
+        noise_dist = self._epsilon*torch.distributions.multinomial.MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
+        noise = epsilon*noise_dist.sample(torch.Size([])).double()
+        y_true = testcase.true_functions[0](X_eval) + noise
 
         model.eval()
         likelihood.eval()
@@ -212,9 +218,11 @@ class ExcursionSetEstimator():
                 if(y<thresholds[j+1] and y>thresholds[j]):
                     return 'c_'+str(j) 
 
-        labels_true = [label(y) for y in y_true]
         labels_pred = [label(y) for y in y_pred]
+        labels_true = [label(y) for y in y_true]
 
+        #force y_true = y_train for those x in dataset
+        
         conf_matrix = confusion_matrix(labels_true, labels_pred)
         self.confusion_matrix.append(conf_matrix)
         pct = np.diag(conf_matrix).sum()*1./len(X_eval)
@@ -237,8 +245,9 @@ class ExcursionSetEstimator():
 
         #get x, y
         self.x_new = testcase.X[new_index].reshape(1,-1)
-        noise = self._epsilon*np.random.multivariate_normal(np.zeros(1), np.eye(1))
-        self.y_new = testcase.true_functions[0](self.x_new) + torch.from_numpy(noise).double()
+        noise_dist= self._epsilon*torch.distributions.multinomial.MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
+        noise = noise_dist.sample(torch.Size([])).double()
+        self.y_new = epsilon*testcase.true_functions[0](self.x_new) + noise
 
         #update training data
         #model = self.update_posterior(testcase, algorithmopts, model, likelihood)
