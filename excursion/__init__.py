@@ -20,33 +20,25 @@ def init_gp(testcase, algorithmopts, ninit, device):
     kernelopts = algorithmopts['model']['kernel']
     n_dims = testcase.n_dims
     epsilon = float(algorithmopts['likelihood']['epsilon'])
+    dtype = torch.float64
 
     #
     # TRAIN DATA
     #
-    X_grid = torch.Tensor(testcase.X_plot).cuda()
+    X_grid = torch.Tensor(testcase.X_plot).to(device, dtype)
     init_type = algorithmopts['init_type']
-    noise_dist= MultivariateNormal(torch.zeros(ninit).double(), torch.eye(ninit).double())
+    noise_dist= MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
 
     if(init_type=='random'):
         indexs = np.random.choice(range(len(X_grid)), size = ninit, replace=False)
-        X_init = X_grid[indexs].double()
-        #X_init = torch.Tensor(X_init).double().cuda()
-        X_init = X_grid[indexs].double()
-        noises = epsilon*noise_dist.sample(torch.Size([])).double()
-        print('epsilon ', type(epsilon))
-        y_init = testcase.true_functions[0](X_init).double() #+ noises
-        #CUDA
-        X_init = X_init.to(device)
-        y_init = y_init.to(device)
+        X_init = X_grid[indexs].to(device, dtype)
+        noises = epsilon*noise_dist.sample(torch.Size([])).to(device, dtype)
+        y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
     elif(init_type=='worstcase'):
         X_init = [X_grid[0]]
-        X_init = torch.Tensor(X_init).double()
-        noises = epsilon*noise_dist.sample(torch.Size([])).double()
-        y_init = testcase.true_functions[0](X_init) + noises
-        #CUDA
-        X_init = X_init.to(device)
-        y_init = y_init.to(device)
+        X_init = torch.Tensor(X_init).to(device, dtype)
+        noises = epsilon*noise_dist.sample(torch.Size([])).to(device, dtype)
+        y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
     elif(init_type=='custom'):
         raise NotImplementedError('Not implemented yet')
     else:
@@ -57,9 +49,9 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     if(likelihood_type=='GaussianLikelihood'):
         if(epsilon > 0.):
-            likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([epsilon])).to(device)
+            likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([epsilon])).to(device, dtype)
         elif(epsilon == 0.):
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device) 
+            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device, dtype) 
 
     else:
         raise RuntimeError('unknown likelihood')
@@ -68,7 +60,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #GAUSSIAN PROCESS
     #
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
-        model = ExactGP_RBF(X_init, y_init, likelihood).to(device)
+        model = ExactGP_RBF(X_init, y_init, likelihood).to(device, dtype)
     elif(modelopts == 'GridGP' and kernelopts =='RBF'):
         grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
         grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
@@ -76,7 +68,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(grid_bounds[i][0] , grid_bounds[i][1], int(grid_size), dtype=torch.double)
 
-        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood).to(device)
+        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood).to(device, dtype)
     else:
         raise RuntimeError('unknown gpytorch model')
 
@@ -195,6 +187,8 @@ class ExcursionSetEstimator():
         self.pct_correct = []
         self.walltime_step = []
         self.walltime_posterior = []
+        self.device = device
+        self.dtype = torch.float64
 
         self._acq_type = algorithmopts['acq']['acq_type'] 
         self._X_grid = testcase.X
@@ -204,14 +198,14 @@ class ExcursionSetEstimator():
 
     def get_diagnostics(self, testcase, model, likelihood):
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        X_eval = testcase.X
-        noise_dist = self._epsilon*torch.distributions.multinomial.MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
-        noise = epsilon*noise_dist.sample(torch.Size([])).double()
-        y_true = testcase.true_functions[0](X_eval) + noise
+        X_eval = (testcase.X)
+        noise_dist = MultivariateNormal(torch.zeros(len(X_eval)), torch.eye(len(X_eval)))
+        noise = self._epsilon*noise_dist.sample(torch.Size([])).to(self.device, self.dtype)
+        y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype) + noise
 
         model.eval()
         likelihood.eval()
-        y_pred = likelihood(model(X_eval)).mean
+        y_pred = likelihood(model(X_eval.to(self.device, self.dtype))).mean
 
         def label(y):
             for j in range(len(thresholds)-1):
@@ -237,18 +231,18 @@ class ExcursionSetEstimator():
         print('Iteration ', self.this_iteration)
        
         #order grid indexs by maxmium acquitision function value
-        new_indexs = self.get_new_indexs(model, testcase)[0]
-        self.acq_values = self.get_new_indexs(model, testcase)[1]
+        new_indexs, self.acq_values = self.get_new_indexs(model, testcase)
 
         #discard those points already in dataset
         new_index = get_first_max_index(model, new_indexs, testcase)
 
         #get x, y
         self.x_new = testcase.X[new_index].reshape(1,-1)
-        noise_dist= self._epsilon*torch.distributions.multinomial.MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
-        noise = noise_dist.sample(torch.Size([])).double()
-        self.y_new = epsilon*testcase.true_functions[0](self.x_new) + noise
-
+        self.x_new = self.x_new.to(self.device, self.dtype)
+        noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+        noise = self._epsilon*noise_dist.sample(torch.Size([])).to(self.device, self.dtype)
+        self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
+        self.y_new = self.y_new.to(self.device, self.dtype)
         #update training data
         #model = self.update_posterior(testcase, algorithmopts, model, likelihood)
         
@@ -262,13 +256,13 @@ class ExcursionSetEstimator():
         acquisition_values_grid = []
         for x in self._X_grid:
             #print('****x ', x.shape, type(x), x)
-            value = acq(model,testcase, x.view(1,-1).double(), self._acq_type)
+            value = acq(model,testcase, x.view(1,-1).to(self.device, self.dtype), self._acq_type, self.device, self.dtype)
             acquisition_values_grid.append(value)
             new_indexs = np.argsort(acquisition_values_grid)[::-1]
         return new_indexs, acquisition_values_grid
 
 
-    def update_posterior(self, testcase, algorithmopts, model, likelihood, device):
+    def update_posterior(self, testcase, algorithmopts, model, likelihood):
         #track wall time
         start_time = time.process_time()
         if(self._n_dims==1):
@@ -279,7 +273,7 @@ class ExcursionSetEstimator():
             targets_i = torch.cat((model.train_targets, self.y_new),0).flatten()
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts, testcase, device)
+        model = get_gp(inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device)
 
         likelihood.train()
         model.train()
@@ -297,12 +291,14 @@ class ExcursionSetEstimator():
             plots_1D.plot_GP(model, testcase, \
                             acq=self.acq_values, \
                             acq_type=self._acq_type, \
-                            x_new=self.x_new ) 
+                            x_new=self.x_new, \
+                            device=self.device, \
+                            dtype=self.dtype) 
             plt.savefig(outputfolder+'/'+str(self._n_dims)+'D_'+str(self.this_iteration)+'_'+str(self._acq_type)+'.png')
         
         elif(self._n_dims==2):
             fig = plt.figure()
-            plot = plots_2D.plot_GP(plt, model, testcase) 
+            plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype) 
             plt.tight_layout()
             figname = outputfolder+str(self._n_dims)+'D_'+str(self.this_iteration)+ \
                       '_'+str(self._acq_type)+'.png'

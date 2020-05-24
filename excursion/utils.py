@@ -55,7 +55,12 @@ def values2mesh(values, rangedef, invalid, invalid_value = np.nan):
     allX = mesh2points(grid,rangedef[:,2])
     allv = np.zeros(len(allX))
     inv  = invalid(allX)
-    allv[~inv]  = values
+
+    if(torch.cuda.is_available() and type(values)==torch.Tensor):
+        allv[~inv]  = values.cpu()
+    else:
+        allv[~inv]  = values
+
     if np.any(inv):
         allv[inv]  = invalid_value
     return allv.reshape(*map(int,rangedef[:,2]))

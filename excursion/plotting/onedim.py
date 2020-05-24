@@ -147,6 +147,8 @@ def plot_GP(gp, testcase, **kwargs):
         acq = kwargs['acq']
         acq_type = kwargs['acq_type']
         xnew = kwargs['x_new']
+        device = kwargs['device']
+        dtype = kwargs['dtype']
 
         #axis
         try:

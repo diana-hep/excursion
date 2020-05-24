@@ -9,8 +9,7 @@ from torch.distributions import normal
 from excursion.utils import truncated_std_conditional, get_first_max_index
 
 
-def acq(gp, testcase, x_candidate, acquisition: str):
-
+def acq(gp, testcase, x_candidate, acquisition: str, device, dtype):
     """
     Acquisition function
     Inputs:
@@ -21,15 +20,15 @@ def acq(gp, testcase, x_candidate, acquisition: str):
     """
     if acquisition == "PES":
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        info_gain = PES(gp, testcase, thresholds, x_candidate)
+        info_gain = PES(gp, testcase, thresholds, x_candidate, device, dtype)
         return info_gain
 
     if acquisition == "MES":
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        info_gain = MES(gp, testcase, thresholds, x_candidate)
+        info_gain = MES(gp, testcase, thresholds, x_candidate, device, dtype)
         return info_gain
 
-def MES(gp, testcase, thresholds, x_candidate):
+def MES(gp, testcase, thresholds, x_candidate, device, dtype):
    
     # compute predictive posterior of Y(x) | train data
     kernel = gp.covar_module
@@ -58,7 +57,7 @@ def MES(gp, testcase, thresholds, x_candidate):
 
 
 
-def PES(gp, testcase, thresholds, x_candidate):
+def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     """
     Calculates information gain of choosing x_candidadate as next point to evaluate.
     Performs this calculation with the Predictive Entropy Search approximation. Roughly,
@@ -73,15 +72,15 @@ def PES(gp, testcase, thresholds, x_candidate):
     gp.eval()
     likelihood.eval()
 
-    X_grid = testcase.X
-    X_all = torch.cat((x_candidate, X_grid)).cuda()
+    X_grid = (testcase.X).to(device, dtype)
+    X_all = torch.cat((x_candidate, X_grid)).to(device, dtype)
     Y_pred_all = likelihood(gp(X_all))
     Y_pred_grid = torch.distributions.Normal(
         loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:] ) ** 0.5
     )
 
     # vector of expected value H1 under S(x) for each x in X_grid
-    E_S_H1 = torch.zeros(len(X_grid))
+    E_S_H1 = torch.zeros(len(X_grid)).to(device,dtype)
 
     for j in range(len(thresholds) - 1):
 

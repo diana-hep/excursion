@@ -79,11 +79,12 @@ def main():
     estimator = ExcursionSetEstimator(testcase, algorithmopts, model, likelihood, device)
     
     timestampStr = datetime.datetime.now().strftime("%d-%b-%Y_%H:%M:%S")+'/'
+    
     os.mkdir(args.outputfolder+timestampStr)
 
     while(estimator.this_iteration < args.nupdates):
         estimator.step(testcase, algorithmopts, model, likelihood)
-        model = estimator.update_posterior(testcase, algorithmopts, model, likelihood, device)
+        model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
         estimator.plot_status(testcase, model, estimator.acq_values, args.outputfolder+timestampStr)
         estimator.get_diagnostics(testcase, model,likelihood)
 

@@ -63,7 +63,6 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
         )
 
         axarr[i].set_title('GP #{}'.format(i))
-        
         plot_current_estimate(
             axarr[i], gp, X, y,
             prediction,
@@ -83,7 +82,7 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize = 1):
 
 
 
-def plot_GP(ax, gp, testcase, batchsize=1):
+def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     """
     Plot GP posterior fit to data with the option of plotting side by side acquisition function
     """
@@ -95,21 +94,21 @@ def plot_GP(ax, gp, testcase, batchsize=1):
     thresholds = testcase.thresholds
 
     #true function + thresholds
-    truthv = testcase.true_functions[0](testcase.X_plot)
+    X_plot = torch.Tensor(testcase.X_plot).to(device, dtype)
+    truthv = testcase.true_functions[0](X_plot)
+    truthv = truthv.to(device, dtype)
     truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
     line0 = ax.contour(xv, yv, truthv,thresholds, colors='white', linestyles='dotted', label='true contour')
 
     
     ##mean 
-    X_plot = torch.from_numpy(testcase.X_plot)
-
     gp.eval()
     likelihood = gp.likelihood
     likelihood.eval()
     prediction = likelihood(gp(X_plot))
 
     prediction = values2mesh(
-            prediction.mean.detach().numpy(),
+            prediction.mean.detach().cpu().numpy(),
             testcase.rangedef,
             testcase.invalid_region
     )
@@ -120,8 +119,8 @@ def plot_GP(ax, gp, testcase, batchsize=1):
     line1 = ax.contour(xv, yv, prediction,thresholds, colors='white',linestyles='solid')
 
     ##train points
-    old_points = ax.scatter(X_train[:-batchsize, 0], X_train[:-batchsize, 1], s=20, edgecolor='white',  label='true sample')
-    new_point = ax.scatter(X_train[-batchsize:, 0], X_train[-batchsize:, 1], s=20, c='r', label='last added')
+    old_points = ax.scatter(X_train[:-batchsize, 0].cpu(), X_train[:-batchsize, 1].cpu(), s=20, edgecolor='white',  label='true sample')
+    new_point = ax.scatter(X_train[-batchsize:, 0].cpu(), X_train[-batchsize:, 1].cpu(), s=20, c='r', label='last added')
         
 
     ax.xlabel('x')
@@ -139,8 +138,6 @@ def plot_GP(ax, gp, testcase, batchsize=1):
         loc='bottom center',\
         bbox_to_anchor=(1.10, -0.1), ncol=2, facecolor='grey', framealpha=0.20)
     
-
-
     return ax
 
 
