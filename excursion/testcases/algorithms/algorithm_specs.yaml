@@ -20,9 +20,10 @@ likelihood:
 model:
   type: 'ExactGP'
   kernel: 'RBF'
+  prior: 'Lineal'
 
 
 #acquisition function
 acq:
-  acq_type: 'PES'
+  acq_type: 'MES'
 

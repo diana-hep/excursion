@@ -1,7 +1,5 @@
 import matplotlib
 matplotlib.use('PS')
-sys.path.append(os.getcwd()) 
-
 
 from excursion import init_gp
 from excursion.utils import get_first_max_index
