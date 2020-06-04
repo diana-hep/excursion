@@ -1,5 +1,7 @@
 #IRINA
 excursion/results/
+examples/*.png
+examples/*.gif
 
 
 # Created by https://www.gitignore.io/api/python,jupyternotebooks
