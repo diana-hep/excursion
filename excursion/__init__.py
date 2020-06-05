@@ -65,33 +65,19 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     # GAUSSIAN PROCESS
     #
-<<<<<<< HEAD
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
         model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
     elif(modelopts == 'GridGP' and kernelopts =='RBF'):
         grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
         grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
-=======
-    if modelopts == "ExactGP" and kernelopts == "RBF":
-        model = ExactGP_RBF(X_init, y_init, likelihood).to(device, dtype)
-    elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = [
-            (testcase.rangedef[0][0], testcase.rangedef[0][1]),
-            (testcase.rangedef[1][0], testcase.rangedef[1][1]),
-        ]
-        grid_size = testcase.rangedef[0][2] * testcase.rangedef[1][2]
->>>>>>> gpu
         grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
             )
 
-<<<<<<< HEAD
         model = GridGPRegression_RBF(grid, X_init, y_init, likelihood, prioropts).to(device)
-=======
-        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood).to(device, dtype)
->>>>>>> gpu
+
     else:
         raise RuntimeError("unknown gpytorch model")
 
@@ -106,14 +92,10 @@ def init_gp(testcase, algorithmopts, ninit, device):
 
 
 def get_gp(X, y, likelihood, algorithmopts, testcase, device):
-<<<<<<< HEAD
     modelopts = algorithmopts['model']['type']
     kernelopts = algorithmopts['model']['kernel']
     prioropts = algorithmopts['model']['prior']
-=======
-    modelopts = algorithmopts["model"]["type"]
-    kernelopts = algorithmopts["model"]["kernel"]
->>>>>>> gpu
+
     #
     # GAUSSIAN PROCESS
     #
@@ -122,35 +104,18 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     X = X.to(device)
     y = y.to(device)
 
-<<<<<<< HEAD
     if(modelopts == 'ExactGP' and kernelopts =='RBF'):
         model = ExactGP_RBF(X, y, likelihood, prioropts).to(device)
     elif(modelopts == 'GridGP' and kernelopts =='RBF'):
         grid_bounds = [(testcase.rangedef[0][0], testcase.rangedef[0][1]), (testcase.rangedef[1][0], testcase.rangedef[1][1])]
         grid_size = testcase.rangedef[0][2]*testcase.rangedef[1][2]
-=======
-    if modelopts == "ExactGP" and kernelopts == "RBF":
-        model = ExactGP_RBF(X, y, likelihood).to(device)
-    elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = [
-            (testcase.rangedef[0][0], testcase.rangedef[0][1]),
-            (testcase.rangedef[1][0], testcase.rangedef[1][1]),
-        ]
-        grid_size = testcase.rangedef[0][2] * testcase.rangedef[1][2]
->>>>>>> gpu
         grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
             )
-
-<<<<<<< HEAD
         model = GridGPRegression_RBF(grid, X, y, likelihood, prioropts).to(device)
         
-=======
-        model = GridGPRegression_RBF(grid, X, y, likelihood).to(device)
-
->>>>>>> gpu
     else:
         raise RuntimeError("unknown gpytorch model")
 
