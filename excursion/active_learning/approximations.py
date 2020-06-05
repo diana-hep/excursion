@@ -9,6 +9,7 @@ def h_normal_gpytorch(s):
     """ Entropy of a normal distribution """
     return torch.log(s * (2 * np.e * np.pi) ** 0.5)
 
+
 def approx_mi_vec_gpytorch(mu, cov, thresholds):
     # Expectation Propagation
     mu1 = mu[:, 0]
@@ -21,7 +22,7 @@ def approx_mi_vec_gpytorch(mu, cov, thresholds):
 
     for j in range(len(thresholds) - 1):
         alpha_j = (thresholds[j] - mu2) / std2
-        beta_j = (thresholds[j+1] - mu2) / std2
+        beta_j = (thresholds[j + 1] - mu2) / std2
         alpha_j = alpha_j.detach().numpy()
         beta_j = beta_j.detach().numpy()
 
@@ -36,10 +37,27 @@ def approx_mi_vec_gpytorch(mu, cov, thresholds):
         alpha_j = torch.tensor(alpha_j)
         beta_j = torch.tensor(beta_j)
 
-        mu_cond = mu1 - std1 * rho / torch.tensor(c_j) * ( torch.tensor(norm.pdf(beta_j)) - torch.tensor(norm.pdf(alpha_j)) )
-        var_cond = (mu1 ** 2 - 2 * mu1 * std1 * (rho / torch.tensor(c_j) * ( torch.tensor(norm.pdf(beta_j)) - torch.tensor(norm.pdf(alpha_j))) ) +
-                    std1 ** 2 * (1. - (rho ** 2 / torch.tensor(c_j)) * (torch.tensor(b_phi_b) - torch.tensor(a_phi_a))) -
-                   mu_cond ** 2)
+        mu_cond = mu1 - std1 * rho / torch.tensor(c_j) * (
+            torch.tensor(norm.pdf(beta_j)) - torch.tensor(norm.pdf(alpha_j))
+        )
+        var_cond = (
+            mu1 ** 2
+            - 2
+            * mu1
+            * std1
+            * (
+                rho
+                / torch.tensor(c_j)
+                * (torch.tensor(norm.pdf(beta_j)) - torch.tensor(norm.pdf(alpha_j)))
+            )
+            + std1 ** 2
+            * (
+                1.0
+                - (rho ** 2 / torch.tensor(c_j))
+                * (torch.tensor(b_phi_b) - torch.tensor(a_phi_a))
+            )
+            - mu_cond ** 2
+        )
 
         std_sx_j = var_cond ** 0.5
 
@@ -49,9 +67,10 @@ def approx_mi_vec_gpytorch(mu, cov, thresholds):
     h = h_normal_gpytorch(std1)
 
     for j in range(len(thresholds) - 1):
-        p_j = norm(mu2.detach().numpy(), std2.detach().numpy()).cdf(thresholds[j+1]) - \
-              norm(mu2.detach().numpy(), std2.detach().numpy()).cdf(thresholds[j])
-        print('pj ', p_j)
+        p_j = norm(mu2.detach().numpy(), std2.detach().numpy()).cdf(
+            thresholds[j + 1]
+        ) - norm(mu2.detach().numpy(), std2.detach().numpy()).cdf(thresholds[j])
+        print("pj ", p_j)
         dec = torch.tensor(p_j) * h_normal_gpytorch(std_sx[j])
         h[p_j > 0.0] -= dec[p_j > 0.0]
 

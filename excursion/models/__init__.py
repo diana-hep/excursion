@@ -2,6 +2,7 @@ import gpytorch
 import torch
 from . import priors
 
+
 class ExactGP_RBF(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, prior):
         super(ExactGP_RBF, self).__init__(train_x, train_y, likelihood)
@@ -24,8 +25,6 @@ class ExactGP_RBF(gpytorch.models.ExactGP):
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 
-
-
 class GridGPRegression_RBF(gpytorch.models.ExactGP):
     def __init__(self, grid, train_x, train_y, likelihood, prior):
         super(GridGPRegression_RBF, self).__init__(train_x, train_y, likelihood)
@@ -38,6 +37,7 @@ class GridGPRegression_RBF(gpytorch.models.ExactGP):
         else:
             raise NotImplementedError()
         self.covar_module = gpytorch.kernels.GridKernel(gpytorch.kernels.RBFKernel(), grid=grid)
+
 
     def forward(self, x):
         mean_x = self.mean_module(x)
