@@ -34,6 +34,7 @@ def acq(gp, testcase, x_candidate, acquisition: str, device, dtype):
         info_gain = PPES(gp, testcase, thresholds, x_candidate)
         return info_gain
 
+
 def MES(gp, testcase, thresholds, x_candidate, device, dtype):
 
     # compute predictive posterior of Y(x) | train data
@@ -119,7 +120,6 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     return cumulative_info_gain.item()
 
 
-
 def PPES(gp, testcase, thresholds, x_candidate):
     """
     Calculates information gain of choosing x_candidadate as next point to evaluate.
@@ -131,5 +131,6 @@ def PPES(gp, testcase, thresholds, x_candidate):
     """
 
     # compute predictive posterior of Y(x) | train data
-    raise NotImplmentedError('Should be same strcture as PES but the cumulative info gain is weighted')
-
+    raise NotImplmentedError(
+        "Should be same strcture as PES but the cumulative info gain is weighted"
+    )
