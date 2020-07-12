@@ -66,7 +66,7 @@ args = parser.parse_args()
 
 
 def main():
-    print('hello')
+    print("hello")
     if args.cuda and torch.cuda.is_available():
         device = torch.device("cuda")
     else:
@@ -76,9 +76,9 @@ def main():
 
     algorithmopts = yaml.safe_load(open(args.algorithm_specs, "r"))
 
-    testcase = load_example(algorithmopts['example'])
+    testcase = load_example(algorithmopts["example"])
 
-    model, likelihood = init_gp(testcase, algorithmopts, algorithmopts['ninit'], device)
+    model, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
 
     estimator = ExcursionSetEstimator(
         testcase, algorithmopts, model, likelihood, device
@@ -88,7 +88,7 @@ def main():
 
     os.mkdir(args.outputfolder + timestampStr)
 
-    while estimator.this_iteration < algorithmopts['nupdates']:
+    while estimator.this_iteration < algorithmopts["nupdates"]:
         estimator.step(testcase, algorithmopts, model, likelihood)
         model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
         estimator.plot_status(

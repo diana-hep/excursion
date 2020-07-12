@@ -37,6 +37,7 @@ class LinealMean(gpytorch.means.Mean):
                 _mul_broadcast_shape(inputs.shape[:-1], self.constant.shape)
             )
 
+
 class CircularMean(gpytorch.means.Mean):
     def __init__(self, prior=None, batch_shape=torch.Size(), **kwargs):
         super(CircularMean, self).__init__()
