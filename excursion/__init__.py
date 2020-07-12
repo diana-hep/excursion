@@ -18,6 +18,8 @@ def init_gp(testcase, algorithmopts, ninit, device):
     likelihood_type = algorithmopts["likelihood"]["type"]
     modelopts = algorithmopts["model"]["type"]
     kernelopts = algorithmopts["model"]["kernel"]
+    prioropts = algorithmopts["model"]["prior"]
+
     n_dims = testcase.n_dims
     epsilon = float(algorithmopts["likelihood"]["epsilon"])
     dtype = torch.float64
@@ -64,7 +66,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
     # GAUSSIAN PROCESS
     #
     if modelopts == "ExactGP" and kernelopts == "RBF":
-        model = ExactGP_RBF(X_init, y_init, likelihood).to(device, dtype)
+        model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
         grid_bounds = [
             (testcase.rangedef[0][0], testcase.rangedef[0][1]),
@@ -77,7 +79,10 @@ def init_gp(testcase, algorithmopts, ninit, device):
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
             )
 
-        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood).to(device, dtype)
+        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood, prioropts).to(
+            device
+        )
+
     else:
         raise RuntimeError("unknown gpytorch model")
 
@@ -94,6 +99,8 @@ def init_gp(testcase, algorithmopts, ninit, device):
 def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     modelopts = algorithmopts["model"]["type"]
     kernelopts = algorithmopts["model"]["kernel"]
+    prioropts = algorithmopts["model"]["prior"]
+
     #
     # GAUSSIAN PROCESS
     #
@@ -103,7 +110,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     y = y.to(device)
 
     if modelopts == "ExactGP" and kernelopts == "RBF":
-        model = ExactGP_RBF(X, y, likelihood).to(device)
+        model = ExactGP_RBF(X, y, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
         grid_bounds = [
             (testcase.rangedef[0][0], testcase.rangedef[0][1]),
@@ -115,8 +122,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
             )
-
-        model = GridGPRegression_RBF(grid, X, y, likelihood).to(device)
+        model = GridGPRegression_RBF(grid, X, y, likelihood, prioropts).to(device)
 
     else:
         raise RuntimeError("unknown gpytorch model")

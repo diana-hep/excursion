@@ -46,34 +46,12 @@ def load_example(example):
 parser = argparse.ArgumentParser(description="Description of excursion job")
 
 parser.add_argument(
-    "--example", required=True, metavar="EX", type=str, help="example to load"
-)
-
-parser.add_argument(
     "--outputfolder", required=True, metavar="OUT", type=str, help="outputfolder path"
 )
 
 parser.add_argument(
-    "--ninit",
-    required=False,
-    metavar="NINIT",
-    type=int,
-    default=10,
-    help="number of init training points",
-)
-
-parser.add_argument(
-    "--nupdates",
-    required=False,
-    metavar="NUP",
-    type=int,
-    default=100,
-    help="number of iterations",
-)
-
-parser.add_argument(
     "--algorithm_specs",
-    required=False,
+    required=True,
     metavar="ALG",
     type=str,
     default="",
@@ -88,6 +66,7 @@ args = parser.parse_args()
 
 
 def main():
+    print("hello")
     if args.cuda and torch.cuda.is_available():
         device = torch.device("cuda")
     else:
@@ -95,11 +74,11 @@ def main():
 
     print("device", device, type(device))
 
-    testcase = load_example(args.example)
-
     algorithmopts = yaml.safe_load(open(args.algorithm_specs, "r"))
 
-    model, likelihood = init_gp(testcase, algorithmopts, args.ninit, device)
+    testcase = load_example(algorithmopts["example"])
+
+    model, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
 
     estimator = ExcursionSetEstimator(
         testcase, algorithmopts, model, likelihood, device
@@ -109,7 +88,7 @@ def main():
 
     os.mkdir(args.outputfolder + timestampStr)
 
-    while estimator.this_iteration < args.nupdates:
+    while estimator.this_iteration < algorithmopts["nupdates"]:
         estimator.step(testcase, algorithmopts, model, likelihood)
         model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
         estimator.plot_status(

@@ -1,4 +1,10 @@
 
+#IRINA
+excursion/results/
+examples/*.png
+examples/*.gif
+examples/.ipynb_checkpoints/
+
 # Created by https://www.gitignore.io/api/python,jupyternotebooks
 # Edit at https://www.gitignore.io/?templates=python,jupyternotebooks
 
@@ -121,4 +127,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+<<<<<<< HEAD
 # End of https://www.gitignore.io/api/python,jupyternotebooks
+=======
+# End of https://www.gitignore.io/api/python,jupyternotebooks
+>>>>>>> gpu
