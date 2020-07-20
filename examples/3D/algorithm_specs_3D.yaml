@@ -1,0 +1,35 @@
+#
+# ALGORITHM OPTS
+#
+
+#type of testcase to run
+example: '3Dtoyanalysis'
+
+#number of initial points
+ninit: 10
+
+#number of iterations
+nupdates: 10
+
+##Define the init training data type
+init_type: 'random'
+
+#if init_type == 'custom' then fill in the lines below
+#X_train:
+#  [0.,0.]
+
+#likelihood
+likelihood:
+  type: 'GaussianLikelihood'
+  epsilon: 0.
+
+#model
+model:
+  type: 'GridGP'
+  kernel: 'RBF'
+  prior: 'Constant'
+
+
+#acquisition function
+acq:
+  acq_type: 'MES'

@@ -37,7 +37,7 @@ def load_example(example):
     elif example == "3dfoursheets":
         testcase = importlib.import_module("excursion.testcases.toy3d_foursheets")
     elif example == "3Dtoyanalysis":
-        testcase = importlib.import_module("excursion.testcases.fast3d")
+        testcase = importlib.import_module("excursion.testcases.fast_3D")
     else:
         raise RuntimeError("unnkown test case")
     return testcase

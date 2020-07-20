@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
+from torch.distributions.normal import Normal
 import gpytorch
 import excursion
 import time
@@ -217,13 +218,25 @@ class ExcursionSetEstimator:
     def get_diagnostics(self, testcase, model, likelihood):
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         X_eval = testcase.X
-        noise_dist = MultivariateNormal(
-            torch.zeros(len(X_eval)), torch.eye(len(X_eval))
-        )
-        noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
-            self.device, self.dtype
-        )
-        y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype) + noise
+
+        print("len(X_eval)", X_eval.shape, len(X_eval))
+        # noise_dist = MultivariateNormal(
+        #    torch.zeros(len(X_eval)), torch.eye(len(X_eval))
+        # )
+        
+        # noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
+        #    self.device, self.dtype
+        # )
+
+        noise = self._epsilon * Normal(
+            torch.tensor([0.0]), torch.tensor([1.0])
+        ).rsample(sample_shape=torch.Size([len(X_eval)]))
+
+        #y_true = testcase.true_functions[0](X_eval).to(
+        #    self.device, self.dtype
+        #) + noise.to(self.device, self.dtype)
+
+        y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
 
         model.eval()
         likelihood.eval()
