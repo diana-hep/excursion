@@ -11,6 +11,7 @@ from excursion.active_learning import acq
 from excursion.utils import get_first_max_index
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
+import excursion.plotting.threedim as plots_3D
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
@@ -258,6 +259,7 @@ class ExcursionSetEstimator:
         self.pct_correct.append(pct)
         return None
 
+
     def step(self, testcase, algorithmopts, model, likelihood):
         # track wall time
         start_time = time.process_time()
@@ -357,6 +359,23 @@ class ExcursionSetEstimator:
         elif self._n_dims == 2:
             fig = plt.figure()
             plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype)
+            plt.tight_layout()
+            figname = (
+                outputfolder
+                + str(self._n_dims)
+                + "D_"
+                + str(self.this_iteration)
+                + "_"
+                + str(self._acq_type)
+                + ".png"
+            )
+            plt.savefig(figname)
+
+
+        elif self._n_dims == 3:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            plot = plots_3D.plot_GP(ax, model, testcase, self.device, self.dtype)
             plt.tight_layout()
             figname = (
                 outputfolder
