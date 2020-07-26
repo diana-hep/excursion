@@ -10,11 +10,14 @@ from ..utils import (
 import torch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
-
+def getminmax(ndarray):
+    return np.min(ndarray), np.max(ndarray)
 
 def contour_3d(v, rangedef, level, alpha=None, facecolors=None, edgecolors=None):
-    verts, faces, normals, values = measure.marching_cubes(v, level=level, step_size=1)
+    verts, faces, normals, values = measure.marching_cubes_lewiner(v, level=level, step_size=1)
     true = (
         rangedef[:, 0]
         + (rangedef[:, 1] - rangedef[:, 0]) * np.divide(1.0, rangedef[:, 2] - 1) * verts
@@ -87,11 +90,21 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     prediction = likelihood(gp(X_plot))
 
     #plot heatmap mean
-    ax.scatter(X_plot[:, 0], X_plot[:, 1], X_plot[:, 2], c=prediction.mean.detach().to(device,dtype).numpy(), alpha=0.02)
+    mean = prediction.mean.detach().cpu()
+    mean = mean.numpy()
+
+
+    colors = cm.hsv(mean/max(mean))
+
+    colmap = cm.ScalarMappable(cmap=cm.hsv)
+    colmap.set_array(mean)
+
+    plot = ax.scatter(X_plot[:, 0].cpu(), X_plot[:, 1].cpu(), X_plot[:, 2].cpu(), c=colors, alpha=0.02)
+    plt.colorbar(plot, ax=ax)
 
     #plot excursion set estimation
     prediction_mean = values2mesh(
-        prediction.mean.detach().to(device,dtype).numpy(),
+        mean,
         testcase.rangedef,
         testcase.invalid_region,
     )
@@ -113,7 +126,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
         ax.add_collection3d(mesh)
 
     # points of evaluation
-    ax.scatter(X_train[:, 0], X_train[:, 1], X_train[:, 2], c="r", s=100, alpha=0.6)
+    ax.scatter(X_train[:, 0].cpu(), X_train[:, 1].cpu(), X_train[:, 2].cpu(), c="r", s=100, alpha=0.6)
 
     # limits
     ax.set_xlim(testcase.rangedef[0][0], testcase.rangedef[0][1])
