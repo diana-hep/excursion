@@ -3,6 +3,7 @@ from scipy.stats import norm
 import gpytorch
 import torch
 import numpy as np
+torch.cuda.set_device(0)
 
 
 def h_normal_gpytorch(s):

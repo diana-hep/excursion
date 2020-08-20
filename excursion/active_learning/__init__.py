@@ -8,31 +8,8 @@ from scipy.linalg import cho_solve
 from excursion.utils import h_normal
 from torch.distributions import normal
 from excursion.utils import truncated_std_conditional, get_first_max_index
-
-
-def acq(gp, testcase, x_candidate, acquisition: str, device, dtype):
-    """
-    Acquisition function
-    Inputs:
-    - model for Gaussian Process
-    -  settings of the testcase
-    - thresholds: aray with thresholds including infinity
-    - x_candidate: candidate point in te grid
-    """
-    if acquisition == "PES":
-        thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        info_gain = PES(gp, testcase, thresholds, x_candidate, device, dtype)
-        return info_gain
-
-    if acquisition == "MES":
-        thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        info_gain = MES(gp, testcase, thresholds, x_candidate, device, dtype)
-        return info_gain
-
-    if acquisition == "PPES":
-        thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        info_gain = PPES(gp, testcase, thresholds, x_candidate)
-        return info_gain
+import time
+import os
 
 
 def MES(gp, testcase, thresholds, x_candidate, device, dtype):
@@ -50,7 +27,7 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
     )
 
     # entropy of S(x_candidate)
-    entropy_candidate = torch.Tensor([0.0])
+    entropy_candidate = torch.Tensor([0.0]).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
         # p(S(x)=j)
@@ -60,11 +37,12 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
 
         if p_j > 0.0:
             # print(x_candidate, p_j,j)
-            entropy_candidate -= torch.logsumexp(p_j, 0) * torch.logsumexp(
+
+            entropy_candidate -= torch.logsumexp(p_j, 0).to(device, dtype) * torch.logsumexp(
                 torch.log(p_j), 0
             )
 
-    return float(entropy_candidate.detach().numpy())
+    return entropy_candidate.detach()#.to(device, dtype)
 
 
 def PES(gp, testcase, thresholds, x_candidate, device, dtype):
@@ -82,15 +60,15 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     gp.eval()
     likelihood.eval()
 
-    X_grid = (testcase.X).to(device, dtype)
-    X_all = torch.cat((x_candidate, X_grid)).to(device, dtype)
+    X_grid = (testcase.X)#.to(device, dtype)
+    X_all = torch.cat((x_candidate, X_grid))#.to(device, dtype)
     Y_pred_all = likelihood(gp(X_all))
     Y_pred_grid = torch.distributions.Normal(
         loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:]) ** 0.5
     )
 
     # vector of expected value H1 under S(x) for each x in X_grid
-    E_S_H1 = torch.zeros(len(X_grid)).to(device, dtype)
+    E_S_H1 = torch.zeros(len(X_grid))#.to(device, dtype)
 
     for j in range(len(thresholds) - 1):
 
@@ -134,3 +112,7 @@ def PPES(gp, testcase, thresholds, x_candidate):
     raise NotImplmentedError(
         "Should be same strcture as PES but the cumulative info gain is weighted"
     )
+
+
+
+acquisition_functions = {'PES': PES, 'MES': MES}

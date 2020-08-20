@@ -3,6 +3,7 @@ import torch
 from . import priors
 
 
+
 class ExactGP_RBF(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, prior):
         super(ExactGP_RBF, self).__init__(train_x, train_y, likelihood)

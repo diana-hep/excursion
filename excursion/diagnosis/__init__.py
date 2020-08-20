@@ -1,6 +1,9 @@
 import numpy as np
 import itertools
 from .. import utils
+import torch
+torch.cuda.set_device(0)
+
 
 
 def classlabels(values, thresholds):
