@@ -2,6 +2,13 @@
 # ALGORITHM OPTS
 #
 
+example: '1Dtoyanalysis'
+
+#number of initial points
+ninit: 10
+
+#number of iterations
+nupdates: 2
 
 ##Define the init training data type
 init_type: 'random'
@@ -17,12 +24,11 @@ likelihood:
 
 #model
 model:
-  type: 'ExactGP'
+  type: 'GridGP'
   kernel: 'RBF'
-  prior: 'Lineal'
+  prior: 'Constant'
 
 
 #acquisition function
 acq:
   acq_type: 'MES'
-
