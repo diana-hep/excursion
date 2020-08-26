@@ -1,3 +1,4 @@
+pytest
 beartype==0.1.1
 beautifulsoup4==4.9.1
 brotlipy==0.7.0

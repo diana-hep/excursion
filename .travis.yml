@@ -3,9 +3,13 @@ python:
   - "3.6"     
   - "3.7"
   - "3.8"
+
+before_install:
+  - "pip install -U pip"
+
 install:
   - pip install -r requeriments.txt
   - pip install .
-  - pip install pytest
+  
 script:
   - pytest
