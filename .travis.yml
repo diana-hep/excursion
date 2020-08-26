@@ -5,11 +5,12 @@ python:
   - "3.8"
 
 before_install:
-  - "pip install -U pip"
+  - sudo apt-get -y install python3-pip python-dev
+  - sudo pip3 install -U setuptools
 
 install:
   - pip install -r requeriments.txt
   - pip install .
-  
+
 script:
   - pytest
