@@ -5,9 +5,6 @@ certifi==2020.6.20
 cffi==1.14.0
 chardet==3.0.4
 colored==1.4.2
-conda==4.8.3
-conda-build==3.18.11
-conda-package-handling==1.7.0
 cryptography==2.9.2
 cycler==0.10.0
 DateTime==4.3
