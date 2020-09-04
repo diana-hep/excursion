@@ -17,6 +17,5 @@ def test_init_gp():
         testcase = load_example(example)
         gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 
-        assert type(gp.mean) == torch.distributions.multivariate_normal.MultivariateNormal 
         assert type(gp.train_inputs[0]) != type(None)
         assert type(gp.train_targets) != type(None)
