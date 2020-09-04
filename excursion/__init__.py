@@ -121,11 +121,8 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     if modelopts == "ExactGP" and kernelopts == "RBF":
         model = ExactGP_RBF(X, y, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = [
-            (testcase.rangedef[0][0], testcase.rangedef[0][1]),
-            (testcase.rangedef[1][0], testcase.rangedef[1][1]),
-        ]
-        grid_size = testcase.rangedef[0][2] * testcase.rangedef[1][2]
+        grid_bounds = testcase.rangedef[:,:-1]
+        grid_size = torch.prod(testcase.rangedef[:,-1],0)
         grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(

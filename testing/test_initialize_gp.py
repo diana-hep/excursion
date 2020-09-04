@@ -15,7 +15,8 @@ def test_init_gp():
     # three toy examples
     for example in ["1Dtoyanalysis", "2Dtoyanalysis", "3Dtoyanalysis"]:
         testcase = load_example(example)
-        gp = init_gp(testcase, algorithmopts, ninit, device)
-        print(type(gp))
+        gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 
-        assert type(gp) == torch.distributions.multivariate_normal.MultivariateNormal
+        assert type(gp) == torch.distributions.multivariate_normal.MultivariateNormal 
+        assert type(gp.train_inputs[0]) != type(None)
+        assert type(gp.train_targets) != type(None)

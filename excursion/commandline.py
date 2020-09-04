@@ -58,6 +58,7 @@ def main():
 
     os.system("echo start_init_gp")
     model, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
+
     os.system("echo end_init_gp")
  
     time1=time.time()####
