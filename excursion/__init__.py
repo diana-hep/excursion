@@ -74,7 +74,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
     if modelopts == "ExactGP" and kernelopts == "RBF":
         model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = testcase.rangedef[:,:-1]
+        grid_bounds = torch.Tensor(testcase.rangedef[:,:-1])
 
         #grid_bounds = [
         #    (testcase.rangedef[0][0], testcase.rangedef[0][1]),
