@@ -1,6 +1,27 @@
 from scipy.stats import norm
 import numpy as np
 import torch
+import importlib
+
+
+def load_example(example):
+    testcase = None
+    if example == "1Dtoyanalysis":
+        testcase = importlib.import_module("testcases.fast_1D")
+    elif example == "2Dtoyanalysis":
+        testcase = importlib.import_module("testcases.fast_2D")
+    elif example == "darkhiggs":
+        testcase = importlib.import_module("excursion.testcases.darkhiggs")
+    elif example == "checkmate":
+        testcase = importlib.import_module("excursion.testcases.checkmate")
+    elif example == "3dfoursheets":
+        testcase = importlib.import_module("excursion.testcases.toy3d_foursheets")
+    elif example == "3Dtoyanalysis":
+        testcase = importlib.import_module("excursion.testcases.fast_3D")
+    else:
+        raise RuntimeError("unnkown test case")
+    return testcase
+
 
 
 def point_entropy(mu_stds, thresholds):

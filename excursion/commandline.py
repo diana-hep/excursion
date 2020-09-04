@@ -5,38 +5,17 @@ sys.path.append(os.getcwd())
 
 from excursion import init_gp
 from excursion import ExcursionSetEstimator
+from excursion.utils import load_example
 import numpy as np
-import importlib
 import json
 import yaml
 import time
 import torch
 import datetime
 import argparse
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
-import imp
+
 
 np.warnings.filterwarnings("ignore")
-
-
-def load_example(example):
-    testcase = None
-    if example == "1Dtoyanalysis":
-        testcase = importlib.import_module("testcases.fast_1D")
-    elif example == "2Dtoyanalysis":
-        testcase = importlib.import_module("testcases.fast_2D")
-    elif example == "darkhiggs":
-        testcase = importlib.import_module("excursion.testcases.darkhiggs")
-    elif example == "checkmate":
-        testcase = importlib.import_module("excursion.testcases.checkmate")
-    elif example == "3dfoursheets":
-        testcase = importlib.import_module("excursion.testcases.toy3d_foursheets")
-    elif example == "3Dtoyanalysis":
-        testcase = importlib.import_module("excursion.testcases.fast_3D")
-    else:
-        raise RuntimeError("unnkown test case")
-    return testcase
 
 
 parser = argparse.ArgumentParser(description="Description of excursion job")

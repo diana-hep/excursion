@@ -3,7 +3,7 @@
 import torch
 import yaml
 from excursion import init_gp
-from excursion.commandline import load_example
+from excursion.utils import load_example
 
 
 def test_init_gp():
