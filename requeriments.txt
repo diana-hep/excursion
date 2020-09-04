@@ -53,8 +53,8 @@ slurm-gpustat==0.0.3.9
 soupsieve==2.0.1
 threadpoolctl==2.1.0
 tifffile==2020.7.24
-torch==1.5.0+cu101
-torchvision==0.6.0+cu101
+torch==1.5.0
+torchvision==0.6.0
 typeguard==2.9.1
 urllib3==1.25.9
 zope.interface==5.1.0
