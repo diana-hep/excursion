@@ -7,9 +7,9 @@ import importlib
 def load_example(example):
     testcase = None
     if example == "1Dtoyanalysis":
-        testcase = importlib.import_module("testcases.fast_1D")
+        testcase = importlib.import_module("excursion.testcases.fast_1D")
     elif example == "2Dtoyanalysis":
-        testcase = importlib.import_module("testcases.fast_2D")
+        testcase = importlib.import_module("excursion.testcases.fast_2D")
     elif example == "darkhiggs":
         testcase = importlib.import_module("excursion.testcases.darkhiggs")
     elif example == "checkmate":
