@@ -7,6 +7,7 @@ from excursion.utils import load_example
 
 torch.cuda.empty_cache()
 
+
 def test_init_gp():
 
     device = torch.device("cpu")
