@@ -3,8 +3,8 @@ from scipy.linalg import cho_solve
 from scipy.stats import norm
 import gpytorch
 import torch
-torch.cuda.set_device(0)
 
+torch.cuda.set_device(0)
 
 
 def h_normal(s):

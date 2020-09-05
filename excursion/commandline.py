@@ -48,28 +48,26 @@ def main():
 
     print("device", type(device))
 
-
     algorithmopts = yaml.safe_load(open(args.algorithm_specs, "r"))
 
     testcase = load_example(algorithmopts["example"])
 
-    start_time = time.time() #######
-
+    start_time = time.time()  #######
 
     os.system("echo start_init_gp")
     model, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
 
     os.system("echo end_init_gp")
- 
-    time1=time.time()####
-    print("--- init_gp %s seconds ---" % (time1 - start_time)) ###
+
+    time1 = time.time()  ####
+    print("--- init_gp %s seconds ---" % (time1 - start_time))  ###
 
     estimator = ExcursionSetEstimator(
         testcase, algorithmopts, model, likelihood, device
     )
 
-    time2=time.time()####
-    print("--- init_excursion %s seconds ---" % (time2 - time1)) ###
+    time2 = time.time()  ####
+    print("--- init_excursion %s seconds ---" % (time2 - time1))  ###
 
     timestampStr = datetime.datetime.now().strftime("%d-%b-%Y_%H:%M:%S") + "/"
 
@@ -80,23 +78,21 @@ def main():
         estimator.step(testcase, algorithmopts, model, likelihood)
         os.system("echo end_step")
 
-        time3=time.time()####
-        print("--- step %s seconds ---" % (time3 - time2)) ###
-
+        time3 = time.time()  ####
+        print("--- step %s seconds ---" % (time3 - time2))  ###
 
         model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
-        
-        time4=time.time()####
-        print("--- posterior %s seconds ---" % (time4 - time3)) ###
 
-        #estimator.plot_status(
+        time4 = time.time()  ####
+        print("--- posterior %s seconds ---" % (time4 - time3))  ###
+
+        # estimator.plot_status(
         #    testcase, model, estimator.acq_values, args.outputfolder + timestampStr
-        #)
+        # )
         estimator.get_diagnostics(testcase, model, likelihood)
 
-        time5=time.time()####
-        print("--- get_diagnostics %s seconds ---" % (time5 - time4)) ###
-
+        time5 = time.time()  ####
+        print("--- get_diagnostics %s seconds ---" % (time5 - time4))  ###
 
     estimator.print_results(args.outputfolder + timestampStr, testcase, algorithmopts)
 

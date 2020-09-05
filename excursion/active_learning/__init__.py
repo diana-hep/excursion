@@ -38,11 +38,11 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
         if p_j > 0.0:
             # print(x_candidate, p_j,j)
 
-            entropy_candidate -= torch.logsumexp(p_j, 0).to(device, dtype) * torch.logsumexp(
-                torch.log(p_j), 0
-            )
+            entropy_candidate -= torch.logsumexp(p_j, 0).to(
+                device, dtype
+            ) * torch.logsumexp(torch.log(p_j), 0)
 
-    return entropy_candidate.detach()#.to(device, dtype)
+    return entropy_candidate.detach()  # .to(device, dtype)
 
 
 def PES(gp, testcase, thresholds, x_candidate, device, dtype):
@@ -60,15 +60,15 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     gp.eval()
     likelihood.eval()
 
-    X_grid = (testcase.X)#.to(device, dtype)
-    X_all = torch.cat((x_candidate, X_grid))#.to(device, dtype)
+    X_grid = testcase.X  # .to(device, dtype)
+    X_all = torch.cat((x_candidate, X_grid))  # .to(device, dtype)
     Y_pred_all = likelihood(gp(X_all))
     Y_pred_grid = torch.distributions.Normal(
         loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:]) ** 0.5
     )
 
     # vector of expected value H1 under S(x) for each x in X_grid
-    E_S_H1 = torch.zeros(len(X_grid))#.to(device, dtype)
+    E_S_H1 = torch.zeros(len(X_grid))  # .to(device, dtype)
 
     for j in range(len(thresholds) - 1):
 
@@ -114,5 +114,4 @@ def PPES(gp, testcase, thresholds, x_candidate):
     )
 
 
-
-acquisition_functions = {'PES': PES, 'MES': MES}
+acquisition_functions = {"PES": PES, "MES": MES}

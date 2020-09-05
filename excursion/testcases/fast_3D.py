@@ -10,7 +10,9 @@ def truth(x):
 
     def xsec(xv, yv, zv):
         return (
-            12 * torch.exp(-xv / 2) + ((0.1 * torch.cos(10 * yv))) + ((0.2 * torch.cos(15 * xv)))
+            12 * torch.exp(-xv / 2)
+            + ((0.1 * torch.cos(10 * yv)))
+            + ((0.2 * torch.cos(15 * xv)))
         ) * torch.exp(-0.3 * zv)
 
     def eff(xv, yv, zv):

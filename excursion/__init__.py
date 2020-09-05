@@ -8,7 +8,8 @@ import time
 import os
 import simplejson
 from excursion.models import ExactGP_RBF, GridGPRegression_RBF
-#from excursion.active_learning import acq
+
+# from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
 from excursion.utils import get_first_max_index
 import excursion.plotting.onedim as plots_1D
@@ -17,7 +18,7 @@ import excursion.plotting.threedim as plots_3D
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
-#torch.cuda.set_device(0)
+# torch.cuda.set_device(0)
 
 
 def init_gp(testcase, algorithmopts, ninit, device):
@@ -74,14 +75,10 @@ def init_gp(testcase, algorithmopts, ninit, device):
     if modelopts == "ExactGP" and kernelopts == "RBF":
         model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = torch.Tensor(testcase.rangedef[:,:-1])
+        grid_bounds = testcase.rangedef[:, :-1]
 
-        #grid_bounds = [
-        #    (testcase.rangedef[0][0], testcase.rangedef[0][1]),
-        #    (testcase.rangedef[1][0], testcase.rangedef[1][1]),
-        #]
-        grid_size = torch.prod(testcase.rangedef[:,-1])
-        
+        grid_size = torch.prod(torch.Tensor(testcase.rangedef[:, -1]))
+
         grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(
@@ -121,8 +118,8 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     if modelopts == "ExactGP" and kernelopts == "RBF":
         model = ExactGP_RBF(X, y, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = torch.Tensor(testcase.rangedef[:,:-1])
-        grid_size = torch.prod(testcase.rangedef[:,-1])
+        grid_bounds = testcase.rangedef[:, :-1]
+        grid_size = torch.prod(torch.Tensor(testcase.rangedef[:, -1]))
         grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
             grid[:, i] = torch.linspace(
@@ -228,7 +225,7 @@ class ExcursionSetEstimator:
         # noise_dist = MultivariateNormal(
         #    torch.zeros(len(X_eval)), torch.eye(len(X_eval))
         # )
-        
+
         # noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
         #    self.device, self.dtype
         # )
@@ -237,15 +234,17 @@ class ExcursionSetEstimator:
             torch.tensor([0.0]), torch.tensor([1.0])
         ).rsample(sample_shape=torch.Size([len(X_eval)]))
 
-        #y_true = testcase.true_functions[0](X_eval).to(
+        # y_true = testcase.true_functions[0](X_eval).to(
         #    self.device, self.dtype
-        #) + noise.to(self.device, self.dtype)
+        # ) + noise.to(self.device, self.dtype)
 
         y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
 
         model.eval()
         likelihood.eval()
-        y_pred = likelihood(model(X_eval.to(self.device, self.dtype))).mean.to(self.device, self.dtype)
+        y_pred = likelihood(model(X_eval.to(self.device, self.dtype))).mean.to(
+            self.device, self.dtype
+        )
 
         def label(y):
             for j in range(len(thresholds) - 1):
@@ -263,7 +262,6 @@ class ExcursionSetEstimator:
         self.pct_correct.append(pct)
         return None
 
-
     def step(self, testcase, algorithmopts, model, likelihood):
         # track wall time
         start_time = time.process_time()
@@ -274,7 +272,7 @@ class ExcursionSetEstimator:
 
         # order grid indexs by maxmium acquitision function value
         new_indexs = self.get_new_indexs(model, testcase)[0]
-    
+
         # discard those points already in dataset
         new_index = get_first_max_index(model, new_indexs, testcase)
 
@@ -302,36 +300,31 @@ class ExcursionSetEstimator:
         os.system("echo get_new_indexs")
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
-        
+
         for x in self._X_grid:
             # print('****x ', x.shape, type(x), x)
             x = x.view(1, -1).to(self.device, self.dtype)
 
-            #os.system("echo "+str(x))
-            start_time=time.time()
-            #value = acq(
+            # os.system("echo "+str(x))
+            start_time = time.time()
+            # value = acq(
             #    model,
             #    testcase,
             #    x.view(1, -1).to(self.device, self.dtype),
             #    self._acq_type,
             #    self.device,
             #    self.dtype,
-            #)
+            # )
 
             value = acquisition_functions[self._acq_type](
-                model,
-                testcase,
-                thresholds,
-                x,
-                self.device,
-                self.dtype,
+                model, testcase, thresholds, x, self.device, self.dtype,
             )
 
-            end_time = time.time()-start_time
-            #os.system("echo acq() time "+str(end_time))
-            
+            end_time = time.time() - start_time
+            # os.system("echo acq() time "+str(end_time))
+
             acquisition_values_grid.append(value)
-        
+
         new_indexs = np.argsort(acquisition_values_grid)[::-1]
         return new_indexs, acquisition_values_grid
 
@@ -399,10 +392,9 @@ class ExcursionSetEstimator:
             )
             plt.savefig(figname)
 
-
         elif self._n_dims == 3:
             fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
+            ax = fig.add_subplot(111, projection="3d")
             plot = plots_3D.plot_GP(ax, model, testcase, self.device, self.dtype)
             plt.tight_layout()
             figname = (
@@ -448,8 +440,8 @@ class ExcursionSetEstimator:
         plt.hlines(y=1, xmax=self.this_iteration, xmin=0, color="grey", linestyle="--")
         plt.savefig(filename_pct_img)
 
-        #tick_marks = np.arange(len(testcase.thresholds) + 2)
-        #c = ["c_" + str(j) for j in range(len(testcase.thresholds) + 1)]
+        # tick_marks = np.arange(len(testcase.thresholds) + 2)
+        # c = ["c_" + str(j) for j in range(len(testcase.thresholds) + 1)]
 
         # print pct to file
         with open(outputfolder + "pct_correct.txt", "w") as f:
@@ -459,8 +451,8 @@ class ExcursionSetEstimator:
         for i in range(self.this_iteration):
             plt.clf()
             plt.title("Confusion matrix iter=" + str(i) + " " + self._acq_type)
-            #plt.xticks(tick_marks, c, rotation=45)
-            #plt.yticks(tick_marks, c)
+            # plt.xticks(tick_marks, c, rotation=45)
+            # plt.yticks(tick_marks, c)
             plt.imshow(self.confusion_matrix[i], cmap="binary")
             for i1 in range(self.confusion_matrix[i].shape[0]):
                 for i2 in range(self.confusion_matrix[i].shape[1]):

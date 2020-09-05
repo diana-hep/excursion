@@ -23,7 +23,6 @@ def load_example(example):
     return testcase
 
 
-
 def point_entropy(mu_stds, thresholds):
     thresholds = np.concatenate([[-np.inf], thresholds, [np.inf]])
 
