@@ -5,6 +5,8 @@ import gpytorch
 
 from . import core
 
+torch.cuda.set_device(0)
+
 
 def gridsearch(gps, X, scandetails):
     thresholds = [-np.inf] + scandetails.thresholds + [np.inf]

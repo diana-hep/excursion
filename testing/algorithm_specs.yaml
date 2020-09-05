@@ -5,10 +5,10 @@
 example: '1Dtoyanalysis'
 
 #number of initial points
-ninit: 10
+ninit: 1
 
 #number of iterations
-nupdates: 2
+nupdates: 1
 
 ##Define the init training data type
 init_type: 'random'

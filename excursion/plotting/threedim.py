@@ -1,12 +1,27 @@
 from skimage import measure
 import numpy as np
+from ..utils import (
+    point_entropy,
+    point_entropy_gpytorch,
+    mesh2points,
+    points2mesh,
+    values2mesh,
+)
+import torch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
-from .. import utils
+
+def getminmax(ndarray):
+    return np.min(ndarray), np.max(ndarray)
 
 
 def contour_3d(v, rangedef, level, alpha=None, facecolors=None, edgecolors=None):
-    verts, faces, normals, values = measure.marching_cubes(v, level=level, step_size=1)
+    verts, faces, normals, values = measure.marching_cubes_lewiner(
+        v, level=level, step_size=1
+    )
     true = (
         rangedef[:, 0]
         + (rangedef[:, 1] - rangedef[:, 0]) * np.divide(1.0, rangedef[:, 2] - 1) * verts
@@ -51,3 +66,81 @@ def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, view_init=(70, -
     ax.set_ylim(scandetails.plot_rangedef[1][0], scandetails.plot_rangedef[1][1])
     ax.set_zlim(scandetails.plot_rangedef[2][0], scandetails.plot_rangedef[2][1])
     ax.view_init(*view_init)
+
+
+def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
+    """
+    Plot GP posterior fit to data with the option of plotting side by side acquisition function
+    """
+
+    X_train = gp.train_inputs[0]
+    y_train = gp.train_targets
+
+    xv, yv, zv = testcase.plot_meshgrid
+    thresholds = testcase.thresholds
+
+    # true function + thresholds
+    X_plot = torch.Tensor(testcase.X_plot).to(device, dtype)
+    truthv = testcase.true_functions[0](X_plot)
+    truthv = truthv.to(device, dtype)
+    truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
+
+    # mean prediction
+    # prediction, prediction_std = gp.predict(denseX, return_std=True)
+    gp.eval()
+    likelihood = gp.likelihood
+    likelihood.eval()
+    prediction = likelihood(gp(X_plot))
+
+    # plot heatmap mean
+    mean = prediction.mean.detach().cpu()
+    mean = mean.numpy()
+
+    colors = cm.hsv(mean / max(mean))
+
+    colmap = cm.ScalarMappable(cmap=cm.hsv)
+    colmap.set_array(mean)
+
+    plot = ax.scatter(
+        X_plot[:, 0].cpu(), X_plot[:, 1].cpu(), X_plot[:, 2].cpu(), c=colors, alpha=0.02
+    )
+    plt.colorbar(plot, ax=ax)
+
+    # plot excursion set estimation
+    prediction_mean = values2mesh(mean, testcase.rangedef, testcase.invalid_region,)
+
+    for val, c in zip(testcase.thresholds, ["r", "g", "y"]):
+        vals = (prediction_mean).reshape(*map(int, testcase.rangedef[:, 2]))
+        mesh = contour_3d(
+            vals, testcase.rangedef, val, alpha=0.1, facecolors=c, edgecolors=c
+        )
+        ax.add_collection3d(mesh)
+
+    # true excursion set
+    for val, c in zip(testcase.thresholds, ["k", "grey", "blue"]):
+        vals = truthv.reshape(*map(int, testcase.rangedef[:, 2]))
+        mesh = contour_3d(
+            vals, testcase.rangedef, val, alpha=0.1, facecolors=c, edgecolors=c
+        )
+        ax.add_collection3d(mesh)
+
+    # points of evaluation
+    ax.scatter(
+        X_train[:, 0].cpu(),
+        X_train[:, 1].cpu(),
+        X_train[:, 2].cpu(),
+        c="r",
+        s=100,
+        alpha=0.6,
+    )
+
+    # limits
+    ax.set_xlim(testcase.rangedef[0][0], testcase.rangedef[0][1])
+    ax.set_ylim(testcase.rangedef[1][0], testcase.rangedef[1][1])
+    ax.set_zlim(testcase.rangedef[2][0], testcase.rangedef[2][1])
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+    # ax.view_init(*view_init)

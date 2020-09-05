@@ -4,6 +4,8 @@ from scipy.stats import norm
 import gpytorch
 import torch
 
+torch.cuda.set_device(0)
+
 
 def h_normal(s):
     return np.log(s * (2 * np.e * np.pi) ** 0.5)
