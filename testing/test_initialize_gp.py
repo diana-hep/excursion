@@ -15,6 +15,7 @@ def test_init_gp():
 
     # three toy examples
     for example in ["1Dtoyanalysis", "2Dtoyanalysis", "3Dtoyanalysis"]:
+        print(example)
         testcase = load_example(example)
         gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 

@@ -43,7 +43,7 @@ n_dims = 1
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
 rangedef_1 = [0, 5, 500]
-rangedef = torch.Tensor([rangedef_1])
+rangedef = np.array([rangedef_1])
 
 grid_1 = torch.linspace(
     start=rangedef_1[0], end=rangedef_1[1], steps=rangedef_1[2], dtype=torch.double

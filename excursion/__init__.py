@@ -76,15 +76,21 @@ def init_gp(testcase, algorithmopts, ninit, device):
         model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
         grid_bounds = testcase.rangedef[:, :-1]
+        grid_n = testcase.rangedef[:, -1]
 
-        grid_size = torch.prod(torch.Tensor(testcase.rangedef[:, -1]))
+        grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
 
-        grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
         for i in range(len(grid_bounds)):
-            grid[:, i] = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
+            a = torch.linspace(
+                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
             )
- 
+            print(i)
+            print(a.size())
+            print(grid[:, i].size())
+
+            grid[:, i] = torch.linspace(
+                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+            )
 
         model = GridGPRegression_RBF(grid, X_init, y_init, likelihood, prioropts).to(
             device
@@ -120,12 +126,27 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
         model = ExactGP_RBF(X, y, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
         grid_bounds = testcase.rangedef[:, :-1]
+
+        grid_n = testcase.rangedef[:, -1]
+
         grid_size = torch.prod(torch.Tensor(testcase.rangedef[:, -1]))
-        grid = torch.zeros(int(grid_size), len(grid_bounds), dtype=torch.double)
+
+        grid = torch.zeros(
+            int(len(grid_bounds)), int(torch.max(grid_n)), dtype=torch.double
+        )
+
         for i in range(len(grid_bounds)):
-            grid[:, i] = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
+            a = torch.linspace(
+                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
             )
+            print(i)
+            print(a.size)
+            print(grid.size)
+
+            grid[:, i] = torch.linspace(
+                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+            )
+
         model = GridGPRegression_RBF(grid, X, y, likelihood, prioropts).to(device)
 
     else:
