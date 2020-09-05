@@ -84,6 +84,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_size), dtype=torch.double
             )
+ 
 
         model = GridGPRegression_RBF(grid, X_init, y_init, likelihood, prioropts).to(
             device
