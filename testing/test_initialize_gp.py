@@ -5,6 +5,7 @@ import yaml
 from excursion import init_gp
 from excursion.utils import load_example
 
+torch.cuda.empty_cache()
 
 def test_init_gp():
 
