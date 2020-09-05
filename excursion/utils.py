@@ -8,6 +8,8 @@ def load_example(example):
     testcase = None
     if example == "1Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_1D")
+    elif example == "1D_test":
+        testcase = importlib.import_module("excursion.testcases.1D_test")
     elif example == "2Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_2D")
     elif example == "darkhiggs":
