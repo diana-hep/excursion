@@ -11,7 +11,7 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
-from excursion.utils import get_first_max_index, get_batch
+from excursion.active_learning.batch import batch_types
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -198,7 +198,7 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
             output = gp(X_train)
             # Calc loss and backprop gradients
             loss = -mll(output, y_train)
-            loss.sum().backward()
+            loss.sum().backward(retain_graph=True)
             optimizer.step()
 
             # print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f outputscale: %.3f  noise: %.3f' % (
@@ -285,8 +285,11 @@ class ExcursionSetEstimator:
 
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
-            new_indexs = get_batch(model, ordered_indexs, testcase, batchsize)
-            self.x_new = testcase.X[new_indexs]  # .reshape( -1)
+            batchtype = algorithmopts["acq"]["batchtype"]
+            new_indexs = batch_types[batchtype](
+                model, ordered_indexs, testcase, batchsize, self, likelihood=likelihood, algorithmopts=algorithmopts
+            )
+            self.x_new = testcase.X[new_indexs].reshape(batchsize, -1)
             self.x_new = self.x_new.to(self.device, self.dtype)
 
         else:
@@ -340,13 +343,14 @@ class ExcursionSetEstimator:
         # track wall time
         start_time = time.process_time()
         if self._n_dims == 1:
-            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)#.flatten()
-            targets_i = torch.cat(
-                (model.train_targets.view(-1, 1), self.y_new), 0
-            ).flatten()
+            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
 
-            print('update posterior inputs_i ', inputs_i)
-            print('update posterior inputs_i ', targets_i)
+            print(model.train_targets.size())
+            print(self.y_new.size())
+
+            targets_i = torch.cat(
+                (model.train_targets, self.y_new), 0
+            ).flatten()
 
         else:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)

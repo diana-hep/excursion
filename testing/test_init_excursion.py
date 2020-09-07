@@ -7,6 +7,7 @@ from excursion.utils import load_example
 
 torch.cuda.empty_cache()
 
+
 def test_init_excursion():
 
     device = torch.device("cpu")
@@ -19,12 +20,10 @@ def test_init_excursion():
         gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 
         estimator = ExcursionSetEstimator(
-        testcase, algorithmopts, gp, likelihood, device
+            testcase, algorithmopts, gp, likelihood, device
         )
 
         assert type(estimator) != type(None)
         assert type(estimator._X_grid) != type(None)
         assert type(estimator._n_dims) != type(None)
         assert type(estimator._acq_type) != type(None)
-
-

@@ -232,10 +232,8 @@ def plot_GP(gp, testcase, **kwargs):
         for i in range(1, 6):
             ax0.fill_between(
                 X_plot[:, 0],
-                prediction.mean.detach().numpy()
-                + i * variance.detach().numpy() ** 0.5,
-                prediction.mean.detach().numpy()
-                - i * variance.detach().numpy() ** 0.5,
+                prediction.mean.detach().numpy() + i * variance.detach().numpy() ** 0.5,
+                prediction.mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i,
                 label=str(i) + "sigma",
@@ -265,7 +263,7 @@ def plot_GP(gp, testcase, **kwargs):
         for x in xnew:
             vertical = ax1.axvline(x, c="red")
 
-        ax1.legend(vertical, label="maximum")
+        #ax1.legend(vertical, label="maximum")
 
         ax1.legend(loc="lower right")
 
