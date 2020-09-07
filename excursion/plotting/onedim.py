@@ -226,15 +226,16 @@ def plot_GP(gp, testcase, **kwargs):
         likelihood.eval()
         prediction = likelihood(gp(X_plot))
         ax0.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
+        variance = prediction.covariance_matrix.diag()
 
         ##variance
         for i in range(1, 6):
             ax0.fill_between(
                 X_plot[:, 0],
                 prediction.mean.detach().numpy()
-                + i * prediction.variance.detach().numpy() ** 0.5,
+                + i * variance.detach().numpy() ** 0.5,
                 prediction.mean.detach().numpy()
-                - i * prediction.variance.detach().numpy() ** 0.5,
+                - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i,
                 label=str(i) + "sigma",
@@ -261,7 +262,11 @@ def plot_GP(gp, testcase, **kwargs):
         if acq_type == "MES":
             ax1.set_yscale("log")
 
-        ax1.axvline(xnew, c="red", label="maximum")
+        for x in xnew:
+            vertical = ax1.axvline(x, c="red")
+
+        ax1.legend(vertical, label="maximum")
+
         ax1.legend(loc="lower right")
 
         plt.subplots_adjust(hspace=0.0)

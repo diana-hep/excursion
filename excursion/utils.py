@@ -108,6 +108,27 @@ def get_first_max_index(gp, new_index, testcase):
     return new_first
 
 
+def get_batch(gp, ordered_indexs, testcase, batchsize):
+    X_train = gp.train_inputs[0]
+    new_indexs = []
+    new_ordered_indexs = ordered_indexs
+
+    while(len(new_indexs) < batchsize):
+        for i in new_ordered_indexs:
+            if( testcase.X.tolist()[i] not in X_train.tolist() and i not in new_indexs ):
+                new_indexs.append(i)  
+                break
+
+    #while(len(new_indexs) < batchsize):
+    #    index = max(new_ordered_indexs)
+    #    new_indexs.append(index)
+    #    new_ordered_indexs = acq()
+
+
+    #make sure selected indexs are not already in training set
+    return new_indexs
+
+
 def h_normal(var):
     return torch.log(var * (2 * np.e * np.pi) ** 0.5)
 
