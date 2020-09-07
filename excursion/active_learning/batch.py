@@ -31,27 +31,29 @@ def get_naive_batch(gp, ordered_indexs, testcase, batchsize, self, **kwargs):
 def get_kb_batch(gp, ordered_indexs, testcase, batchsize, self, **kwargs):
     X_train = gp.train_inputs[0]
     new_indexs = []
-    new_ordered_indexs = ordered_indexs
-    likelihood = kwargs['likelihood']
-    algorithmopts = kwargs['algorithmopts']
+    new_xs = torch.Tensor([])
+    new_fake_ys = torch.Tensor([])
 
-    while(len(new_indexs) < batchsize):
+    new_ordered_indexs = ordered_indexs
+    likelihood = kwargs["likelihood"]
+    algorithmopts = kwargs["algorithmopts"]
+    gp_fake = gp
+
+    while len(new_indexs) < batchsize:
         max_index = get_first_max_index(gp, new_ordered_indexs, testcase)
         new_indexs.append(max_index)
 
-        x_new = testcase.X[max_index].reshape(1,-1)
-        gp.eval()
+        x = testcase.X[max_index].reshape(1, -1)
+        new_xs = torch.cat((new_xs, x), 0)
+        gp_fake.eval()
         likelihood.eval()
-        y_new = likelihood(gp(x_new)).mean
+        y_fake = likelihood(gp_fake(x)).mean
+        new_fake_ys = torch.cat((new_fake_ys,y_fake), 0)
 
-        self.x_new = x_new
-        self.y_new = y_new
+        gp_fake = self.update_fake_posterior(testcase, algorithmopts, gp_fake, likelihood, new_xs, new_fake_ys)
+        new_ordered_indexs = self.get_ordered_indexs(gp_fake, testcase)[0]
 
-        gp = self.update_posterior(testcase, algorithmopts, gp, likelihood)
-        new_ordered_indexs = self.get_ordered_indexs(gp, testcase)[0]
-    
     return new_indexs
 
 
 batch_types = {"Naive": get_naive_batch, "KB": get_kb_batch}
-

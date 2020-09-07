@@ -214,7 +214,7 @@ def plot_GP(gp, testcase, **kwargs):
             ax0.hlines(thr, min_X, max_X, colors="purple", label="threshold")
 
         ##train points
-        ax0.plot(X_train, y_train, "k*", color="black", label="samples", markersize=10)
+        ax0.plot(X_train.detach().numpy(), y_train.detach().numpy(), "k*", color="black", label="samples", markersize=10)
         for x in X_train:
             ax0.axvline(x, alpha=0.2, color="grey")
 

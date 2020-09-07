@@ -11,7 +11,7 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
-from excursion.active_learning.batch import batch_types
+from excursion.active_learning.batch import get_first_max_index, batch_types
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -344,12 +344,8 @@ class ExcursionSetEstimator:
         start_time = time.process_time()
         if self._n_dims == 1:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
-
-            print(model.train_targets.size())
-            print(self.y_new.size())
-
             targets_i = torch.cat(
-                (model.train_targets, self.y_new), 0
+                (model.train_targets, self.y_new.reshape(-1)), 0
             ).flatten()
 
         else:
@@ -370,6 +366,33 @@ class ExcursionSetEstimator:
         self.walltime_posterior.append(end_time)
 
         return model
+
+
+    def update_fake_posterior(self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys):
+
+        if self._n_dims == 1:
+            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0).flatten()
+            targets = torch.cat(
+                (model_fake.train_targets, list_fake_ys), 0
+            ).flatten()
+
+        else:
+            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
+            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
+
+        model_fake.set_train_data(inputs=inputs, targets=targets, strict=False)
+        model_fake = get_gp(
+            inputs, targets, likelihood, algorithmopts, testcase, self.device
+        )
+
+        likelihood.train()
+        model_fake.train()
+        fit_hyperparams(model_fake, likelihood)
+
+        return model_fake
+
+
+
 
     def plot_status(self, testcase, model, acq_values, outputfolder):
 
