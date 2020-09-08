@@ -82,7 +82,7 @@ def main():
         # print("--- posterior %s seconds ---" % (time4 - time3))  ###
 
         estimator.plot_status(
-            testcase, model, estimator.acq_values, args.outputfolder + timestampStr
+            testcase, algorithmopts, model, estimator.acq_values, args.outputfolder + timestampStr
         )
         estimator.get_diagnostics(testcase, model, likelihood)
 

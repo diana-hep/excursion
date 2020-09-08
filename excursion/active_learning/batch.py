@@ -56,4 +56,19 @@ def get_kb_batch(gp, ordered_indexs, testcase, batchsize, self, **kwargs):
     return new_indexs
 
 
-batch_types = {"Naive": get_naive_batch, "KB": get_kb_batch}
+def get_cluster_batch(gp, ordered_indexs, testcase, batchsize, self, **kwargs):
+
+    X_train = gp.train_inputs[0]
+    new_indexs = []
+    
+
+    new_ordered_indexs = ordered_indexs
+    algorithmopts = kwargs["algorithmopts"]
+
+    while len(new_indexs) < batchsize:
+        pass
+
+    return new_indexs
+
+
+batch_types = {"Naive": get_naive_batch, "KB": get_kb_batch, "Cluster": get_cluster_batch}

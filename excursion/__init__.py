@@ -393,8 +393,7 @@ class ExcursionSetEstimator:
 
 
 
-
-    def plot_status(self, testcase, model, acq_values, outputfolder):
+    def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
 
         if self._n_dims == 1:
             fig = plt.figure()
@@ -421,7 +420,12 @@ class ExcursionSetEstimator:
 
         elif self._n_dims == 2:
             fig = plt.figure()
-            plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype)
+            if(algorithmopts['acq']['batch']):
+                batchsize = algorithmopts['acq']['batchsize']
+            else:
+                batchsize = 1
+
+            plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype, batchsize)
             plt.tight_layout()
             figname = (
                 outputfolder
