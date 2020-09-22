@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # `excursion` — Efficient Excursion Set Estimation 
-
+[ReadTheDocs](https://excursion.readthedocs.io/en/latest/)
 
 This package implements a Bayesian Optimization procedure based on Gaussian Processes to efficiently determine excursion sets (or equivalently iso-surfaces) of one or many expensive black-box functions.
 
