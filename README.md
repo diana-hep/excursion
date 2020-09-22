@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/irinaespejo/excursion.svg?branch=master)](https://travis-ci.org/irinaespejo/excursion)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1634427.svg)](https://zenodo.org/badge/latestdoi/146087019)
+[![Documentation Status](https://readthedocs.org/projects/excursion/badge/?version=latest)](https://excursion.readthedocs.io/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
