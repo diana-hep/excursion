@@ -5,8 +5,6 @@ import yaml
 from excursion import init_gp, ExcursionSetEstimator
 from excursion.utils import load_example
 
-torch.cuda.empty_cache()
-
 
 def test_step_excursion():
 

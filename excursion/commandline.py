@@ -70,6 +70,7 @@ def main():
 
     os.mkdir(args.outputfolder + timestampStr)
 
+
     while estimator.this_iteration < algorithmopts["nupdates"]:
         estimator.step(testcase, algorithmopts, model, likelihood)
 

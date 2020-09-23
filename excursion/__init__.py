@@ -11,7 +11,7 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
-from excursion.active_learning.batch import get_first_max_index, batch_types
+from excursion.active_learning.batch import batchGrid
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -224,7 +224,7 @@ class ExcursionSetEstimator:
         self.dtype = torch.float64
 
         self._acq_type = algorithmopts["acq"]["acq_type"]
-        self._X_grid = testcase.X
+        self._X_grid = testcase.X.to(self.device, self.dtype)
         self._epsilon = algorithmopts["likelihood"]["epsilon"]
         self._n_dims = testcase.n_dims
 
@@ -279,23 +279,46 @@ class ExcursionSetEstimator:
         self.this_iteration += 1
 
         print("Iteration ", self.this_iteration)
+        os.system("echo ******Iteration "+str(self.this_iteration))
 
-        # order grid indexs by maxmium acquitision function value
-        ordered_indexs = self.get_ordered_indexs(model, testcase)[0]
-
+        ################################## this should be all one step with output
+        ################################## number of batches, ordered max indices in grid
+        acq_values_of_grid = self.get_acq_values(model, testcase)
+        os.system("echo acq_values_of_grid size "+ str(acq_values_of_grid.size()))
+        os.system("echo acq_values_of_grid  "+ str(acq_values_of_grid.tolist()))
+        batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype)
+        batchgrid.update(acq_values_of_grid, self.device, self.dtype)
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
             batchtype = algorithmopts["acq"]["batchtype"]
-            new_indexs = batch_types[batchtype](
-                model, ordered_indexs, testcase, batchsize, self, likelihood=likelihood, algorithmopts=algorithmopts
+            new_indexs = batchgrid.batch_types[batchtype](
+                model,
+                testcase,
+                batchsize,
+                self.device,
+                self.dtype,
+                likelihood=likelihood,
+                algorithmopts=algorithmopts,
             )
-            self.x_new = testcase.X[new_indexs].reshape(batchsize, -1)
-            self.x_new = self.x_new.to(self.device, self.dtype)
+            print('**** ', new_indexs)
+            print([index for index in new_indexs])
+            self.x_new = torch.stack([testcase.X[index] for index in new_indexs]).to(self.device, self.dtype).reshape(batchsize, self._n_dims)
+
+            #.reshape(batchsize, self._n_dims)
+            
+            # self.x_new = (testcase.X[new_indexs]).reshape(batchsize, self._n_dims).to(self.device, self.dtype)
 
         else:
-            new_index = get_first_max_index(model, ordered_indexs, testcase)
-            self.x_new = testcase.X[new_index].reshape(1, -1)
-            self.x_new = self.x_new.to(self.device, self.dtype)
+            new_index = get_first_max_index(
+                model, acq_values_of_grid, testcase, self.device, self.dtype
+            )
+            self.x_new = (
+                testcase.X[new_index]
+                .reshape(1, self._n_dims)
+                .to(self.device, self.dtype)
+            )
+
+        ##################################
 
         # get y from selected x
 
@@ -303,11 +326,11 @@ class ExcursionSetEstimator:
         noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
             self.device, self.dtype
         )
-        self.y_new = (
-            testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
-        )
-        self.y_new = self.y_new.to(self.device, self.dtype)
-
+        print([x.size() for x in self.x_new])
+        print([x for x in self.x_new])
+        print(self.x_new.size())
+        self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
+        
         # track wall time
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
@@ -317,27 +340,32 @@ class ExcursionSetEstimator:
 
         return self.x_new, self.y_new
 
-    def get_ordered_indexs(self, model, testcase):
+    def get_acq_values(self, model, testcase):
         acquisition_values_grid = []
         os.system("echo getting ordered indexs according to acquisition function")
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        for x in self._X_grid:
-            x = x.view(1, -1).to(self.device, self.dtype)
+        # for x in self._X_grid:
+        #     x = x.view(1, -1).to(self.device, self.dtype)
 
-            start_time = time.time()
+        #     start_time = time.time()
 
-            value = acquisition_functions[self._acq_type](
-                model, testcase, thresholds, x, self.device, self.dtype,
-            )
+        #     value = acquisition_functions[self._acq_type](
+        #         model, testcase, thresholds, x, self.device, self.dtype,
+        #     )
 
-            end_time = time.time() - start_time
+        #     end_time = time.time() - start_time
 
-            acquisition_values_grid.append(value)
+        #     acquisition_values_grid.append(value)
+        start_time = time.time()
+        acquisition_values_grid = acquisition_functions[self._acq_type](
+            model, testcase, thresholds, self._X_grid, self.device, self.dtype
+        )
+        end_time = time.time() - start_time
+        os.system("echo " + str(end_time))
 
-        ordered_indexs = np.argsort(acquisition_values_grid)[::-1]
-        return ordered_indexs, acquisition_values_grid
+        return acquisition_values_grid
 
     def update_posterior(self, testcase, algorithmopts, model, likelihood):
         # track wall time
@@ -367,14 +395,13 @@ class ExcursionSetEstimator:
 
         return model
 
-
-    def update_fake_posterior(self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys):
+    def update_fake_posterior(
+        self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys
+    ):
 
         if self._n_dims == 1:
             inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0).flatten()
-            targets = torch.cat(
-                (model_fake.train_targets, list_fake_ys), 0
-            ).flatten()
+            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
 
         else:
             inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
@@ -390,8 +417,6 @@ class ExcursionSetEstimator:
         fit_hyperparams(model_fake, likelihood)
 
         return model_fake
-
-
 
     def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
 
@@ -420,12 +445,14 @@ class ExcursionSetEstimator:
 
         elif self._n_dims == 2:
             fig = plt.figure()
-            if(algorithmopts['acq']['batch']):
-                batchsize = algorithmopts['acq']['batchsize']
+            if algorithmopts["acq"]["batch"]:
+                batchsize = algorithmopts["acq"]["batchsize"]
             else:
                 batchsize = 1
 
-            plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype, batchsize)
+            plot = plots_2D.plot_GP(
+                plt, model, testcase, self.device, self.dtype, batchsize
+            )
             plt.tight_layout()
             figname = (
                 outputfolder

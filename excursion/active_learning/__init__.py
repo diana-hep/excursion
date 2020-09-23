@@ -8,9 +8,37 @@ from scipy.linalg import cho_solve
 from excursion.utils import h_normal
 from torch.distributions import normal
 from excursion.utils import truncated_std_conditional
-from excursion.active_learning.batch import get_first_max_index
 import time
 import os
+
+
+def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
+
+    # compute predictive posterior of Y(x) | train data
+    kernel = gp.covar_module
+    likelihood = gp.likelihood
+    gp.eval()
+    likelihood.eval()
+
+    Y_pred_grid = likelihood(gp(X_grid))
+
+    normal_grid = torch.distributions.Normal(
+        loc=Y_pred_grid.mean, scale=Y_pred_grid.variance ** 0.5
+    )
+
+    # entropy of S(x_candidate)
+    entropy_grid = torch.zeros(X_grid.size()[0],).to(device, dtype)
+
+    for j in range(len(thresholds) - 1):
+        # p(S(x)=j)
+        p_j = normal_grid.cdf(thresholds[j + 1]) - normal_grid.cdf(thresholds[j]).to(
+            device, dtype
+        )
+        entropy_grid[p_j > 0.0] -= torch.logsumexp(p_j, 0).to(device, dtype) * torch.logsumexp(
+            torch.log(p_j), 0
+        )
+
+    return entropy_grid
 
 
 def MES(gp, testcase, thresholds, x_candidate, device, dtype):
@@ -115,4 +143,4 @@ def PPES(gp, testcase, thresholds, x_candidate):
     )
 
 
-acquisition_functions = {"PES": PES, "MES": MES}
+acquisition_functions = {"PES": PES, "MES": MES, "MES_gpu": MES_gpu}
