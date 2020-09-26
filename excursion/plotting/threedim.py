@@ -19,7 +19,7 @@ def getminmax(ndarray):
 
 
 def contour_3d(v, rangedef, level, alpha=None, facecolors=None, edgecolors=None):
-    verts, faces, normals, values = measure.marching_cubes_lewiner(
+    verts, faces, normals, values = measure.marching_cubes(
         v, level=level, step_size=1
     )
     true = (
@@ -80,7 +80,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     thresholds = testcase.thresholds
 
     # true function + thresholds
-    X_plot = torch.Tensor(testcase.X_plot).to(device, dtype)
+    X_plot = torch.Tensor(testcase.X_plot)
     truthv = testcase.true_functions[0](X_plot)
     truthv = truthv.to(device, dtype)
     truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
@@ -102,7 +102,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     colmap.set_array(mean)
 
     plot = ax.scatter(
-        X_plot[:, 0].cpu(), X_plot[:, 1].cpu(), X_plot[:, 2].cpu(), c=colors, alpha=0.02
+        X_plot[:, 0].cpu(), X_plot[:, 1].cpu(), X_plot[:, 2].cpu(), c=colors, alpha=0.1
     )
     plt.colorbar(plot, ax=ax)
 
@@ -130,8 +130,8 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
         X_train[:, 1].cpu(),
         X_train[:, 2].cpu(),
         c="r",
-        s=100,
-        alpha=0.6,
+        s=70,
+        alpha=0.8,
     )
 
     # limits

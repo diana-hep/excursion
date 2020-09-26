@@ -11,7 +11,6 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
-from excursion.active_learning.batch import batchGrid
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -286,7 +285,9 @@ class ExcursionSetEstimator:
         acq_values_of_grid = self.get_acq_values(model, testcase)
         os.system("echo acq_values_of_grid size "+ str(acq_values_of_grid.size()))
         os.system("echo acq_values_of_grid  "+ str(acq_values_of_grid.tolist()))
-        batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype)
+        
+        from excursion.active_learning.batch import batchGrid
+        batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype, n_dims=self._n_dims)
         batchgrid.update(acq_values_of_grid, self.device, self.dtype)
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
@@ -299,6 +300,7 @@ class ExcursionSetEstimator:
                 self.dtype,
                 likelihood=likelihood,
                 algorithmopts=algorithmopts,
+                excursion_estimator = self,
             )
             print('**** ', new_indexs)
             print([index for index in new_indexs])
@@ -394,29 +396,6 @@ class ExcursionSetEstimator:
         self.walltime_posterior.append(end_time)
 
         return model
-
-    def update_fake_posterior(
-        self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys
-    ):
-
-        if self._n_dims == 1:
-            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0).flatten()
-            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
-
-        else:
-            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
-            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
-
-        model_fake.set_train_data(inputs=inputs, targets=targets, strict=False)
-        model_fake = get_gp(
-            inputs, targets, likelihood, algorithmopts, testcase, self.device
-        )
-
-        likelihood.train()
-        model_fake.train()
-        fit_hyperparams(model_fake, likelihood)
-
-        return model_fake
 
     def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
 
