@@ -37,9 +37,7 @@ class batchGrid(object):
         continue_ = True
 
         while continue_:  # until accptance of index
-            new_index = torch.max(self._t, dim=0, keepdim=False, out=None)[
-                1
-            ]  # index with max acq value
+            new_index = torch.argmax(self._t)# index with max acq value
             mask = torch.abs(
                 X_train - testcase.X.to(device, dtype)[new_index]
             )  # is X_grid[new_index] already picked?

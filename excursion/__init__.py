@@ -249,6 +249,8 @@ class ExcursionSetEstimator:
         # ) + noise.to(self.device, self.dtype)
 
         y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
+        print('y_true.dtype', y_true.dtype)
+
 
         model.eval()
         likelihood.eval()
@@ -258,13 +260,23 @@ class ExcursionSetEstimator:
 
         def label(y):
             for j in range(len(thresholds) - 1):
-                if y < thresholds[j + 1] and y > thresholds[j]:
-                    return j
+                if y < thresholds[j + 1] and y >= thresholds[j]:
+                    return int(j)
 
         labels_pred = np.array([label(y) for y in y_pred])
+        isnan_vector = np.isnan(labels_pred)
+
+        print('is nan items', isnan_vector[isnan_vector==True])
+        
         labels_true = np.array([label(y) for y in y_true])
 
+        #for y in labels_true:
+        #    print('label ', y, type(y))
+
         # force y_true = y_train for those x in dataset
+
+        print('labels_pred ', labels_pred.dtype)
+        print('labels_true ', labels_true.dtype)
 
         conf_matrix = confusion_matrix(labels_true, labels_pred)
         self.confusion_matrix.append(conf_matrix)
@@ -278,17 +290,15 @@ class ExcursionSetEstimator:
         self.this_iteration += 1
 
         print("Iteration ", self.this_iteration)
-        os.system("echo ******Iteration "+str(self.this_iteration))
 
         ################################## this should be all one step with output
         ################################## number of batches, ordered max indices in grid
         acq_values_of_grid = self.get_acq_values(model, testcase)
-        os.system("echo acq_values_of_grid size "+ str(acq_values_of_grid.size()))
-        os.system("echo acq_values_of_grid  "+ str(acq_values_of_grid.tolist()))
         
         from excursion.active_learning.batch import batchGrid
         batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype, n_dims=self._n_dims)
         batchgrid.update(acq_values_of_grid, self.device, self.dtype)
+        
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
             batchtype = algorithmopts["acq"]["batchtype"]
@@ -311,9 +321,10 @@ class ExcursionSetEstimator:
             # self.x_new = (testcase.X[new_indexs]).reshape(batchsize, self._n_dims).to(self.device, self.dtype)
 
         else:
-            new_index = get_first_max_index(
-                model, acq_values_of_grid, testcase, self.device, self.dtype
+            new_index = batchgrid.get_first_max_index(
+                model, testcase, self.device, self.dtype
             )
+            print("  ********************* "+str(new_index))
             self.x_new = (
                 testcase.X[new_index]
                 .reshape(1, self._n_dims)
@@ -343,8 +354,6 @@ class ExcursionSetEstimator:
         return self.x_new, self.y_new
 
     def get_acq_values(self, model, testcase):
-        acquisition_values_grid = []
-        os.system("echo getting ordered indexs according to acquisition function")
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
@@ -365,7 +374,8 @@ class ExcursionSetEstimator:
             model, testcase, thresholds, self._X_grid, self.device, self.dtype
         )
         end_time = time.time() - start_time
-        os.system("echo " + str(end_time))
+
+        self.acq_values = acquisition_values_grid
 
         return acquisition_values_grid
 

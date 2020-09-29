@@ -248,7 +248,7 @@ def plot_GP(gp, testcase, **kwargs):
 
         ax1.set_xticks([], [])
         # eliminate -inf
-        acq = np.array(acq)
+        acq = acq.detach().numpy()
         X_plot = X_plot.numpy()
         mask = np.isfinite(acq)
         acq = acq[mask]

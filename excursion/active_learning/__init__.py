@@ -6,7 +6,7 @@ import math
 from scipy.stats import norm
 from scipy.linalg import cho_solve
 from excursion.utils import h_normal
-from torch.distributions import normal
+from torch.distributions import Normal
 from excursion.utils import truncated_std_conditional
 import time
 import os
@@ -22,8 +22,13 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 
     Y_pred_grid = likelihood(gp(X_grid))
 
-    normal_grid = torch.distributions.Normal(
-        loc=Y_pred_grid.mean, scale=Y_pred_grid.variance ** 0.5
+    torch.set_printoptions(profile="full")
+    #print('############################### Y_pred_grid.variance ', Y_pred_grid.variance)
+    print('############################### Y_pred_grid diag covariance_matrix ', torch.diagonal(Y_pred_grid.covariance_matrix))
+    
+
+    normal_grid = Normal(
+        loc=Y_pred_grid.mean, scale=torch.sqrt(torch.diagonal(Y_pred_grid.covariance_matrix))
     )
 
     # entropy of S(x_candidate)
