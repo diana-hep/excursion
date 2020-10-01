@@ -6,16 +6,45 @@ from excursion import get_gp, fit_hyperparams
 
 
 class batchGrid(object):
+    """
+    A class to represent the underlying grid with useful features for batch point selection
+
+    ...
+
+    Attributes
+    -----------
+    batch_types : dict()
+    grid : torch.Tensor
+        the acquisition values for each point in the grid
+    device : str
+        device to choose grom gou or cpu
+    picked_indexs list
+        list to keep track of the indices already selected for query or the batch
+    _ndims :  int
+        dimension of the grid
+
+
+    Methods
+    -------
+    pop(index)
+        Removes index from to avoid being picked again
+    update(acq_value_grid)
+        Actualize the elements of the acquisition values for the same grid
+    
+    
+    """
+
     def __init__(self, acq_values_of_grid, device, dtype, n_dims):
-        self._t = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
+        self.grid = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
         self.batch_types = {
             "Naive": self.get_naive_batch,
             "KB": self.get_kb_batch,
             # "Cluster": self.get_cluster_batch,
         }
-        self._picked_indexs = []
+        self.picked_indexs = []
         self._n_dims = n_dims
         self.device = device
+        self.dtype = dtype
 
     def __torch_function__(self, func, types, args=(), kwargs=None):
         if kwargs is None:
@@ -24,57 +53,67 @@ class batchGrid(object):
         ret = func(*args, **kwargs)
         return batchgrid(ret, kwargs["device"], kwargs["dtype"])
 
+
     def pop(self, index):
-        self._picked_indexs.append(index)
-        self._t[index] = -1e10
+        self.grid[index] = torch.Tensor([(-1.)*float("Inf")])
+        #self.grid[index] = torch.empty((1), dtype=self.dtype)
 
     def update(self, acq_values_of_grid, device, dtype):
-        self._t = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
-        #for index in self._picked_indexs:
-        #    self._t[index] = -1e10
+        self.grid = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
 
     def get_first_max_index(self, gp, testcase, device, dtype):
         X_train = gp.train_inputs[0].to(device, dtype)
+
+        new_index = torch.argmax(self.grid)
+        new_x = testcase.X.to(device, dtype)[new_index]
+
+        # if the index is not already picked nor in the training set
+        # accept it ans remove from future picks
+        if (new_index not in self.picked_indexs) and (new_x not in X_train):
+            self.pop(new_index)
+            self.picked_indexs.append(new_index.item())
+            print('new_index ', new_index)
+            print('new_index.item() ', new_index.item())
+            return new_index.item()
         
-        continue_ = True
-        count = 1
-        while continue_: # until accptance of index
-            # new_index = torch.argmax(self._t)# index with max acq value
-            new_index = torch.topk(self._t, count)[1][count-1]
-            print('------------------------- count from', count)
-            print('------------------------- new_index from topk ', new_index)
-
+        else:
+            print('else in get_first_max_index')
+            self.pop(new_index)
+            return self.get_first_max_index(gp, testcase, device, dtype)      
+        
             # is X_grid[new_index] already picked?
-            mask = torch.abs(
-                X_train - testcase.X.to(device, dtype)[new_index]
-            )  
-            identical_elements = mask[mask.sum(dim=1) == 0]
-            number_identical_elements = identical_elements.size()[0]
+            #mask = torch.abs(
+            #    X_train - testcase.X.to(device, dtype)[new_index]
+            #)  
+            #identical_elements = mask[mask.sum(dim=1) == 0]
 
-            if number_identical_elements == 0:
-                # no, accept it, stop
-                return new_index.item()
-                continue_ = False
-                break
+            #number_identical_elements = identical_elements.size()[0]
 
-            else:
-                count += 1
-                continue_ = True
+            #if number_identical_elements == 0 and new_index not in self._picked_indexs :
+            #    # no, accept it, stop
+            #    return new_index.item()
+            #    self._picked_indexs.append(new_index)
+            #    continue_ = False
+            #    break
+
+            #else:
+            #    count += 1
+            #    continue_ = True
 
 
     def get_naive_batch(self, gp, testcase, batchsize, device, dtype, **kwargs):
-        X_train = gp.train_inputs[0].to(device, dtype)
         new_indexs = []
 
         while len(new_indexs) < batchsize:
+            os.system("echo get_naive_batch")
             max_index = self.get_first_max_index(gp, testcase, device, dtype)
             if max_index not in new_indexs:
                 new_indexs.append(max_index)
-                self.pop(max_index)
+                #self.pop(max_index)
                 continue
-            else:
-                self.pop(max_index)
-                max_index = self.get_first_max_index(gp, testcase, device, dtype)
+            #else:
+                #self.pop(max_index)
+            #    max_index = self.get_first_max_index(gp, testcase, device, dtype)
 
         return new_indexs
 

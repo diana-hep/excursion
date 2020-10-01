@@ -328,7 +328,6 @@ class ExcursionSetEstimator:
             new_index = batchgrid.get_first_max_index(
                 model, testcase, self.device, self.dtype
             )
-            print("  ********************* "+str(new_index))
             self.x_new = (
                 testcase.X[new_index]
                 .reshape(1, self._n_dims)
