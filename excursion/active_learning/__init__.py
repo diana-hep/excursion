@@ -12,6 +12,16 @@ import time
 import os
 
 
+def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
+    entropy_grid = torch.zeros(X_grid.size()[0],).to(device, dtype)
+    for i, x in enumerate(X_grid):
+        entropy_grid[i] = MES(gp, testcase, thresholds, x.view(1,-1), device, dtype)
+   
+    #entropy_grid = X_grid.apply_(MES,gp, testcase,thresholds ,device, dtype)
+
+    return entropy_grid
+
+
 def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 
     # compute predictive posterior of Y(x) | train data
@@ -21,11 +31,6 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     likelihood.eval()
 
     Y_pred_grid = likelihood(gp(X_grid))
-
-    torch.set_printoptions(profile="full")
-    #print('############################### Y_pred_grid.variance ', Y_pred_grid.variance)
-    print('############################### Y_pred_grid diag covariance_matrix ', torch.diagonal(Y_pred_grid.covariance_matrix))
-    
 
     normal_grid = Normal(
         loc=Y_pred_grid.mean, scale=torch.sqrt(torch.diagonal(Y_pred_grid.covariance_matrix))
@@ -148,4 +153,4 @@ def PPES(gp, testcase, thresholds, x_candidate):
     )
 
 
-acquisition_functions = {"PES": PES, "MES": MES, "MES_gpu": MES_gpu}
+acquisition_functions = {"PES": PES, "MES": MES, "MES_gpu": MES_gpu, "MES_test": MES_test}

@@ -293,7 +293,11 @@ class ExcursionSetEstimator:
 
         ################################## this should be all one step with output
         ################################## number of batches, ordered max indices in grid
+        
+        torch.set_printoptions(profile="full")
         acq_values_of_grid = self.get_acq_values(model, testcase)
+        #print('ACQ VALUES')
+        #print(acq_values_of_grid)
         
         from excursion.active_learning.batch import batchGrid
         batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype, n_dims=self._n_dims)

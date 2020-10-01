@@ -1,6 +1,7 @@
 import torch
 import gpytorch
 import os
+import itertools
 from excursion import get_gp, fit_hyperparams
 
 
@@ -29,18 +30,24 @@ class batchGrid(object):
 
     def update(self, acq_values_of_grid, device, dtype):
         self._t = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
-        for index in self._picked_indexs:
-            self._t[index] = -1e10
+        #for index in self._picked_indexs:
+        #    self._t[index] = -1e10
 
     def get_first_max_index(self, gp, testcase, device, dtype):
         X_train = gp.train_inputs[0].to(device, dtype)
+        
         continue_ = True
+        count = 1
+        while continue_: # until accptance of index
+            # new_index = torch.argmax(self._t)# index with max acq value
+            new_index = torch.topk(self._t, count)[1][count-1]
+            print('------------------------- count from', count)
+            print('------------------------- new_index from topk ', new_index)
 
-        while continue_:  # until accptance of index
-            new_index = torch.argmax(self._t)# index with max acq value
+            # is X_grid[new_index] already picked?
             mask = torch.abs(
                 X_train - testcase.X.to(device, dtype)[new_index]
-            )  # is X_grid[new_index] already picked?
+            )  
             identical_elements = mask[mask.sum(dim=1) == 0]
             number_identical_elements = identical_elements.size()[0]
 
@@ -49,9 +56,11 @@ class batchGrid(object):
                 return new_index.item()
                 continue_ = False
                 break
+
             else:
-                # yes, discard index try again
-                self.pop(new_index)
+                count += 1
+                continue_ = True
+
 
     def get_naive_batch(self, gp, testcase, batchsize, device, dtype, **kwargs):
         X_train = gp.train_inputs[0].to(device, dtype)
@@ -77,7 +86,7 @@ class batchGrid(object):
 
         likelihood = kwargs["likelihood"]
         algorithmopts = kwargs["algorithmopts"]
-        excursion_estimator = kwargs['excursion_estimator']
+        excursion_estimator = kwargs["excursion_estimator"]
         gp_fake = gp
 
         while len(new_indexs) < batchsize:
@@ -86,15 +95,15 @@ class batchGrid(object):
             if max_index not in new_indexs:
                 new_indexs.append(max_index)
                 self.pop(max_index)
-                fake_x = testcase.X.to(device, dtype)[max_index].reshape(1,-1)
-                fake_x_list=torch.cat((fake_x_list, fake_x), 0)
+                fake_x = testcase.X.to(device, dtype)[max_index].reshape(1, -1)
+                fake_x_list = torch.cat((fake_x_list, fake_x), 0)
 
                 gp_fake.eval()
                 likelihood.eval()
                 fake_y = likelihood(gp_fake(fake_x)).mean
-                fake_y_list = torch.cat((fake_y_list, fake_y), 0) 
+                fake_y_list = torch.cat((fake_y_list, fake_y), 0)
 
-                gp_fake=self.update_fake_posterior(
+                gp_fake = self.update_fake_posterior(
                     testcase,
                     algorithmopts,
                     gp_fake,
@@ -110,7 +119,6 @@ class batchGrid(object):
                 max_index = self.get_first_max_index(gp_fake, testcase, device, dtype)
 
         return new_indexs
-
 
     def update_fake_posterior(
         self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys
