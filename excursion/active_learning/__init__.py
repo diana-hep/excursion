@@ -12,12 +12,19 @@ import time
 import os
 
 
+def cdf(mu, sigma, t):
+    # use torch.erfc for numerical stability 
+    erf = torch.erf((t - mu) * sigma.reciprocal() / math.sqrt(2))
+    cdf = 0.5 * (1 + erf)
+    return cdf
+
+
 def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
     entropy_grid = torch.zeros(X_grid.size()[0],).to(device, dtype)
     for i, x in enumerate(X_grid):
-        entropy_grid[i] = MES(gp, testcase, thresholds, x.view(1,-1), device, dtype)
-   
-    #entropy_grid = X_grid.apply_(MES,gp, testcase,thresholds ,device, dtype)
+        entropy_grid[i] = MES(gp, testcase, thresholds, x.view(1, -1), device, dtype)
+
+    # entropy_grid = X_grid.apply_(MES,gp, testcase,thresholds ,device, dtype)
 
     return entropy_grid
 
@@ -25,28 +32,58 @@ def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
 def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 
     # compute predictive posterior of Y(x) | train data
-    kernel = gp.covar_module
     likelihood = gp.likelihood
     gp.eval()
     likelihood.eval()
 
+    # ok
     Y_pred_grid = likelihood(gp(X_grid))
+    mean_tensor = Y_pred_grid.mean
+    std_tensor = torch.sqrt(Y_pred_grid.variance)
+    #print('mean_tensor ', mean_tensor.size())
+    #print('std_tensor ', std_tensor.size())
 
-    normal_grid = Normal(
-        loc=Y_pred_grid.mean, scale=torch.sqrt(torch.diagonal(Y_pred_grid.covariance_matrix))
-    )
-
-    # entropy of S(x_candidate)
-    entropy_grid = torch.zeros(X_grid.size()[0],).to(device, dtype)
+    num_points = X_grid.size()[0]
+    entropy_grid = torch.zeros(num_points,).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
-        # p(S(x)=j)
-        p_j = normal_grid.cdf(thresholds[j + 1]) - normal_grid.cdf(thresholds[j]).to(
-            device, dtype
-        )
-        entropy_grid[p_j > 0.0] -= torch.logsumexp(p_j, 0).to(device, dtype) * torch.logsumexp(
-            torch.log(p_j), 0
-        )
+        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])
+
+        print('THRESHOLD ', thresholds[j])
+        #print(my_p_j[my_p_j > 0].size())
+        #print('sumexp_pj_matrix=', torch.log(torch.exp(my_p_j[my_p_j > 0])).tolist())
+
+        entropy_grid[my_p_j > 0] -= torch.log(torch.exp(my_p_j[my_p_j > 0])) * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
+
+
+        #test with MES
+        
+        #my_pj_vector = []
+        #pj_vector = []
+        #sumexp_pj_good = []
+        
+        #for i, x in enumerate(X_grid):
+        #    #print('***x candidate ', x)
+        #    Y_pred_candidate = likelihood(gp(x))
+        #    normal_candidate = torch.distributions.Normal(
+        #    loc=Y_pred_candidate.mean, scale=Y_pred_candidate.variance ** 0.5
+        #    )
+
+        #    p_j = normal_candidate.cdf(thresholds[j + 1]) - normal_candidate.cdf(thresholds[j])
+        #    my_p_j = cdf(normal_candidate.mean, normal_candidate.variance ** 0.5, thresholds[j + 1]
+        #    ) - cdf(normal_candidate.mean, normal_candidate.variance ** 0.5, thresholds[j])
+
+        #    pj_vector.append(p_j.item())
+        #    my_pj_vector.append(my_p_j.item())
+
+        #    if(p_j>0):
+        #        sumexp_pj_good.append( torch.logsumexp(p_j, 0).item() )
+
+
+        #print('sumexp_pj_good=', sumexp_pj_good)
+        #print('sumexp_pj_my=', torch.logsumexp(my_p_j, 0))
+            
+
 
     return entropy_grid
 
@@ -54,7 +91,6 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 def MES(gp, testcase, thresholds, x_candidate, device, dtype):
 
     # compute predictive posterior of Y(x) | train data
-    kernel = gp.covar_module
     likelihood = gp.likelihood
     gp.eval()
     likelihood.eval()
@@ -69,10 +105,19 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
     entropy_candidate = torch.Tensor([0.0]).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
+        print('THRESHOLD ', thresholds[j])
         # p(S(x)=j)
         p_j = normal_candidate.cdf(thresholds[j + 1]) - normal_candidate.cdf(
             thresholds[j]
         )
+        my_p_j = cdf(
+            normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j + 1]
+        ) - cdf(normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j])
+
+        print("p_j", p_j.size())
+        print(p_j, "\n")
+        print("MY p_j", my_p_j.size())
+        print(my_p_j, "\n")
 
         if p_j > 0.0:
             # print(x_candidate, p_j,j)
@@ -153,4 +198,9 @@ def PPES(gp, testcase, thresholds, x_candidate):
     )
 
 
-acquisition_functions = {"PES": PES, "MES": MES, "MES_gpu": MES_gpu, "MES_test": MES_test}
+acquisition_functions = {
+    "PES": PES,
+    "MES": MES,
+    "MES_gpu": MES_gpu,
+    "MES_test": MES_test,
+}
