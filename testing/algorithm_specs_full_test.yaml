@@ -2,7 +2,6 @@
 # ALGORITHM OPTS
 #
 
-example: '1D_test'
 
 #number of initial points
 ninit: 2

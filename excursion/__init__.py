@@ -231,7 +231,6 @@ class ExcursionSetEstimator:
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         X_eval = testcase.X
 
-        print("len(X_eval)", X_eval.shape, len(X_eval))
         # noise_dist = MultivariateNormal(
         #    torch.zeros(len(X_eval)), torch.eye(len(X_eval))
         # )
@@ -249,7 +248,6 @@ class ExcursionSetEstimator:
         # ) + noise.to(self.device, self.dtype)
 
         y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
-        print('y_true.dtype', y_true.dtype)
 
 
         model.eval()
@@ -266,7 +264,6 @@ class ExcursionSetEstimator:
         labels_pred = np.array([label(y) for y in y_pred])
         isnan_vector = np.isnan(labels_pred)
 
-        print('is nan items', isnan_vector[isnan_vector==True])
         
         labels_true = np.array([label(y) for y in y_true])
 
@@ -274,9 +271,6 @@ class ExcursionSetEstimator:
         #    print('label ', y, type(y))
 
         # force y_true = y_train for those x in dataset
-
-        print('labels_pred ', labels_pred.dtype)
-        print('labels_true ', labels_true.dtype)
 
         conf_matrix = confusion_matrix(labels_true, labels_pred)
         self.confusion_matrix.append(conf_matrix)
@@ -316,8 +310,6 @@ class ExcursionSetEstimator:
                 algorithmopts=algorithmopts,
                 excursion_estimator = self,
             )
-            print('**** ', new_indexs)
-            print([index for index in new_indexs])
             self.x_new = torch.stack([testcase.X[index] for index in new_indexs]).to(self.device, self.dtype).reshape(batchsize, self._n_dims)
 
             #.reshape(batchsize, self._n_dims)
@@ -380,9 +372,6 @@ class ExcursionSetEstimator:
         end_time = time.time() - start_time
 
         self.acq_values = acquisition_values_grid
-
-        print('******* acq_values ')
-        print(self.acq_values)
 
         return acquisition_values_grid
 

@@ -40,10 +40,6 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     Y_pred_grid = likelihood(gp(X_grid))
     mean_tensor = Y_pred_grid.mean
 
-    print('***** BUG VARIANCE LAZY')
-    print('X_grid ', X_grid.size())
-    print('Y_pred_grid ', Y_pred_grid, type(Y_pred_grid))
-    print('Y_pred_grid.lazy_covariance_matrix ', type(Y_pred_grid.lazy_covariance_matrix), Y_pred_grid.lazy_covariance_matrix.size())
     #print('Y_pred_grid.lazy_covariance_matrix.kernel', Y_pred_grid.lazy_covariance_matrix.kernel )
     #print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
 
@@ -57,7 +53,6 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     for j in range(len(thresholds) - 1):
         my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])
 
-        print('THRESHOLD ', thresholds[j])
         #print(my_p_j[my_p_j > 0].size())
         #print('sumexp_pj_matrix=', torch.log(torch.exp(my_p_j[my_p_j > 0])).tolist())
 
