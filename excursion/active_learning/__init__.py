@@ -39,6 +39,14 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     # ok
     Y_pred_grid = likelihood(gp(X_grid))
     mean_tensor = Y_pred_grid.mean
+
+    print('***** BUG VARIANCE LAZY')
+    print('X_grid ', X_grid.size())
+    print('Y_pred_grid ', Y_pred_grid, type(Y_pred_grid))
+    print('Y_pred_grid.lazy_covariance_matrix ', type(Y_pred_grid.lazy_covariance_matrix), Y_pred_grid.lazy_covariance_matrix.size())
+    #print('Y_pred_grid.lazy_covariance_matrix.kernel', Y_pred_grid.lazy_covariance_matrix.kernel )
+    #print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
+
     std_tensor = torch.sqrt(Y_pred_grid.variance)
     #print('mean_tensor ', mean_tensor.size())
     #print('std_tensor ', std_tensor.size())

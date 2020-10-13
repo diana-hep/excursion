@@ -69,15 +69,22 @@ class batchGrid(object):
 
         # if the index is not already picked nor in the training set
         # accept it ans remove from future picks
-        if (new_index not in self.picked_indexs) and (new_x not in X_train):
+        if (new_index not in self.picked_indexs) and (new_x.tolist() not in X_train.tolist()):
             self.pop(new_index)
             self.picked_indexs.append(new_index.item())
+            print('after pop ', self.grid[self.picked_indexs])
             print('new_index ', new_index)
-            print('new_index.item() ', new_index.item())
             return new_index.item()
         
         else:
             print('else in get_first_max_index')
+            print('new_index ', new_index)
+            print('bool ', new_index not in self.picked_indexs)
+            print('self.picked_indexs ', self.picked_indexs)
+            print('new_x ', new_x)
+            print('X_train ', X_train)
+            print('bool ', new_x not in X_train)
+
             self.pop(new_index)
             return self.get_first_max_index(gp, testcase, device, dtype)      
         

@@ -4,6 +4,10 @@ import torch
 import importlib
 
 
+def cdf(value):
+    return 0.5 * (1 + torch.erf((value - self.loc) * self.scale.reciprocal() / math.sqrt(2)))
+
+
 def load_example(example):
     testcase = None
     if example == "1Dtoyanalysis":

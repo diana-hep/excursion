@@ -346,7 +346,8 @@ class ExcursionSetEstimator:
         print([x for x in self.x_new])
         print(self.x_new.size())
         self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
-        
+        self.y_new = self.y_new
+
         # track wall time
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
@@ -380,6 +381,9 @@ class ExcursionSetEstimator:
 
         self.acq_values = acquisition_values_grid
 
+        print('******* acq_values ')
+        print(self.acq_values)
+
         return acquisition_values_grid
 
     def update_posterior(self, testcase, algorithmopts, model, likelihood):
@@ -387,13 +391,12 @@ class ExcursionSetEstimator:
         start_time = time.process_time()
         if self._n_dims == 1:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
-            targets_i = torch.cat(
-                (model.train_targets, self.y_new.reshape(-1)), 0
-            ).flatten()
+            targets_i = torch.cat((model.train_targets.flatten(),self.y_new.flatten()), dim=0).flatten()
 
         else:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
             targets_i = torch.cat((model.train_targets, self.y_new), 0).flatten()
+
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         model = get_gp(

@@ -125,7 +125,7 @@ def plot_GP(gp, testcase, **kwargs):
 
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
-    X_plot = testcase.plot_X
+    X_plot = testcase.X_plot
 
     if len(kwargs) == 0:
 
@@ -202,15 +202,15 @@ def plot_GP(gp, testcase, **kwargs):
         for func in testcase.true_functions:
             ax0.plot(
                 X_plot,
-                func(X_plot),
+                func(torch.from_numpy(X_plot)),
                 linestyle="dashed",
                 color="black",
                 label="true function",
             )
 
         for thr in testcase.thresholds:
-            min_X = torch.min(testcase.plot_X)
-            max_X = torch.max(testcase.plot_X)
+            min_X = torch.min(testcase.X)
+            max_X = torch.max(testcase.X)
             ax0.hlines(thr, min_X, max_X, colors="purple", label="threshold")
 
         ##train points
@@ -224,7 +224,7 @@ def plot_GP(gp, testcase, **kwargs):
         gp.eval()
         likelihood = gp.likelihood
         likelihood.eval()
-        prediction = likelihood(gp(X_plot))
+        prediction = likelihood(gp(testcase.X))
         ax0.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
         variance = prediction.covariance_matrix.diag()
 
@@ -249,7 +249,6 @@ def plot_GP(gp, testcase, **kwargs):
         ax1.set_xticks([], [])
         # eliminate -inf
         acq = acq.detach().numpy()
-        X_plot = X_plot.numpy()
         mask = np.isfinite(acq)
         acq = acq[mask]
         X_plot = X_plot[mask]

@@ -173,7 +173,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     ax.legend(
         [l0[0], l1[0], old_points, new_point],
         ["True excursion set (thr=0)", "Estimation", "Observed points", "Next point"],
-        loc="bottom center",
+        #loc="bottom center",
         bbox_to_anchor=(1.10, -0.1),
         ncol=2,
         facecolor="grey",
