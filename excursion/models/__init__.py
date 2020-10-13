@@ -8,9 +8,9 @@ class ExactGP_RBF(gpytorch.models.ExactGP):
         super(ExactGP_RBF, self).__init__(train_x, train_y, likelihood)
         # prior
         if prior == "Lineal":
-            self.mean_module = priors.LinealMean(
-                ndim=train_x.shape[1]
-            )  # gpytorch.means.LinealMean()
+            #self.mean_module = priors.LinealMean(
+            #    ndim=train_x.shape[1]
+            self.mean_module=gpytorch.means.LinearMean()
         elif prior == "Constant":
             self.mean_module = gpytorch.means.ConstantMean()
         elif prior == "Circular":

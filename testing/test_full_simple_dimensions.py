@@ -1,4 +1,4 @@
-# test_full_1D_line.py
+# test_full_2D_line.py
 
 import torch
 import yaml
@@ -14,7 +14,7 @@ def test_full_simple():
     algorithmopts = yaml.safe_load(open("testing/algorithm_specs_full_test.yaml", "r"))
 
     # three toy examples
-    for example in ["1D_test"]:
+    for example in ["1D_test", "2D_test", "3D_test"]:
         testcase = load_example(example)
         model, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 

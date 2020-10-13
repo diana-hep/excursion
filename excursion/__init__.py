@@ -11,7 +11,6 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
-from excursion.utils import get_first_max_index
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -84,9 +83,6 @@ def init_gp(testcase, algorithmopts, ninit, device):
             a = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
             )
-            print(i)
-            print(a.size())
-            print(grid[:, i].size())
 
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
@@ -134,9 +130,6 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
             a = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
             )
-            print(i)
-            print(a.size())
-            print(grid[:, i].size())
 
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
@@ -204,7 +197,7 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
             output = gp(X_train)
             # Calc loss and backprop gradients
             loss = -mll(output, y_train)
-            loss.sum().backward()
+            loss.sum().backward(retain_graph=True)
             optimizer.step()
 
             # print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f outputscale: %.3f  noise: %.3f' % (
@@ -230,7 +223,7 @@ class ExcursionSetEstimator:
         self.dtype = torch.float64
 
         self._acq_type = algorithmopts["acq"]["acq_type"]
-        self._X_grid = testcase.X
+        self._X_grid = testcase.X.to(self.device, self.dtype)
         self._epsilon = algorithmopts["likelihood"]["epsilon"]
         self._n_dims = testcase.n_dims
 
@@ -238,7 +231,6 @@ class ExcursionSetEstimator:
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         X_eval = testcase.X
 
-        print("len(X_eval)", X_eval.shape, len(X_eval))
         # noise_dist = MultivariateNormal(
         #    torch.zeros(len(X_eval)), torch.eye(len(X_eval))
         # )
@@ -257,6 +249,7 @@ class ExcursionSetEstimator:
 
         y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
 
+
         model.eval()
         likelihood.eval()
         y_pred = likelihood(model(X_eval.to(self.device, self.dtype))).mean.to(
@@ -265,11 +258,17 @@ class ExcursionSetEstimator:
 
         def label(y):
             for j in range(len(thresholds) - 1):
-                if y < thresholds[j + 1] and y > thresholds[j]:
-                    return j
+                if y < thresholds[j + 1] and y >= thresholds[j]:
+                    return int(j)
 
         labels_pred = np.array([label(y) for y in y_pred])
+        isnan_vector = np.isnan(labels_pred)
+
+        
         labels_true = np.array([label(y) for y in y_true])
+
+        #for y in labels_true:
+        #    print('label ', y, type(y))
 
         # force y_true = y_train for those x in dataset
 
@@ -284,78 +283,109 @@ class ExcursionSetEstimator:
         start_time = time.process_time()
         self.this_iteration += 1
 
-        os.system("echo iteration_step")
         print("Iteration ", self.this_iteration)
 
-        # order grid indexs by maxmium acquitision function value
-        new_indexs = self.get_new_indexs(model, testcase)[0]
+        ################################## this should be all one step with output
+        ################################## number of batches, ordered max indices in grid
+        
+        torch.set_printoptions(profile="full")
+        acq_values_of_grid = self.get_acq_values(model, testcase)
+        #print('ACQ VALUES')
+        #print(acq_values_of_grid)
+        
+        from excursion.active_learning.batch import batchGrid
+        batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype, n_dims=self._n_dims)
+        batchgrid.update(acq_values_of_grid, self.device, self.dtype)
+        
+        if algorithmopts["acq"]["batch"]:
+            batchsize = algorithmopts["acq"]["batchsize"]
+            batchtype = algorithmopts["acq"]["batchtype"]
+            new_indexs = batchgrid.batch_types[batchtype](
+                model,
+                testcase,
+                batchsize,
+                self.device,
+                self.dtype,
+                likelihood=likelihood,
+                algorithmopts=algorithmopts,
+                excursion_estimator = self,
+            )
+            self.x_new = torch.stack([testcase.X[index] for index in new_indexs]).to(self.device, self.dtype).reshape(batchsize, self._n_dims)
 
-        # discard those points already in dataset
-        new_index = get_first_max_index(model, new_indexs, testcase)
+            #.reshape(batchsize, self._n_dims)
+            
+            # self.x_new = (testcase.X[new_indexs]).reshape(batchsize, self._n_dims).to(self.device, self.dtype)
 
-        # get x, y
-        self.x_new = testcase.X[new_index].reshape(1, -1)
-        self.x_new = self.x_new.to(self.device, self.dtype)
+        else:
+            new_index = batchgrid.get_first_max_index(
+                model, testcase, self.device, self.dtype
+            )
+            self.x_new = (
+                testcase.X[new_index]
+                .reshape(1, self._n_dims)
+                .to(self.device, self.dtype)
+            )
+
+        ##################################
+
+        # get y from selected x
+
         noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
         noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
             self.device, self.dtype
         )
-        self.y_new = (
-            testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
-        )
-        self.y_new = self.y_new.to(self.device, self.dtype)
-        # update training data
-        # model = self.update_posterior(testcase, algorithmopts, model, likelihood)
+        print([x.size() for x in self.x_new])
+        print([x for x in self.x_new])
+        print(self.x_new.size())
+        self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
+        self.y_new = self.y_new
 
         # track wall time
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
+
+        print("x_new ", self.x_new.size(), self.x_new)
+        print("y_new ", self.y_new.size(), self.y_new)
+
         return self.x_new, self.y_new
 
-    def get_new_indexs(self, model, testcase):
-        acquisition_values_grid = []
-        os.system("echo get_new_indexs")
+    def get_acq_values(self, model, testcase):
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        for x in self._X_grid:
-            # print('****x ', x.shape, type(x), x)
-            x = x.view(1, -1).to(self.device, self.dtype)
+        # for x in self._X_grid:
+        #     x = x.view(1, -1).to(self.device, self.dtype)
 
-            # os.system("echo "+str(x))
-            start_time = time.time()
-            # value = acq(
-            #    model,
-            #    testcase,
-            #    x.view(1, -1).to(self.device, self.dtype),
-            #    self._acq_type,
-            #    self.device,
-            #    self.dtype,
-            # )
+        #     start_time = time.time()
 
-            value = acquisition_functions[self._acq_type](
-                model, testcase, thresholds, x, self.device, self.dtype,
-            )
+        #     value = acquisition_functions[self._acq_type](
+        #         model, testcase, thresholds, x, self.device, self.dtype,
+        #     )
 
-            end_time = time.time() - start_time
-            # os.system("echo acq() time "+str(end_time))
+        #     end_time = time.time() - start_time
 
-            acquisition_values_grid.append(value)
+        #     acquisition_values_grid.append(value)
+        start_time = time.time()
+        acquisition_values_grid = acquisition_functions[self._acq_type](
+            model, testcase, thresholds, self._X_grid, self.device, self.dtype
+        )
+        end_time = time.time() - start_time
 
-        new_indexs = np.argsort(acquisition_values_grid)[::-1]
-        return new_indexs, acquisition_values_grid
+        self.acq_values = acquisition_values_grid
+
+        return acquisition_values_grid
 
     def update_posterior(self, testcase, algorithmopts, model, likelihood):
         # track wall time
         start_time = time.process_time()
         if self._n_dims == 1:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
-            targets_i = torch.cat(
-                (model.train_targets.view(-1, 1), self.y_new), 0
-            ).flatten()
+            targets_i = torch.cat((model.train_targets.flatten(),self.y_new.flatten()), dim=0).flatten()
+
         else:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
             targets_i = torch.cat((model.train_targets, self.y_new), 0).flatten()
+
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         model = get_gp(
@@ -372,8 +402,10 @@ class ExcursionSetEstimator:
 
         return model
 
-    def plot_status(self, testcase, model, acq_values, outputfolder):
+    def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
+
         if self._n_dims == 1:
+            fig = plt.figure()
             plots_1D.plot_GP(
                 model,
                 testcase,
@@ -383,9 +415,9 @@ class ExcursionSetEstimator:
                 device=self.device,
                 dtype=self.dtype,
             )
-            plt.savefig(
+            plt.tight_layout()
+            figname = (
                 outputfolder
-                + "/"
                 + str(self._n_dims)
                 + "D_"
                 + str(self.this_iteration)
@@ -393,10 +425,18 @@ class ExcursionSetEstimator:
                 + str(self._acq_type)
                 + ".png"
             )
+            plt.savefig(figname)
 
         elif self._n_dims == 2:
             fig = plt.figure()
-            plot = plots_2D.plot_GP(plt, model, testcase, self.device, self.dtype)
+            if algorithmopts["acq"]["batch"]:
+                batchsize = algorithmopts["acq"]["batchsize"]
+            else:
+                batchsize = 1
+
+            plot = plots_2D.plot_GP(
+                plt, model, testcase, self.device, self.dtype, batchsize
+            )
             plt.tight_layout()
             figname = (
                 outputfolder

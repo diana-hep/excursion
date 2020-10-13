@@ -31,4 +31,7 @@ model:
 
 #acquisition function
 acq:
-  acq_type: 'MES'
+  acq_type: 'MES_gpu'
+  batch: False
+  batchtype: None
+  batchsize: None

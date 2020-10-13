@@ -5,7 +5,6 @@ import yaml
 from excursion import init_gp, ExcursionSetEstimator
 from excursion.utils import load_example
 
-torch.cuda.empty_cache()
 
 def test_step_excursion():
 
@@ -19,16 +18,14 @@ def test_step_excursion():
         gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
 
         estimator = ExcursionSetEstimator(
-        testcase, algorithmopts, gp, likelihood, device
+            testcase, algorithmopts, gp, likelihood, device
         )
 
-        #one iteration only to test
+        # one iteration only to test
         estimator.step(testcase, algorithmopts, gp, likelihood)
 
         assert type(estimator) != type(None)
         assert type(estimator.x_new) != type(None)
         assert type(estimator.y_new) != type(None)
-        assert estimator.walltime_step != 0.
+        assert estimator.walltime_step != 0.0
         assert estimator.this_iteration == 1
-
-

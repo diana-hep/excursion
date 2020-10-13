@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+from excursion.utils import mgrid, mesh2points
+import math
 
 # Define true functions
 
@@ -30,30 +32,19 @@ true_functions = [function_2]
 # Define threshold list
 thresholds = torch.Tensor([2.0])
 
-# gaussian noise to the black box evaluation
-# if you want other than gaussian noise, modify the likelihood in the notebook
-epsilon = 0.0
-
-
-# acquisition function type
-acq_type = "MES"
-
 # Define grid for acquisition function
 n_dims = 1
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef_1 = [0, 5, 500]
-rangedef = np.array([rangedef_1])
+rangedef = np.array([[0.0, 5.0, 500]])
 
-grid_1 = torch.linspace(
-    start=rangedef_1[0], end=rangedef_1[1], steps=rangedef_1[2], dtype=torch.double
-)
-X = grid_1.view(-1, 1)
+# meshgrid
+plot_meshgrid = mgrid(rangedef)
 
-## Define grid for plotting, with same format as above, default same as X
-plot_X = X
+# 2D points
+X_plot = mesh2points(plot_meshgrid, rangedef[:, 2])
+X = torch.from_numpy(X_plot)
 
-X_plot = np.linspace(rangedef_1[0], rangedef_1[1], rangedef_1[2])
 
-mean_range = X  # default
-plot_y = torch.Tensor([-5, 30])
+def invalid_region(x):
+    return np.array([False] * len(x))

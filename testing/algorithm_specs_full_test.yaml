@@ -2,7 +2,6 @@
 # ALGORITHM OPTS
 #
 
-example: '1D_test'
 
 #number of initial points
 ninit: 2
@@ -31,4 +30,7 @@ model:
 
 #acquisition function
 acq:
-  acq_type: 'MES'
+  acq_type: 'MES_gpu'
+  batch: False
+  batchtype: None
+  batchsize: None

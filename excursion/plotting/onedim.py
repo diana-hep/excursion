@@ -125,7 +125,7 @@ def plot_GP(gp, testcase, **kwargs):
 
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
-    X_plot = testcase.plot_X
+    X_plot = testcase.X_plot
 
     if len(kwargs) == 0:
 
@@ -202,19 +202,19 @@ def plot_GP(gp, testcase, **kwargs):
         for func in testcase.true_functions:
             ax0.plot(
                 X_plot,
-                func(X_plot),
+                func(torch.from_numpy(X_plot)),
                 linestyle="dashed",
                 color="black",
                 label="true function",
             )
 
         for thr in testcase.thresholds:
-            min_X = torch.min(testcase.plot_X)
-            max_X = torch.max(testcase.plot_X)
+            min_X = torch.min(testcase.X)
+            max_X = torch.max(testcase.X)
             ax0.hlines(thr, min_X, max_X, colors="purple", label="threshold")
 
         ##train points
-        ax0.plot(X_train, y_train, "k*", color="black", label="samples", markersize=10)
+        ax0.plot(X_train.detach().numpy(), y_train.detach().numpy(), "k*", color="black", label="samples", markersize=10)
         for x in X_train:
             ax0.axvline(x, alpha=0.2, color="grey")
 
@@ -224,17 +224,16 @@ def plot_GP(gp, testcase, **kwargs):
         gp.eval()
         likelihood = gp.likelihood
         likelihood.eval()
-        prediction = likelihood(gp(X_plot))
+        prediction = likelihood(gp(testcase.X))
         ax0.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
+        variance = prediction.covariance_matrix.diag()
 
         ##variance
         for i in range(1, 6):
             ax0.fill_between(
                 X_plot[:, 0],
-                prediction.mean.detach().numpy()
-                + i * prediction.variance.detach().numpy() ** 0.5,
-                prediction.mean.detach().numpy()
-                - i * prediction.variance.detach().numpy() ** 0.5,
+                prediction.mean.detach().numpy() + i * variance.detach().numpy() ** 0.5,
+                prediction.mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i,
                 label=str(i) + "sigma",
@@ -249,8 +248,7 @@ def plot_GP(gp, testcase, **kwargs):
 
         ax1.set_xticks([], [])
         # eliminate -inf
-        acq = np.array(acq)
-        X_plot = X_plot.numpy()
+        acq = acq.detach().numpy()
         mask = np.isfinite(acq)
         acq = acq[mask]
         X_plot = X_plot[mask]
@@ -261,7 +259,11 @@ def plot_GP(gp, testcase, **kwargs):
         if acq_type == "MES":
             ax1.set_yscale("log")
 
-        ax1.axvline(xnew, c="red", label="maximum")
+        for x in xnew:
+            vertical = ax1.axvline(x, c="red")
+
+        #ax1.legend(vertical, label="maximum")
+
         ax1.legend(loc="lower right")
 
         plt.subplots_adjust(hspace=0.0)
