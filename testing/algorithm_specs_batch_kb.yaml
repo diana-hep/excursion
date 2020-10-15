@@ -2,13 +2,13 @@
 # ALGORITHM OPTS
 #
 
-example: '1Dtoyanalysis'
+example: '1D_test' 
 
 #number of initial points
-ninit: 1
+ninit: 2
 
 #number of iterations
-nupdates: 1
+nupdates: 10
 
 ##Define the init training data type
 init_type: 'random'
@@ -32,6 +32,6 @@ model:
 #acquisition function
 acq:
   acq_type: 'MES_gpu'
-  batch: False
-  batchtype: None
-  batchsize: None
+  batch: True
+  batchtype: 'KB'
+  batchsize: 3

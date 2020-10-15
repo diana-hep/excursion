@@ -4,12 +4,20 @@ import torch
 import importlib
 
 
+def cdf(value):
+    return 0.5 * (1 + torch.erf((value - self.loc) * self.scale.reciprocal() / math.sqrt(2)))
+
+
 def load_example(example):
     testcase = None
     if example == "1Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_1D")
     elif example == "1D_test":
         testcase = importlib.import_module("excursion.testcases.1D_test")
+    elif example == "2D_test":
+        testcase = importlib.import_module("excursion.testcases.2D_test")
+    elif example == "3D_test":
+        testcase = importlib.import_module("excursion.testcases.3D_test")
     elif example == "2Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_2D")
     elif example == "darkhiggs":
@@ -20,6 +28,9 @@ def load_example(example):
         testcase = importlib.import_module("excursion.testcases.toy3d_foursheets")
     elif example == "3Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_3D")
+    elif example == "parabola_2D":
+        testcase = importlib.import_module("excursion.testcases.parabola_2D")
+
     else:
         raise RuntimeError("unnkown test case")
     return testcase
@@ -95,17 +106,6 @@ def values2mesh(values, rangedef, invalid, invalid_value=np.nan):
     if np.any(inv):
         allv[inv] = invalid_value
     return allv.reshape(*map(int, rangedef[:, 2]))
-
-
-def get_first_max_index(gp, new_index, testcase):
-    X_train = gp.train_inputs[0]
-
-    for i in new_index:
-        if testcase.X.tolist()[i] not in X_train.tolist():
-            new_first = i
-            break
-
-    return new_first
 
 
 def h_normal(var):

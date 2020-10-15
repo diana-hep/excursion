@@ -7,7 +7,7 @@ import numpy as np
 def function_1(X: torch.Tensor) -> torch.Tensor:
     """ Returns a torch tensor where the ith-element is the i-th true function evaluated at x"""
 
-    f1 = X 
+    f1 = X
     return f1
 
 
@@ -20,9 +20,6 @@ thresholds = torch.Tensor([0.0])
 # if you want other than gaussian noise, modify the likelihood in the notebook
 epsilon = 0.0
 
-
-# acquisition function type
-acq_type = "MES"
 
 # Define grid for acquisition function
 n_dims = 1
