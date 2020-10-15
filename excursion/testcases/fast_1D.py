@@ -26,6 +26,12 @@ def function_3(X: torch.Tensor) -> torch.Tensor:
     f3 = 2 * X - 1
     return f3
 
+def function_4(X: torch.Tensor) -> torch.Tensor:
+    """ Returns a torch tensor where the ith-element is the i-th true function evaluated at x"""
+
+    f4 = X 
+    return f4
+
 
 true_functions = [function_2]
 
@@ -36,15 +42,18 @@ thresholds = torch.Tensor([2.0])
 n_dims = 1
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[0.0, 5.0, 500]])
+rangedef_1 = [0, 5, 400]
+rangedef = np.array([rangedef_1])
 
-# meshgrid
-plot_meshgrid = mgrid(rangedef)
+grid_1 = torch.linspace(
+    start=rangedef_1[0], end=rangedef_1[1], steps=rangedef_1[2], dtype=torch.double
+)
+X = grid_1.view(-1, 1)
 
-# 2D points
-X_plot = mesh2points(plot_meshgrid, rangedef[:, 2])
-X = torch.from_numpy(X_plot)
+## Define grid for plotting, with same format as above, default same as X
+plot_X = X
 
+X_plot = np.linspace(rangedef_1[0], rangedef_1[1], rangedef_1[2])
 
-def invalid_region(x):
-    return np.array([False] * len(x))
+mean_range = X  # default
+plot_y = torch.Tensor([-5, 30])

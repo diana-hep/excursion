@@ -21,9 +21,6 @@ thresholds = torch.Tensor([0.0])
 epsilon = 0.0
 
 
-# acquisition function type
-acq_type = "MES"
-
 # Define grid for acquisition function
 n_dims = 1
 

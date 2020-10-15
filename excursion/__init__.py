@@ -143,7 +143,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     # fit
     model.train()
     likelihood.train()
-    excursion.fit_hyperparams(model, likelihood)
+    fit_hyperparams(model, likelihood)
 
     return model
 
@@ -199,13 +199,6 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
             loss = -mll(output, y_train)
             loss.sum().backward(retain_graph=True)
             optimizer.step()
-
-            # print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f outputscale: %.3f  noise: %.3f' % (
-            # i + 1, training_iter, loss.item(),
-            # gp.covar_module.base_kernel.lengthscale.item(),
-            # gp.covar_module. outputscale.item(),
-            # gp.likelihood.noise.item()
-            # ))
 
 
 class ExcursionSetEstimator:

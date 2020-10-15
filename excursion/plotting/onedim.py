@@ -231,7 +231,7 @@ def plot_GP(gp, testcase, **kwargs):
         ##variance
         for i in range(1, 6):
             ax0.fill_between(
-                X_plot[:, 0],
+                X_plot,
                 prediction.mean.detach().numpy() + i * variance.detach().numpy() ** 0.5,
                 prediction.mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",

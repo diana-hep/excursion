@@ -24,7 +24,6 @@ def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
     for i, x in enumerate(X_grid):
         entropy_grid[i] = MES(gp, testcase, thresholds, x.view(1, -1), device, dtype)
 
-    # entropy_grid = X_grid.apply_(MES,gp, testcase,thresholds ,device, dtype)
 
     return entropy_grid
 
@@ -44,6 +43,7 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     #print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
 
     std_tensor = torch.sqrt(Y_pred_grid.variance)
+    #std_tensor = torch.sqrt(torch.diag(Y_pred_grid.lazy_covariance_matrix))
     #print('mean_tensor ', mean_tensor.size())
     #print('std_tensor ', std_tensor.size())
 
