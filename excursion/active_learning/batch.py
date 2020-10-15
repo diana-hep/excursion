@@ -3,6 +3,7 @@ import gpytorch
 import os
 import itertools
 from excursion import get_gp, fit_hyperparams
+from copy import deepcopy
 
 
 class batchGrid(object):
@@ -56,7 +57,6 @@ class batchGrid(object):
 
     def pop(self, index):
         self.grid[index] = torch.Tensor([(-1.)*float("Inf")])
-        #self.grid[index] = torch.empty((1), dtype=self.dtype)
 
     def update(self, acq_values_of_grid, device, dtype):
         self.grid = torch.as_tensor(acq_values_of_grid, device=device, dtype=dtype)
@@ -78,39 +78,19 @@ class batchGrid(object):
             self.pop(new_index)
             return self.get_first_max_index(gp, testcase, device, dtype)      
         
-            # is X_grid[new_index] already picked?
-            #mask = torch.abs(
-            #    X_train - testcase.X.to(device, dtype)[new_index]
-            #)  
-            #identical_elements = mask[mask.sum(dim=1) == 0]
-
-            #number_identical_elements = identical_elements.size()[0]
-
-            #if number_identical_elements == 0 and new_index not in self._picked_indexs :
-            #    # no, accept it, stop
-            #    return new_index.item()
-            #    self._picked_indexs.append(new_index)
-            #    continue_ = False
-            #    break
-
-            #else:
-            #    count += 1
-            #    continue_ = True
-
-
+            
     def get_naive_batch(self, gp, testcase, batchsize, device, dtype, **kwargs):
         new_indexs = []
 
         while len(new_indexs) < batchsize:
-            os.system("echo get_naive_batch")
             max_index = self.get_first_max_index(gp, testcase, device, dtype)
             if max_index not in new_indexs:
                 new_indexs.append(max_index)
-                #self.pop(max_index)
-                continue
-            #else:
-                #self.pop(max_index)
-            #    max_index = self.get_first_max_index(gp, testcase, device, dtype)
+                self.pop(max_index)
+                
+            else:
+                self.pop(max_index)
+                max_index = self.get_first_max_index(gp, testcase, device, dtype)
 
         return new_indexs
 
@@ -123,7 +103,8 @@ class batchGrid(object):
         likelihood = kwargs["likelihood"]
         algorithmopts = kwargs["algorithmopts"]
         excursion_estimator = kwargs["excursion_estimator"]
-        gp_fake = gp
+        print('@@@@@@ gp targets', gp.train_targets)
+        gp_fake = deepcopy(gp)
 
         while len(new_indexs) < batchsize:
             max_index = self.get_first_max_index(gp, testcase, device, dtype)
@@ -139,14 +120,23 @@ class batchGrid(object):
                 fake_y = likelihood(gp_fake(fake_x)).mean
                 fake_y_list = torch.cat((fake_y_list, fake_y), 0)
 
-                gp_fake = self.update_fake_posterior(
-                    testcase,
-                    algorithmopts,
-                    gp_fake,
-                    likelihood,
-                    fake_x_list,
-                    fake_y_list,
-                )
+                print('******* train_targets', gp_fake.train_targets.dim(), gp_fake.train_targets)
+                print('******* model_batch_sample ', len(gp_fake.train_inputs[0].shape[:-2]))
+
+
+                gp_fake = gp_fake.get_fantasy_model(fake_x_list, fake_y_list, noise=likelihood.noise)
+
+                #gp_fake = self.update_fake_posterior(
+                #    testcase,
+                #    algorithmopts,
+                #    gp_fake,
+                #    likelihood,
+                #    fake_x_list,
+                #    fake_y_list,
+                #)
+
+
+
                 new_acq_values = excursion_estimator.get_acq_values(gp_fake, testcase)
                 self.update(new_acq_values, device, dtype)
 
@@ -157,25 +147,29 @@ class batchGrid(object):
         return new_indexs
 
     def update_fake_posterior(
-        self, testcase, algorithmopts, model_fake, likelihood, list_xs, list_fake_ys
+        self, testcase, algorithmopts, model_fake, likelihood, list_fake_xs, list_fake_ys
     ):
+        with torch.autograd.set_detect_anomaly(True):
 
-        if self._n_dims == 1:
-            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0).flatten()
-            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
+            if self._n_dims == 1:
+                # calculate new fake training data
+                inputs = torch.cat((model_fake.train_inputs[0], list_fake_xs), 0).flatten()
+                targets = torch.cat((model_fake.train_targets.flatten(), list_fake_ys.flatten()), dim=0).flatten()
+ 
 
-        else:
-            inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
-            targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
+            else:
+                inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
+                targets = torch.cat((model_fake.train_targets, list_fake_ys), 0).flatten()
 
-        model_fake.set_train_data(inputs=inputs, targets=targets, strict=False)
-        model_fake = get_gp(
-            inputs, targets, likelihood, algorithmopts, testcase, self.device
-        )
+            model_fake.set_train_data(inputs=inputs, targets=targets, strict=False)
+            model_fake = get_gp(
+                inputs, targets, likelihood, algorithmopts, testcase, self.device
+            )
 
-        likelihood.train()
-        model_fake.train()
-        fit_hyperparams(model_fake, likelihood)
+
+            likelihood.train()
+            model_fake.train()
+            fit_hyperparams(model_fake, likelihood)
 
         return model_fake
 
