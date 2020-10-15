@@ -1,4 +1,4 @@
-# test_full_2D_line.py
+# test_full_simple_dimensions.py
 
 import torch
 import yaml
@@ -6,7 +6,7 @@ from excursion import init_gp, ExcursionSetEstimator
 from excursion.utils import load_example
 
 
-def test_full_simple():
+def test_full_simple_dimensions():
 
     tol = 1e-6
     device = torch.device("cpu")
