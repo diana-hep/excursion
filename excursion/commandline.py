@@ -63,8 +63,7 @@ def main():
         testcase, algorithmopts, model, likelihood, device
     )
 
-    # time2 = time.time()  ####
-    # print("--- init_excursion %s seconds ---" % (time2 - time1))  ###
+    
 
     timestampStr = datetime.datetime.now().strftime("%d-%b-%Y_%H:%M:%S") + "/"
 
@@ -72,23 +71,25 @@ def main():
 
 
     while estimator.this_iteration < algorithmopts["nupdates"]:
+        time2 = time.time() 
+        
         estimator.step(testcase, algorithmopts, model, likelihood)
 
-        # time3 = time.time()  ####
-        # print("--- step %s seconds ---" % (time3 - time2))  ###
+        time3 = time.time()  ####
+        print("--- step %s seconds ---" % (time3 - time2))  ###
 
         model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
 
-        # time4 = time.time()  ####
-        # print("--- posterior %s seconds ---" % (time4 - time3))  ###
+        time4 = time.time()  ####
+        print("--- posterior %s seconds ---" % (time4 - time3))  ###
 
         estimator.plot_status(
             testcase, algorithmopts, model, estimator.acq_values, args.outputfolder + timestampStr
         )
         estimator.get_diagnostics(testcase, model, likelihood)
 
-        # time5 = time.time()  ####
-        # print("--- get_diagnostics %s seconds ---" % (time5 - time4))  ###
+        time5 = time.time()  ####
+        print("--- get_diagnostics %s seconds ---" % (time5 - time4))  ###
 
     estimator.print_results(args.outputfolder + timestampStr, testcase, algorithmopts)
 

@@ -6,6 +6,7 @@ from excursion import init_gp
 from excursion.utils import load_example
 
 
+
 def test_init_gp():
 
     device = torch.device("cpu")
