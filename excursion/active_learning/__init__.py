@@ -10,6 +10,7 @@ from torch.distributions import Normal
 from excursion.utils import truncated_std_conditional
 import time
 import os
+import gc
 
 
 def cdf(mu, sigma, t):
@@ -108,7 +109,6 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
     entropy_candidate = torch.Tensor([0.0]).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
-        print('THRESHOLD ', thresholds[j])
         # p(S(x)=j)
         p_j = normal_candidate.cdf(thresholds[j + 1]) - normal_candidate.cdf(
             thresholds[j]
@@ -117,10 +117,6 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
             normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j + 1]
         ) - cdf(normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j])
 
-        print("p_j", p_j.size())
-        print(p_j, "\n")
-        print("MY p_j", my_p_j.size())
-        print(my_p_j, "\n")
 
         if p_j > 0.0:
             # print(x_candidate, p_j,j)

@@ -2,7 +2,6 @@ from scipy.stats import norm
 import numpy as np
 import torch
 import importlib
-from excusion.testcases import make_parabola_script
 
 def cdf(value):
     return 0.5 * (1 + torch.erf((value - self.loc) * self.scale.reciprocal() / math.sqrt(2)))
@@ -29,7 +28,7 @@ def load_example(example):
     elif example == "3Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_3D")
     elif example.startswith("parabola_"):
-        n = [int(s) for s in example.split() if s.isdigit()][0]
+        n = [int(s) for s in example if s.isdigit()][0]
         #make_parabola_script(n)
         testcase = importlib.import_module("excursion.testcases.parabola_"+str(n)+"D")
     #elif example == "parabola_1D":
