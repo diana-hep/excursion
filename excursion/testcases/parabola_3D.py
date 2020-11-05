@@ -5,9 +5,9 @@ import math
 
 
 def truth(x):
-    xv, yv = x[:, 0], x[:, 1]
+    xv, yv, zv = x[:, 0], x[:, 1], x[:, 2]
 
-    return  torch.square(xv) + torch.square(yv)
+    return  torch.square(xv) + torch.square(yv) + torch.square(zv)
 
 
 true_functions = [truth]
@@ -16,10 +16,10 @@ true_functions = [truth]
 thresholds = torch.Tensor([0.0])
 
 # Define grid for acquisition function
-n_dims = 2
+n_dims = 3
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[-1, 1, 41], [-1, 1, 41]])
+rangedef = np.array([[-1, 1, 41], [-1, 1, 41], [-1, 1, 41]])
 
 # meshgrid
 plot_meshgrid = mgrid(rangedef)

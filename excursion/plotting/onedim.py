@@ -125,7 +125,13 @@ def plot_GP(gp, testcase, **kwargs):
 
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
-    X_plot = testcase.X_plot
+    X_plot = torch.from_numpy(testcase.X_plot)
+
+    ##mean
+    likelihood = gp.likelihood
+    likelihood.eval()
+    gp.eval()
+    prediction = likelihood(gp(X_plot))
 
     if len(kwargs) == 0:
 
@@ -152,17 +158,12 @@ def plot_GP(gp, testcase, **kwargs):
         for x in X_train:
             plt.axvline(x, alpha=0.2, color="grey")
 
-        ##mean
-        gp.eval()
-        likelihood = gp.likelihood
-        likelihood.eval()
-        prediction = likelihood(gp(X_plot))
         plt.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
 
         ##variance
         for i in [1, 2, 3, 4, 5]:
             plt.fill_between(
-                X_plot[:, 0],
+                X_plot[:],
                 prediction.mean.detach().numpy()
                 + i * prediction.variance.detach().numpy() ** 0.5,
                 prediction.mean.detach().numpy()
@@ -202,7 +203,7 @@ def plot_GP(gp, testcase, **kwargs):
         for func in testcase.true_functions:
             ax0.plot(
                 X_plot,
-                func(torch.from_numpy(X_plot)),
+                func(X_plot),
                 linestyle="dashed",
                 color="black",
                 label="true function",

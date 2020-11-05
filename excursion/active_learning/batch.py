@@ -103,7 +103,7 @@ class batchGrid(object):
         likelihood = kwargs["likelihood"]
         algorithmopts = kwargs["algorithmopts"]
         excursion_estimator = kwargs["excursion_estimator"]
-        print('@@@@@@ gp targets', gp.train_targets)
+        #print('@@@@@@ gp targets', gp.train_targets)
         gp_fake = deepcopy(gp)
 
         while len(new_indexs) < batchsize:
@@ -120,8 +120,8 @@ class batchGrid(object):
                 fake_y = likelihood(gp_fake(fake_x)).mean
                 fake_y_list = torch.cat((fake_y_list, fake_y), 0)
 
-                print('******* train_targets', gp_fake.train_targets.dim(), gp_fake.train_targets)
-                print('******* model_batch_sample ', len(gp_fake.train_inputs[0].shape[:-2]))
+                #print('******* train_targets', gp_fake.train_targets.dim(), gp_fake.train_targets)
+                #print('******* model_batch_sample ', len(gp_fake.train_inputs[0].shape[:-2]))
 
 
                 gp_fake = gp_fake.get_fantasy_model(fake_x_list, fake_y_list, noise=likelihood.noise)

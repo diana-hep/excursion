@@ -6,6 +6,7 @@ import gpytorch
 import excursion
 import time
 import os
+import gc
 import simplejson
 from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
@@ -269,6 +270,7 @@ class ExcursionSetEstimator:
         self.confusion_matrix.append(conf_matrix)
         pct = np.diag(conf_matrix).sum() * 1.0 / len(X_eval)
         self.pct_correct.append(pct)
+        print('pct ', pct)
         return None
 
     def step(self, testcase, algorithmopts, model, likelihood):
@@ -281,7 +283,6 @@ class ExcursionSetEstimator:
         ################################## this should be all one step with output
         ################################## number of batches, ordered max indices in grid
         
-        torch.set_printoptions(profile="full")
         acq_values_of_grid = self.get_acq_values(model, testcase)
         #print('ACQ VALUES')
         #print(acq_values_of_grid)
@@ -322,14 +323,14 @@ class ExcursionSetEstimator:
         ##################################
 
         # get y from selected x
+        gc.collect()
+        torch.cuda.empty_cache()
+
 
         noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
         noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
             self.device, self.dtype
         )
-        print([x.size() for x in self.x_new])
-        print([x for x in self.x_new])
-        print(self.x_new.size())
         self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
         self.y_new = self.y_new
 
