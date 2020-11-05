@@ -1,8 +1,11 @@
 [![Build Status](https://travis-ci.org/irinaespejo/excursion.svg?branch=master)](https://travis-ci.org/irinaespejo/excursion)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1634427.svg)](https://zenodo.org/badge/latestdoi/146087019)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/irinaespejo/excursion/master?urlpath=https%3A%2F%2Fgithub.com%2Firinaespejo%2Fexcursion%2Fblob%2Fmaster%2Fexamples%2Ftutorial_1D.ipynb)
 [![Documentation Status](https://readthedocs.org/projects/excursion/badge/?version=latest)](https://excursion.readthedocs.io/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+
 
 # `excursion` — Efficient Excursion Set Estimation 
 [ReadTheDocs](https://excursion.readthedocs.io/en/latest/)
