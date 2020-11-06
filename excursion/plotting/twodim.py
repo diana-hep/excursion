@@ -185,3 +185,100 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
 
 def my_func(x):
     return
+
+
+
+def plot_GP_init(ax, gp, testcase, device, dtype, batchsize=1):
+    """
+    Plot GP posterior fit to data with the option of plotting side by side acquisition function
+    """
+
+    X_train = gp.train_inputs[0]
+    y_train = gp.train_targets
+
+    xv, yv = testcase.plot_meshgrid
+    thresholds = testcase.thresholds
+
+    # true function + thresholds
+    X_plot = torch.Tensor(testcase.X_plot).to(device, dtype)
+    truthv = testcase.true_functions[0](X_plot)
+    truthv = truthv.to(device, dtype)
+    truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
+    line0 = ax.contour(
+        xv,
+        yv,
+        truthv,
+        thresholds,
+        colors="white",
+        linestyles="dotted",
+        label="true contour",
+    )
+
+    ##mean
+    gp.eval()
+    likelihood = gp.likelihood
+    likelihood.eval()
+    prediction = likelihood(gp(X_plot))
+
+    prediction = values2mesh(
+        prediction.mean.detach().cpu().numpy(),
+        testcase.rangedef,
+        testcase.invalid_region,
+    )
+
+    vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
+
+    ax1 = ax.contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
+    line1 = ax.contour(
+        xv, yv, prediction, thresholds, colors="white", linestyles="solid"
+    )
+
+    ##train points
+    old_points = ax.scatter(
+        X_train[ 0].cpu(),
+        X_train[1].cpu(),
+        s=20,
+        edgecolor="white",
+        label="true sample",
+    )
+    
+
+    ax.xlabel("x")
+    ax.ylabel("y")
+    ax.xlim(*testcase.rangedef[0][:2])
+    ax.ylim(*testcase.rangedef[1][:2])
+    ax.colorbar(ax1)
+    ax.legend(loc=0)
+    l0, _ = line0.legend_elements()
+    l1, _ = line1.legend_elements()
+
+    ax.legend(
+        [l0[0], l1[0], old_points],
+        ["True excursion set (thr=0)", "Estimation", "Observed points"],
+        #loc="bottom center",
+        bbox_to_anchor=(1.10, -0.1),
+        ncol=2,
+        facecolor="grey",
+        framealpha=0.20,
+    )
+
+    return ax
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
