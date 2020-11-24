@@ -173,7 +173,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
     ax.legend(
         [l0[0], l1[0], old_points, new_point],
         ["True excursion set (thr=0)", "Estimation", "Observed points", "Next point"],
-        # loc="bottom center",
+        #loc="bottom center",
         bbox_to_anchor=(1.10, -0.1),
         ncol=2,
         facecolor="grey",
@@ -185,6 +185,7 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
 
 def my_func(x):
     return
+
 
 
 def plot_GP_init(ax, gp, testcase, device, dtype, batchsize=1):
@@ -234,12 +235,13 @@ def plot_GP_init(ax, gp, testcase, device, dtype, batchsize=1):
 
     ##train points
     old_points = ax.scatter(
-        X_train[0].cpu(),
+        X_train[ 0].cpu(),
         X_train[1].cpu(),
         s=20,
         edgecolor="white",
         label="true sample",
     )
+    
 
     ax.xlabel("x")
     ax.ylabel("y")
@@ -253,7 +255,7 @@ def plot_GP_init(ax, gp, testcase, device, dtype, batchsize=1):
     ax.legend(
         [l0[0], l1[0], old_points],
         ["True excursion set (thr=0)", "Estimation", "Observed points"],
-        # loc="bottom center",
+        #loc="bottom center",
         bbox_to_anchor=(1.10, -0.1),
         ncol=2,
         facecolor="grey",
@@ -261,3 +263,22 @@ def plot_GP_init(ax, gp, testcase, device, dtype, batchsize=1):
     )
 
     return ax
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
