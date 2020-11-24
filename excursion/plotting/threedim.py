@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 def getminmax(ndarray):
     return np.min(ndarray), np.max(ndarray)
 
+
 def check_contour_3d(f, *args, **kw):
     try:
         f(*args, **kw)
@@ -98,7 +99,6 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
         )
         ax.add_collection3d(mesh)
 
-
     # mean prediction
     gp.eval()
     likelihood = gp.likelihood
@@ -107,23 +107,30 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1):
 
     # plot heatmap mean
     prediction_mean = prediction.mean.detach().cpu()
-    
-    prediction_mean_mesh = values2mesh(prediction_mean, testcase.rangedef, testcase.invalid_region,)
 
+    prediction_mean_mesh = values2mesh(
+        prediction_mean, testcase.rangedef, testcase.invalid_region,
+    )
 
     for val, c in zip(testcase.thresholds, ["r", "g", "y"]):
         vals = (prediction_mean_mesh).reshape(*map(int, testcase.rangedef[:, 2]))
 
-        allow = check_contour_3d(contour_3d, vals, testcase.rangedef, val, alpha=0.1, facecolors=c, edgecolors=c)
-        print('allow ', allow)
+        allow = check_contour_3d(
+            contour_3d,
+            vals,
+            testcase.rangedef,
+            val,
+            alpha=0.1,
+            facecolors=c,
+            edgecolors=c,
+        )
+        print("allow ", allow)
 
-        if(allow):
+        if allow:
             mesh = contour_3d(
                 vals, testcase.rangedef, val, alpha=0.1, facecolors=c, edgecolors=c
             )
             ax.add_collection3d(mesh)
-
-    
 
     # points of evaluation
     ax.scatter(

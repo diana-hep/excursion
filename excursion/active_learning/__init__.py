@@ -14,7 +14,7 @@ import gc
 
 
 def cdf(mu, sigma, t):
-    # use torch.erfc for numerical stability 
+    # use torch.erfc for numerical stability
     erf = torch.erf((t - mu) * sigma.reciprocal() / math.sqrt(2))
     cdf = 0.5 * (1 + erf)
     return cdf
@@ -24,7 +24,6 @@ def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
     entropy_grid = torch.zeros(X_grid.size()[0],).to(device, dtype)
     for i, x in enumerate(X_grid):
         entropy_grid[i] = MES(gp, testcase, thresholds, x.view(1, -1), device, dtype)
-
 
     return entropy_grid
 
@@ -40,33 +39,36 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     Y_pred_grid = likelihood(gp(X_grid))
     mean_tensor = Y_pred_grid.mean
 
-    #print('Y_pred_grid.lazy_covariance_matrix.kernel', Y_pred_grid.lazy_covariance_matrix.kernel )
-    #print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
+    # print('Y_pred_grid.lazy_covariance_matrix.kernel', Y_pred_grid.lazy_covariance_matrix.kernel )
+    # print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
 
     std_tensor = torch.sqrt(Y_pred_grid.variance)
-    #std_tensor = torch.sqrt(torch.diag(Y_pred_grid.lazy_covariance_matrix))
-    #print('mean_tensor ', mean_tensor.size())
-    #print('std_tensor ', std_tensor.size())
+    # std_tensor = torch.sqrt(torch.diag(Y_pred_grid.lazy_covariance_matrix))
+    # print('mean_tensor ', mean_tensor.size())
+    # print('std_tensor ', std_tensor.size())
 
     num_points = X_grid.size()[0]
     entropy_grid = torch.zeros(num_points,).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
-        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])
+        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(
+            mean_tensor, std_tensor, thresholds[j]
+        )
 
-        #print(my_p_j[my_p_j > 0].size())
-        #print('sumexp_pj_matrix=', torch.log(torch.exp(my_p_j[my_p_j > 0])).tolist())
+        # print(my_p_j[my_p_j > 0].size())
+        # print('sumexp_pj_matrix=', torch.log(torch.exp(my_p_j[my_p_j > 0])).tolist())
 
-        entropy_grid[my_p_j > 0] -= torch.log(torch.exp(my_p_j[my_p_j > 0])) * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
+        entropy_grid[my_p_j > 0] -= torch.log(
+            torch.exp(my_p_j[my_p_j > 0])
+        ) * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
 
+        # test with MES
 
-        #test with MES
-        
-        #my_pj_vector = []
-        #pj_vector = []
-        #sumexp_pj_good = []
-        
-        #for i, x in enumerate(X_grid):
+        # my_pj_vector = []
+        # pj_vector = []
+        # sumexp_pj_good = []
+
+        # for i, x in enumerate(X_grid):
         #    #print('***x candidate ', x)
         #    Y_pred_candidate = likelihood(gp(x))
         #    normal_candidate = torch.distributions.Normal(
@@ -83,11 +85,8 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
         #    if(p_j>0):
         #        sumexp_pj_good.append( torch.logsumexp(p_j, 0).item() )
 
-
-        #print('sumexp_pj_good=', sumexp_pj_good)
-        #print('sumexp_pj_my=', torch.logsumexp(my_p_j, 0))
-            
-
+        # print('sumexp_pj_good=', sumexp_pj_good)
+        # print('sumexp_pj_my=', torch.logsumexp(my_p_j, 0))
 
     return entropy_grid
 
@@ -116,7 +115,6 @@ def MES(gp, testcase, thresholds, x_candidate, device, dtype):
         my_p_j = cdf(
             normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j + 1]
         ) - cdf(normal_candidate.mean, normal_candidate.variance ** 2, thresholds[j])
-
 
         if p_j > 0.0:
             # print(x_candidate, p_j,j)

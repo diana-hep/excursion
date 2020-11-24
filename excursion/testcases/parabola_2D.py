@@ -7,7 +7,7 @@ import math
 def truth(x):
     xv, yv = x[:, 0], x[:, 1]
 
-    return  torch.square(xv) + torch.square(yv)
+    return torch.square(xv) + torch.square(yv)
 
 
 true_functions = [truth]

@@ -1,15 +1,15 @@
 import json
-import numpy
 import numpy as np
 import pkg_resources
 import pickle
+from excursion.utils import mgrid, mesh2points
+import torch
+import sklearn.preprocessing
 
-from .. import utils
 
 datafile = pkg_resources.resource_filename(
     "excursion", "testcases/data/checkmate_dense.json"
 )
-
 
 def modify(zv):
     return np.log(zv) - np.log(0.05)
@@ -28,15 +28,12 @@ for p, _, result in json.load(open(datafile))["precomputed"]:
     )
 
 truthX = np.array(truthX)
-
 truthy_obs = np.array(truthy_obs)
 truthy_obs = modify(truthy_obs)
 
 truthy_exp = np.array(truthy_exp)
 truthy_exp = modify(truthy_exp)
 
-
-import sklearn.preprocessing
 
 scaler = sklearn.preprocessing.MinMaxScaler()
 scaler.fit(truthX)
@@ -47,17 +44,16 @@ picklefile = pkg_resources.resource_filename(
 )
 d = pickle.load(open(picklefile, "rb"))
 
+print('d', type(d))
+print(d)
+
 
 def truth_obs(X):
-    return 2 * d["obs"].predict(X)
+    from scipy.interpolate import griddata
+    grid_data = torch.from_numpy(griddata(truthX,truthy_obs,X))
+    return grid_data
 
 
-def truth_exp(X):
-    return 2 * d["exp"].predict(X)
-
-
-thresholds = [modify(0.05)]
-truth_functions = [truth_obs, truth_exp]
 
 
 def invalid_region(x):
@@ -65,17 +61,11 @@ def invalid_region(x):
     return oX[:, 0] < oX[:, 1] + 202
 
 
-plot_rangedef = np.array([[0.0, 1.0, 101], [0.0, 1.0, 101]])
-plotG = utils.mgrid(plot_rangedef)
-plotX = utils.mesh2points(plotG, plot_rangedef[:, 2])
-plotX = plotX[~invalid_region(plotX)]
+thresholds = torch.Tensor([0.05])
+true_functions = [truth_obs]
+n_dims = 2
 
-acq_rd = np.array([[0.0, 1.0, 41], [0.0, 1.0, 41]])
-acqG = utils.mgrid(acq_rd)
-acqX = utils.mesh2points(acqG, acq_rd[:, 2])
-acqX = acqX[~invalid_region(acqX)]
-
-mn_rd = np.array([[0.0, 1.0, 41], [0, 1.0, 41]])
-mnG = utils.mgrid(mn_rd)
-meanX = utils.mesh2points(mnG, mn_rd[:, 2])
-meanX = meanX[~invalid_region(meanX)]
+rangedef = np.array([[0.0, 1.0, 101], [0.0, 1.0, 101]])
+plot_meshgrid = mgrid(rangedef)
+X_plot = mesh2points(plot_meshgrid, rangedef[:, 2])
+X = torch.from_numpy(X_plot)

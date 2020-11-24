@@ -5,8 +5,9 @@ import math
 
 
 def truth(x):
-	#paraboloid
+    # paraboloid
     return torch.square(x).sum(dim=1)
+
 
 true_functions = [truth]
 
@@ -17,7 +18,17 @@ thresholds = torch.Tensor([0.0])
 n_dims = 7
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[-1, 1, 41], [-1, 1, 41], [-1, 1, 41],[-1, 1, 41],[-1, 1, 41],[-1, 1, 41],[-1, 1, 41]])
+rangedef = np.array(
+    [
+        [-1, 1, 41],
+        [-1, 1, 41],
+        [-1, 1, 41],
+        [-1, 1, 41],
+        [-1, 1, 41],
+        [-1, 1, 41],
+        [-1, 1, 41],
+    ]
+)
 
 # meshgrid
 plot_meshgrid = mgrid(rangedef)
@@ -29,5 +40,3 @@ X = torch.from_numpy(X_plot)
 
 def invalid_region(x):
     return np.array([False] * len(x))
-
-

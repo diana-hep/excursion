@@ -26,10 +26,11 @@ def function_3(X: torch.Tensor) -> torch.Tensor:
     f3 = 2 * X - 1
     return f3
 
+
 def function_4(X: torch.Tensor) -> torch.Tensor:
     """ Returns a torch tensor where the ith-element is the i-th true function evaluated at x"""
 
-    f4 = X 
+    f4 = X
     return f4
 
 

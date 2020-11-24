@@ -18,7 +18,6 @@ import excursion.plotting.threedim as plots_3D
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
-# torch.cuda.set_device(0)
 
 
 def init_gp(testcase, algorithmopts, ninit, device):
@@ -243,7 +242,6 @@ class ExcursionSetEstimator:
 
         y_true = testcase.true_functions[0](X_eval).to(self.device, self.dtype)
 
-
         model.eval()
         likelihood.eval()
         y_pred = likelihood(model(X_eval.to(self.device, self.dtype))).mean.to(
@@ -258,10 +256,9 @@ class ExcursionSetEstimator:
         labels_pred = np.array([label(y) for y in y_pred])
         isnan_vector = np.isnan(labels_pred)
 
-        
         labels_true = np.array([label(y) for y in y_true])
 
-        #for y in labels_true:
+        # for y in labels_true:
         #    print('label ', y, type(y))
 
         # force y_true = y_train for those x in dataset
@@ -270,7 +267,7 @@ class ExcursionSetEstimator:
         self.confusion_matrix.append(conf_matrix)
         pct = np.diag(conf_matrix).sum() * 1.0 / len(X_eval)
         self.pct_correct.append(pct)
-        print('pct ', pct)
+        print("pct ", pct)
         return None
 
     def step(self, testcase, algorithmopts, model, likelihood):
@@ -282,15 +279,21 @@ class ExcursionSetEstimator:
 
         ################################## this should be all one step with output
         ################################## number of batches, ordered max indices in grid
-        
+
         acq_values_of_grid = self.get_acq_values(model, testcase)
-        #print('ACQ VALUES')
-        #print(acq_values_of_grid)
-        
+        # print('ACQ VALUES')
+        # print(acq_values_of_grid)
+
         from excursion.active_learning.batch import batchGrid
-        batchgrid = batchGrid(acq_values_of_grid, device=self.device, dtype=self.dtype, n_dims=self._n_dims)
+
+        batchgrid = batchGrid(
+            acq_values_of_grid,
+            device=self.device,
+            dtype=self.dtype,
+            n_dims=self._n_dims,
+        )
         batchgrid.update(acq_values_of_grid, self.device, self.dtype)
-        
+
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
             batchtype = algorithmopts["acq"]["batchtype"]
@@ -302,12 +305,16 @@ class ExcursionSetEstimator:
                 self.dtype,
                 likelihood=likelihood,
                 algorithmopts=algorithmopts,
-                excursion_estimator = self,
+                excursion_estimator=self,
             )
-            self.x_new = torch.stack([testcase.X[index] for index in new_indexs]).to(self.device, self.dtype).reshape(batchsize, self._n_dims)
+            self.x_new = (
+                torch.stack([testcase.X[index] for index in new_indexs])
+                .to(self.device, self.dtype)
+                .reshape(batchsize, self._n_dims)
+            )
 
-            #.reshape(batchsize, self._n_dims)
-            
+            # .reshape(batchsize, self._n_dims)
+
             # self.x_new = (testcase.X[new_indexs]).reshape(batchsize, self._n_dims).to(self.device, self.dtype)
 
         else:
@@ -326,12 +333,13 @@ class ExcursionSetEstimator:
         gc.collect()
         torch.cuda.empty_cache()
 
-
         noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
         noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
             self.device, self.dtype
         )
-        self.y_new = testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
+        self.y_new = (
+            testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
+        )
         self.y_new = self.y_new
 
         # track wall time
@@ -374,12 +382,13 @@ class ExcursionSetEstimator:
         start_time = time.process_time()
         if self._n_dims == 1:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
-            targets_i = torch.cat((model.train_targets.flatten(),self.y_new.flatten()), dim=0).flatten()
+            targets_i = torch.cat(
+                (model.train_targets.flatten(), self.y_new.flatten()), dim=0
+            ).flatten()
 
         else:
             inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
             targets_i = torch.cat((model.train_targets, self.y_new), 0).flatten()
-
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         model = get_gp(
@@ -525,5 +534,11 @@ class ExcursionSetEstimator:
             simplejson.dump(self.walltime_step, g)
         with open(filename_walltime_posterior, "w") as h:
             simplejson.dump(self.walltime_posterior, h)
+
+        # save to numpy file
+        filename_pct_np = outputfolder + "/pct_correct.npy"
+        filename_walltime_np = outputfolder + "/walltime.npy"
+        np.save(filename_pct_np, self.pct_correct)
+        np.save(filename_walltime_np, self.walltime_step)
 
         return None

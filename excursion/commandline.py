@@ -7,16 +7,13 @@ from excursion import init_gp
 from excursion import ExcursionSetEstimator
 from excursion.utils import load_example
 import numpy as np
-import json
 import yaml
 import time
 import torch
 import datetime
 import argparse
 
-
 np.warnings.filterwarnings("ignore")
-
 
 parser = argparse.ArgumentParser(description="Description of excursion job")
 
@@ -63,16 +60,13 @@ def main():
         testcase, algorithmopts, model, likelihood, device
     )
 
-    
-
     timestampStr = datetime.datetime.now().strftime("%d-%b-%Y_%H:%M:%S") + "/"
 
-    os.mkdir(args.outputfolder + timestampStr)
-
+    os.makedirs(args.outputfolder + timestampStr)
 
     while estimator.this_iteration < algorithmopts["nupdates"]:
-        time2 = time.time() 
-        
+        time2 = time.time()
+
         estimator.step(testcase, algorithmopts, model, likelihood)
 
         time3 = time.time()  ####
@@ -84,7 +78,11 @@ def main():
         print("--- posterior %s seconds ---" % (time4 - time3))  ###
 
         estimator.plot_status(
-            testcase, algorithmopts, model, estimator.acq_values, args.outputfolder + timestampStr
+            testcase,
+            algorithmopts,
+            model,
+            estimator.acq_values,
+            args.outputfolder + timestampStr,
         )
         estimator.get_diagnostics(testcase, model, likelihood)
 

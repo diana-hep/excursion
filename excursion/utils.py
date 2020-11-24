@@ -3,8 +3,11 @@ import numpy as np
 import torch
 import importlib
 
+
 def cdf(value):
-    return 0.5 * (1 + torch.erf((value - self.loc) * self.scale.reciprocal() / math.sqrt(2)))
+    return 0.5 * (
+        1 + torch.erf((value - self.loc) * self.scale.reciprocal() / math.sqrt(2))
+    )
 
 
 def load_example(example):
@@ -27,17 +30,23 @@ def load_example(example):
         testcase = importlib.import_module("excursion.testcases.toy3d_foursheets")
     elif example == "3Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_3D")
+    elif example == "darkhiggs":
+        testcase = importlib.import_module("excursion.testcases.darkhiggs")
+    elif example == "checkmate":
+        testcase = importlib.import_module("excursion.testcases.checkmate")
     elif example.startswith("parabola_"):
         n = [int(s) for s in example if s.isdigit()][0]
-        #make_parabola_script(n)
-        testcase = importlib.import_module("excursion.testcases.parabola_"+str(n)+"D")
-    #elif example == "parabola_1D":
+        # make_parabola_script(n)
+        testcase = importlib.import_module(
+            "excursion.testcases.parabola_" + str(n) + "D"
+        )
+    # elif example == "parabola_1D":
     #    testcase = importlib.import_module("excursion.testcases.parabola_1D")
-    #elif example == "parabola_2D":
+    # elif example == "parabola_2D":
     #    testcase = importlib.import_module("excursion.testcases.parabola_2D")
-    #elif example == "parabola_3D":
+    # elif example == "parabola_3D":
     #    testcase = importlib.import_module("excursion.testcases.parabola_3D")
-    #elif example == "parabola_4D":
+    # elif example == "parabola_4D":
     #    testcase = importlib.import_module("excursion.testcases.parabola_4D")
     else:
         raise RuntimeError("unnkown test case")
