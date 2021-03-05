@@ -22,6 +22,12 @@ extras_require = {
     'plots': [
       'matplotlib',
       'scikit-image'
+    ],
+    'parallel': [
+      'joblib'
+    ],
+    'baselines': [
+      'pyDOE'
     ]
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
@@ -36,7 +42,7 @@ setup(
     author='Lukas Heinrich',
     author_email='lukas.heinrich@cern.ch',
     license='Apache',
-    keywords='bayesian optimization excursion set estimation',
+    keywords='Bayesian optimization excursion set estimation',
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
@@ -47,11 +53,17 @@ setup(
     install_requires=[
         'sklearn',
         'scipy',
+        'pyDOE',
         'click>=6.0',
         'sklearn',
         'pyyaml'
     ],
     extras_require=extras_require,
-    entry_points={'console_scripts': ['excursion=excursion.commandline:main']},
+    entry_points={
+        'console_scripts': [
+            'excursion=excursion.commandline:main',
+            'excursion-baseline=excursion.commandline:baseline'
+        ]
+    },
     dependency_links=[],
 )

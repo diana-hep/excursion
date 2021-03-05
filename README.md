@@ -13,20 +13,24 @@ Install via `pip install excursion==0.0.1a0`.
 To estimate excursion sets for `N_FUNCS=2` functions simultaneously run:
 
 ```python
+from excursion import ExcursionProblem
+import excursion.optimize as optimize
+import numpy as np
+import scipy.stats
+
+N_UPDATES = 10
+N_BATCH = 2
+
+def expensive_func(X):
+    return np.atleast_1d(scipy.stats.multivariate_normal.pdf(X,mean = [0.5,0.5], cov = np.diag([0.2,0.3])))
+
+scandetails = ExcursionProblem([expensive_func], ndim = 2)
+X,y_list,gps = optimize.init(scandetails)
 for index in range(N_UPDATES):
-	# construct an estimate for each of the functions
-	gps = [excursion.get_gp(X,y_list[i]) for i in range(N_FUNCS)]
-
-    # determine new point(s) at which to evaluate
-    newx, acqvals = excursion.optimize.gridsearch(gps, X, scandetails)
-
-    # evaluate each black-box function
-    newys_list = [expensive_functions[i](np.asarray([newx])) for i in range(N_FUNCS)]
-
-    # update data
-    for i,newys in enumerate(newys_list):
-        y_list[i] = np.concatenate([y_list[i],newys])
-    X = np.concatenate([X,np.array([newx])])
+    print('next')
+    newX = optimize.suggest(gps, X, scandetails, batchsize=N_BATCH)
+    print(newX)
+    X,y_list,gps  = optimize.evaluate_and_refine(X,y_list,newX,scandetails)
 ```
 
 ## Ex: Finding two-dimensional Contours in High-Energy Physics

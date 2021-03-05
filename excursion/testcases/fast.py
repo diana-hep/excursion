@@ -1,5 +1,6 @@
 import numpy as np
 from .. import utils
+from .. import ExcursionProblem
 
 def truth(x):
     xv, yv = x[:,0],x[:,1]
@@ -19,22 +20,12 @@ def truth(x):
     return 3*(np.log(analysis(xv,yv)) - np.log(0.05))
 
 
+#shift to simulate mismatch between exp / obs
+shifted_truth = lambda X: truth(X-0.05)
 
-truth_functions = [truth]
+bounding_box = [[0,1.5],[0,1.5]]
+npoints = [350,350]
+single_function = ExcursionProblem([truth],[0.0],ndim = 2, bounding_box = bounding_box, plot_npoints=npoints)
+two_functions = ExcursionProblem([truth,shifted_truth],[0.0],ndim = 2, bounding_box = bounding_box, plot_npoints=npoints)
 
-def invalid_region(x):
-    return np.array([False]*len(x))
-
-plot_rangedef = np.array([[0.0,1.5,101],[0.0,1.5,101]])
-plotG = utils.mgrid(plot_rangedef)
-plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
-
-thresholds = [0.0]
-
-acq_rd = np.array([[0.0,1.5,21],[0.0,1.5,21]])
-acqG = utils.mgrid(acq_rd)
-acqX = utils.mesh2points(acqG,acq_rd[:,2])
-
-mn_rd = np.array([[0.0,1.5,21],[0,1.5,21]])
-mnG   = utils.mgrid(mn_rd)
-meanX  = utils.mesh2points(mnG,mn_rd[:,2])
+masked_single = ExcursionProblem([truth],[0.0],ndim = 2, bounding_box = bounding_box, invalid_region = lambda X: X[:,0] < X[:,1], plot_npoints=npoints)

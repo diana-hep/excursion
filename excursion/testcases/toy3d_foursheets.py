@@ -6,7 +6,7 @@ def truth(X):
     return np.cos(5*x)*x**2+6*np.cos(5*z)*y**2+4*z**2-1.0
 
 thresholds = [0.0]
-truth_functions = [truth]
+functions = [truth]
 
 plot_rangedef = np.array([[-1,1,41],[-1,1,21],[-1,1,41]])
 

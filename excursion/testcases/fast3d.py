@@ -1,6 +1,7 @@
 import numpy as np
 
 from .. import utils
+from .. import ExcursionProblem
 
 def truth(x):
     xv, yv, zv = x[:,0],x[:,1], x[:,2]
@@ -20,22 +21,6 @@ def truth(x):
     return 3*(np.log(analysis(xv,yv,zv)) - np.log(0.05))
 
 
-
-truth_functions = [truth]
-
-def invalid_region(x):
-    return np.array([False]*len(x))
-
-plot_rangedef = np.array([[0.0,1.5,41],[0.0,1.5,41],[0,1.5,41]])
-plotG = utils.mgrid(plot_rangedef)
-plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
-
-thresholds = [0.0]
-
-acq_rd = np.array([[0.0,1.5,16],[0.0,1.5,16],[0.0,1.5,16]])
-acqG = utils.mgrid(acq_rd)
-acqX = utils.mesh2points(acqG,acq_rd[:,2])
-
-mn_rd = np.array([[0.0,1.5,16],[0,1.5,16],[0.0,1.5,16]])
-mnG   = utils.mgrid(mn_rd)
-meanX  = utils.mesh2points(mnG,mn_rd[:,2])
+bounding_box = [[0,1.5],[0,1.5],[0,1.5]]
+npoints = [60,60,60]
+single_function = ExcursionProblem([truth],[0.0],ndim = 3, bounding_box = bounding_box, plot_npoints=npoints)

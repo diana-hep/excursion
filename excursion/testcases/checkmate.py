@@ -4,6 +4,7 @@ import pkg_resources
 import pickle
 
 from .. import utils
+from .. import ExcursionProblem
 
 datafile = pkg_resources.resource_filename('excursion','testcases/data/checkmate_dense.json')
 
@@ -41,23 +42,14 @@ def truth_exp(X):
     return 2*d['exp'].predict(X)
 
 thresholds = [modify(0.05)]
-truth_functions = [truth_obs, truth_exp]
+functions = [truth_obs, truth_exp]
 
 def invalid_region(x):
     oX = scaler.inverse_transform(x)
     return oX[:,0] < oX[:,1] + 202
 
-plot_rangedef = np.array([[0.0,1.,101],[0.0,1.,101]])
-plotG = utils.mgrid(plot_rangedef)
-plotX = utils.mesh2points(plotG,plot_rangedef[:,2])
-plotX = plotX[~invalid_region(plotX)]
-
-acq_rd = np.array([[0.0,1.,41],[0.0,1.,41]])
-acqG = utils.mgrid(acq_rd)
-acqX = utils.mesh2points(acqG,acq_rd[:,2])
-acqX = acqX[~invalid_region(acqX)]
-
-mn_rd = np.array([[0.0,1.,41],[0,1.,41]])
-mnG   = utils.mgrid(mn_rd)
-meanX  = utils.mesh2points(mnG,mn_rd[:,2])
-meanX = meanX[~invalid_region(meanX)]
+exp_and_obs = ExcursionProblem(
+    functions, thresholds, ndim = 2,
+    invalid_region = invalid_region,
+    plot_npoints=[350,350]
+)

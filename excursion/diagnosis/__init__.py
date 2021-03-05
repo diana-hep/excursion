@@ -1,43 +1,56 @@
 import numpy as np
-import itertools
 import logging
-from .. import utils
 
 log = logging.getLogger(__name__)
 
-def classlabels(values,thresholds):
-    labels = np.zeros(values.shape)
-    for j in range(len(thresholds) - 1):
-        log.info('[{}, {}]'.format(thresholds[j], thresholds[j+1]))
-        within = np.logical_and(thresholds[j] < values, values < thresholds[j+1])
-        labels[within] = j+1
-    return labels
+def get_class_labels(y,class_labels,minmaxes):
+    assigned_labels = -np.ones_like(y)
+    for class_idx in class_labels:
+        class_selector = np.logical_and(y>=minmaxes[class_idx][0], y<minmaxes[class_idx][1])
+        assigned_labels[class_selector] = class_idx
+    assert np.min(assigned_labels) >= 0
+    return assigned_labels
 
-def confusion_matrix(gps, scandetails):
-    thresholds = np.concatenate([[-np.inf],scandetails.thresholds,[np.inf]])
-    diagX = utils.mesh2points(utils.mgrid(scandetails.plot_rangedef),scandetails.plot_rangedef[:,2])
+def get_status(testy,esti_y,class_labels,minmaxes):
+    true_labels = get_class_labels(testy,class_labels,minmaxes)
+    esti_labels = get_class_labels(esti_y,class_labels,minmaxes)
+    status = np.concatenate([esti_labels.reshape(-1,1),true_labels.reshape(-1,1)], axis=-1)
+    return status
 
-    diagX = diagX[~scandetails.invalid_region(diagX)]
+def get_confusion_matrices(statuses,class_labels):
+    confusion_matrix = -np.ones((len(statuses),2,2))
+    for sidx,sta in enumerate(statuses):
+        for i in class_labels:
+            for j in class_labels:
+                test_val  = i
+                truth_val = j
+                condition_on_truth = sta[sta[:,1]==truth_val]
+                is_test_condition_truth = condition_on_truth[condition_on_truth[:,0]==test_val]
+                prob = len(is_test_condition_truth)/len(condition_on_truth)
+                confusion_matrix[sidx][i][j] = prob #p(i|j)
+    return confusion_matrix
 
-    labels = list(range(1,len(thresholds)))
 
-    confusion_list, predlabels_list, truelabels_list= [], [], []
-    for i,gp in enumerate(gps):
-        predy  = gps[i].predict(diagX)
-        truthy = scandetails.truth_functions[i](diagX)
-        predlabels = classlabels(predy,thresholds)
-        truelabels = classlabels(truthy,thresholds)
+def confusion_callback(X,y_list,gps,scandetails):
+    testX, testy_list = scandetails.testdata()
+    log.debug('computing confusion matrix based on {} testing points'.format(len(testX)))
+    estimatey_list = [gps[i].predict(testX) for i in range(len(scandetails.functions))]
 
-        confusion_matrix = np.zeros((len(labels),len(labels)))
-        for pred,true in itertools.product(labels,labels):
-            log.info('pred {}/true {}'.format(pred,true))
-            predlabels_when_true = predlabels[truelabels==true]
-            numerator = np.sum(np.where(predlabels_when_true==pred,1,0))
-            denominator = len(predlabels_when_true)
-            log.info('{}/{}'.format(numerator,denominator))
-            confusion_matrix[true-1,pred-1] = numerator/denominator
+    class_labels = np.arange(len(scandetails.thresholds)+1)
 
-        predlabels_list.append(predlabels)
-        truelabels_list.append(truelabels)
-        confusion_list.append(confusion_matrix.tolist())
-    return confusion_list, predlabels_list, truelabels_list, diagX, labels
+    boundaries = [-np.inf] + scandetails.thresholds + [np.inf]
+    minmaxes = [[boundaries[i],boundaries[i+1]] for i in class_labels]                
+    statuses = [
+        get_status(yl,estimatey_list[i],class_labels,minmaxes)
+        for i,yl in enumerate(testy_list)
+    ]
+    matrices = get_confusion_matrices(statuses,class_labels)
+    topline = np.mean([np.mean(np.diag(cm)) for cm in matrices])
+    return {'t': topline, 'matrices': np.asarray(matrices).tolist()}
+
+def diagnose(X,y_list,gps, scandetails, callbacks = None):
+    callbacks = callbacks or {
+        'confusion': confusion_callback,
+        'npoints': lambda X,*args: len(X),
+    }
+    return {name: c(X,y_list,gps,scandetails) for name,c in callbacks.items()}
