@@ -254,7 +254,8 @@ def plot_GP(gp, testcase, **kwargs):
 
         # ACQ plot
 
-        ax1.set_xticks([], [])
+#        ax1.set_xticks([], [])
+        ax1.set_xticks([])
         # eliminate -inf
         acq = acq.detach().numpy()
         mask = np.isfinite(acq)
