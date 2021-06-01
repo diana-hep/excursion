@@ -132,7 +132,6 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     Performs this calculation with the Predictive Entropy Search approximation. Roughly,
     PES(x_candidate) = int dx { H[Y(x_candidate)] - E_{S(x=j)} H[Y(x_candidate)|S(x=j)] }
     Notation: PES(x_candidate) = int dx H0 - E_Sj H1
-
     """
 
     # compute predictive posterior of Y(x) | train data

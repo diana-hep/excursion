@@ -355,25 +355,30 @@ class ExcursionSetEstimator:
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        # for x in self._X_grid:
-        #     x = x.view(1, -1).to(self.device, self.dtype)
+        if (self._acq_type == 'PES'):
+            acquisition_values_grid = []
 
-        #     start_time = time.time()
+            for x in self._X_grid:
+                x = x.view(1, -1).to(self.device, self.dtype)
 
-        #     value = acquisition_functions[self._acq_type](
-        #         model, testcase, thresholds, x, self.device, self.dtype,
-        #     )
+                start_time = time.time()
 
-        #     end_time = time.time() - start_time
+                value = acquisition_functions[self._acq_type](
+                    model, testcase, thresholds, x, self.device, self.dtype,
+                )
 
-        #     acquisition_values_grid.append(value)
-        start_time = time.time()
-        acquisition_values_grid = acquisition_functions[self._acq_type](
-            model, testcase, thresholds, self._X_grid, self.device, self.dtype
-        )
-        end_time = time.time() - start_time
+                end_time = time.time() - start_time
 
-        self.acq_values = acquisition_values_grid
+                acquisition_values_grid.append(value)
+
+        else:
+            start_time = time.time()
+            acquisition_values_grid = acquisition_functions[self._acq_type](
+                model, testcase, thresholds, self._X_grid, self.device, self.dtype
+            )
+            end_time = time.time() - start_time
+
+            self.acq_values = acquisition_values_grid
 
         return acquisition_values_grid
 
