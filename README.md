@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/irinaespejo/excursion.svg?branch=master)](https://travis-ci.org/irinaespejo/excursion)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1634427.svg)](https://zenodo.org/badge/latestdoi/146087019)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/irinaespejo/excursion/master?urlpath=https%3A%2F%2Fgithub.com%2Firinaespejo%2Fexcursion%2Fblob%2Fmaster%2Fexamples%2Ftutorial_1D.ipynb)
 [![Documentation Status](https://readthedocs.org/projects/excursion/badge/?version=latest)](https://excursion.readthedocs.io/en/latest/?badge=latest)
@@ -6,13 +5,20 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 
-
 # `excursion` — Efficient Excursion Set Estimation 
-[ReadTheDocs](https://excursion.readthedocs.io/en/latest/)
 
 This package implements a Bayesian Optimization procedure based on Gaussian Processes to efficiently determine excursion sets (or equivalently iso-surfaces) of one or many expensive black-box functions.
 
+
 ## Installation and Example
+
+:warning: Warning |
+----------------- |
+We are developing a new version with GPyTorch support and other nice features. 
+If you want to use this developing version then `pip install excursion==???` |
+
+
+To use the original version:
 
 Install via `pip install excursion==0.0.1a0`.
 
@@ -50,6 +56,11 @@ Typically two simultaneous labels can be assigned, the *expected* and *observed*
 
 <img src="./assets/example.gif" width=600/>
 
+## Documentation
+
+[Docs](https://excursion.readthedocs.io/en/latest/) (to come soon)
+
+
 ## Talks:
 
 * 4th Reinterpretation Workshop [Slides](https://indico.cern.ch/event/702612/contributions/2958660/attachments/1649620/2638023/Contours.pdf)
@@ -59,3 +70,4 @@ Typically two simultaneous labels can be assigned, the *expected* and *observed*
 * Lukas Heinrich, CERN
 * Gilles Louppe, U Liege
 * Kyle Cranmer, NYU
+* Irina Espejo, NYU
