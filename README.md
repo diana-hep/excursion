@@ -12,11 +12,7 @@ This package implements a Bayesian Optimization procedure based on Gaussian Proc
 
 ## Installation and Example
 
-:warning: Warning |
------------------ |
-We are developing a new version with GPyTorch support and other nice features. 
-If you want to use this developing version then `pip install excursion==???` |
-
+> :warning: We are developing a new version with GPyTorch support and other nice features. If you want to use this developing version then `pip install excursion==???` 
 
 To use the original version:
 
