@@ -1,3 +1,4 @@
+[![Continuous Integration](https://github.com/irinaespejo/excursion/actions/workflows/workflow.yml/badge.svg)](https://github.com/irinaespejo/excursion/actions/workflows/workflow.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1634427.svg)](https://zenodo.org/badge/latestdoi/146087019)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/irinaespejo/excursion/master?urlpath=https%3A%2F%2Fgithub.com%2Firinaespejo%2Fexcursion%2Fblob%2Fmaster%2Fexamples%2Ftutorial_1D.ipynb)
 [![Documentation Status](https://readthedocs.org/projects/excursion/badge/?version=latest)](https://excursion.readthedocs.io/en/latest/?badge=latest)
