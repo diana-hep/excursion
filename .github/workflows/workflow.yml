@@ -1,0 +1,34 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+      - developer
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  test:
+    needs: []
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+    - name: "Set up GitHub Actions"
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: "Set up Python ${{ matrix.python-version }}"
+      uses: actions/setup-python@v2
+    - name: "Install Python dependencies"
+      run: |
+        pip install --no-cache-dir --upgrade pip setuptools wheel
+        pip install --no-cache-dir --requirement requirements.txt
+        pip install --no-cache-dir pytest
+    - name: "Unit testing"
+      run: |
+        pytest -p no:cacheprovider
