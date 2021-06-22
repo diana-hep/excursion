@@ -36,7 +36,7 @@ thresholds = torch.Tensor([0.0])
 n_dims = 2
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[0.0, 1.5, 41], [0.0, 1.5, 41]])
+rangedef = np.array([[0.0, 1.5, 200], [0.0, 1.5, 200]])
 
 # meshgrid
 plot_meshgrid = mgrid(rangedef)

@@ -443,7 +443,15 @@ class ExcursionSetEstimator:
                 batchsize = 1
 
             plot = plots_2D.plot_GP(
-                plt, model, testcase, self.device, self.dtype, batchsize
+                plt, 
+                model, 
+                testcase, 
+                self.device, 
+                self.dtype, 
+                batchsize, 
+                algorithmopts["plot_entropies"], 
+                acq=self.acq_values,
+                acq_type=self._acq_type,
             )
             plt.tight_layout()
             figname = (
