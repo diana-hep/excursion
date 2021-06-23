@@ -13,6 +13,9 @@ import os
 import gc
 
 
+
+#### THIS CDF FUNCTION
+
 def cdf(mu, sigma, t):
     # use torch.erfc for numerical stability
     erf = torch.erf((t - mu) * sigma.reciprocal() / math.sqrt(2))
@@ -28,6 +31,8 @@ def MES_test(gp, testcase, thresholds, X_grid, device, dtype):
     return entropy_grid
 
 
+#### THIS MES AQC
+
 def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 
     # compute predictive posterior of Y(x) | train data
@@ -37,12 +42,14 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
 
     # ok
     Y_pred_grid = likelihood(gp(X_grid))
+    #print(Y_pred_grid)
     mean_tensor = Y_pred_grid.mean
 
     # print('Y_pred_grid.lazy_covariance_matrix.kernel', Y_pred_grid.lazy_covariance_matrix.kernel )
     # print('Y_pred_grid.lazy_covar_matrix.diag ', Y_pred_grid.lazy_tensors.size())
 
     std_tensor = torch.sqrt(Y_pred_grid.variance)
+    #print(std_tensor.size())
     # std_tensor = torch.sqrt(torch.diag(Y_pred_grid.lazy_covariance_matrix))
     # print('mean_tensor ', mean_tensor.size())
     # print('std_tensor ', std_tensor.size())
@@ -51,16 +58,16 @@ def MES_gpu(gp, testcase, thresholds, X_grid, device, dtype):
     entropy_grid = torch.zeros(num_points,).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
-        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(
-            mean_tensor, std_tensor, thresholds[j]
-        )
+        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) \
+                 - cdf(mean_tensor, std_tensor, thresholds[j])
 
         # print(my_p_j[my_p_j > 0].size())
         # print('sumexp_pj_matrix=', torch.log(torch.exp(my_p_j[my_p_j > 0])).tolist())
-
-        entropy_grid[my_p_j > 0] -= torch.log(
-            torch.exp(my_p_j[my_p_j > 0])
-        ) * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
+        # print(my_p_j)
+        entropy_grid[my_p_j > 0] -= torch.log(torch.exp(my_p_j[my_p_j > 0])) \
+                                    * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
+        # print(entropy_grid[my_p_j > 0])
+        # print(entropy_grid)
 
         # test with MES
 
@@ -168,7 +175,7 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     # entropy of Y(x_candidate)
     H0 = h_normal(Y_pred_all.variance[0] ** 0.5)
 
-    # info grain on the grid, vector
+    # info gain on the grid, vector
     info_gain = H0 - E_S_H1
 
     info_gain[~torch.isfinite(info_gain)] = 0.0  # just to avoid NaN

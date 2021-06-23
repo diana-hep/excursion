@@ -8,7 +8,7 @@ example: '1Dtoyanalysis'
 ninit: 2
 
 #number of iterations
-nupdates: 15
+nupdates: 25
 
 ##Define the init training data type
 init_type: 'random'

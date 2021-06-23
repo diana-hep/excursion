@@ -55,9 +55,12 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     # LIKELIHOOD
     #
+
+    ## has bernoullilikelihood been used? if yes what was result if no then why not?
+
     if likelihood_type == "GaussianLikelihood":
         if epsilon > 0.0:
-            likelihood = gpytorch.likelihoods.GaussianLikelihood(
+                likelihood = gpytorch.likelihoods.GaussianLikelihood(
                 noise=torch.tensor([epsilon])
             ).to(device, dtype)
         elif epsilon == 0.0:
@@ -80,9 +83,9 @@ def init_gp(testcase, algorithmopts, ninit, device):
         grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
 
         for i in range(len(grid_bounds)):
-            a = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
-            )
+            # a = torch.linspace(
+            #    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+            # )
 
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
@@ -127,9 +130,9 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
         grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
 
         for i in range(len(grid_bounds)):
-            a = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
-            )
+            # a = torch.linspace(
+            #    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+            # )
 
             grid[:, i] = torch.linspace(
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
@@ -395,9 +398,15 @@ class ExcursionSetEstimator:
             inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
         )
 
-        likelihood.train()
-        model.train()
-        fit_hyperparams(model, likelihood)
+        #####
+        ##### I commented these out and it still works. i supposed they might not be doing anything since...
+        #####
+
+
+        # likelihood.train()
+        # model.train()
+        # doest capture output, nothing gets updated??
+        # fit_hyperparams(model, likelihood)
 
         # track wall time
         end_time = time.process_time() - start_time
