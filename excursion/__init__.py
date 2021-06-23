@@ -12,6 +12,7 @@ from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
 # from excursion.active_learning import acq
 from excursion.active_learning import acquisition_functions
+#import excursion.active_learning
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
