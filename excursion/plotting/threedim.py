@@ -6,6 +6,7 @@ from ..utils import (
     mesh2points,
     points2mesh,
     values2mesh,
+    mgrid
 )
 import torch
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -44,8 +45,8 @@ def contour_3d(v, rangedef, level, alpha=None, facecolors=None, edgecolors=None)
 
 
 def plot_current_estimate(ax, gp, X, y, scandetails, funcindex, view_init=(70, -45)):
-    denseGrid = utils.mgrid(scandetails.plot_rangedef)
-    denseX = utils.mesh2points(denseGrid, scandetails.plot_rangedef[:, 2])
+    denseGrid = mgrid(scandetails.plot_rangedef)
+    denseX = mesh2points(denseGrid, scandetails.plot_rangedef[:, 2])
 
     prediction, prediction_std = gp.predict(denseX, return_std=True)
     ax.scatter(denseX[:, 0], denseX[:, 1], denseX[:, 2], c=prediction, alpha=0.05)
