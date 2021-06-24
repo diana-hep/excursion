@@ -1,6 +1,4 @@
-from scipy.linalg import cho_solve
 from scipy.stats import norm
-import gpytorch
 import torch
 import numpy as np
 

@@ -1,7 +1,4 @@
 import torch
-import gpytorch
-import os
-import itertools
 from excursion import get_gp, fit_hyperparams
 from copy import deepcopy
 
