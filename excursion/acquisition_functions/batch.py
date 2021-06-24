@@ -52,7 +52,7 @@ class batchGrid(object):
             kwargs = {}
         args = [a._t if hasattr(a, "_t") else a for a in args]
         ret = func(*args, **kwargs)
-        return batchgrid(ret, kwargs["device"], kwargs["dtype"])
+        return batchGrid(ret, kwargs["device"], kwargs["dtype"])
 
     def pop(self, index):
         self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])
@@ -166,7 +166,7 @@ class batchGrid(object):
                 ).flatten()
 
             else:
-                inputs = torch.cat((model_fake.train_inputs[0], list_xs), 0)
+                inputs = torch.cat((model_fake.train_inputs[0], list_fake_xs), 0)
                 targets = torch.cat(
                     (model_fake.train_targets, list_fake_ys), 0
                 ).flatten()

@@ -5,14 +5,11 @@ from torch.distributions.normal import Normal
 import gpytorch
 import excursion
 import time
-import os
 import gc
 import simplejson
 from excursion.models import ExactGP_RBF, GridGPRegression_RBF
 
-# from excursion.active_learning import acq
-from excursion.active_learning import acquisition_functions
-#import excursion.active_learning
+from excursion.acquisition_functions import acquisition_functions
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
@@ -288,7 +285,7 @@ class ExcursionSetEstimator:
         # print('ACQ VALUES')
         # print(acq_values_of_grid)
 
-        from excursion.active_learning.batch import batchGrid
+        from excursion.acquisition_functions.batch import batchGrid
 
         batchgrid = batchGrid(
             acq_values_of_grid,
