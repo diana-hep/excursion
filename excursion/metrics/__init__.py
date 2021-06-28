@@ -1,7 +1,6 @@
 import numpy as np
 import itertools
-import utils
-
+from excursion import utils
 
 def confusion_matrix(gps, scandetails):
     thresholds = np.concatenate([[-np.inf], scandetails.thresholds, [np.inf]])

@@ -1,6 +1,6 @@
 from gpytorch.models import ExactGP
 from . import priors
-from ..kernels.kernel import Kernel
+from .kernel import Kernel
 import numpy as np
 from .fit import *
 

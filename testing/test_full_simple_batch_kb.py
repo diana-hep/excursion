@@ -2,7 +2,8 @@
 
 import torch
 import yaml
-from excursion import init_gp, ExcursionSetEstimator
+from excursion import init_gp
+from excursion.estimator import ExcursionSetEstimator
 from excursion.utils import load_example
 
 

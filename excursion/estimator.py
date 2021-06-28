@@ -1,17 +1,18 @@
+import time
+import numpy as np
+import gc
+import simplejson
 import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.normal import Normal
-import time
-import numpy as np
 from sklearn.metrics import confusion_matrix
-import gc
-from excursion.acquisition import acquisition_functions
+import matplotlib.pyplot as plt
 import excursion.plotting.onedim as plots_1D
 import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
-import matplotlib.pyplot as plt
-import simplejson
 from excursion.models.gp import get_gp
+from excursion.acquisition import acquisition_functions
+
 
 class ExcursionSetEstimator:
     def __init__(self, testcase, algorithmopts, model, likelihood, device):
@@ -208,15 +209,6 @@ class ExcursionSetEstimator:
             inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
         )
 
-        #####
-        ##### I commented these out and it still works. i supposed they might not be doing anything since...
-        #####
-
-
-        # likelihood.train()
-        # model.train()
-        # doest capture output, nothing gets updated??
-        # fit_hyperparams(model, likelihood)
 
         # track wall time
         end_time = time.process_time() - start_time

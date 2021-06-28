@@ -1,8 +1,11 @@
-import torch
-import gpytorch
+import torch, gpytorch
+
 
 def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
-    training_iter = 100
+
+    #### THIS HYPERPARAMETER MATTERS A LOT.
+
+    training_iter = 200
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
 
