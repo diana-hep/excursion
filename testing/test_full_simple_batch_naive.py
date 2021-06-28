@@ -18,16 +18,17 @@ def test_full_simple_batch_naive():
     # three toy examples
     for example in ["1D_test", "2D_test", "3D_test"]:
         testcase = load_example(example)
-        model, likelihood = init_gp(testcase, algorithmopts, ninit, device)
+        models, likelihood = init_gp(testcase, algorithmopts, ninit, device)
+        model= models[0]
 
         estimator = ExcursionSetEstimator(
-            testcase, algorithmopts, model, likelihood, device
+            testcase, algorithmopts, models, likelihood, device
         )
 
         while estimator.this_iteration < algorithmopts["nupdates"]:
-            estimator.step(testcase, algorithmopts, model, likelihood)
-            model = estimator.update_posterior(
-                testcase, algorithmopts, model, likelihood
+            estimator.step(testcase, algorithmopts, models, likelihood)
+            models = estimator.update_posterior(
+                testcase, algorithmopts, models, likelihood
             )
 
     assert type(torch.abs(model.train_targets) <= tol) != type(None)
