@@ -68,7 +68,7 @@ def plot_current_entropies(ax, gp, X, entropies, scandetails, batchsize=1):
     ax.set_ylim(*scandetails.plot_rangedef[1][:2])
 
 
-def plot(axarr, gps, X, y_list, scandetails, batchsize=1):
+def plot(axarr, gp, X, y_list, scandetails, batchsize=1):
     newX = scandetails.plotX
 
     mu_stds = []
@@ -102,83 +102,86 @@ def plot(axarr, gps, X, y_list, scandetails, batchsize=1):
     )
 
 
-def plot_GP(ax, gp, testcase, device, dtype, batchsize=1, entropy=False, **kwargs):
+def plot_GP(ax, gps, testcase, device, dtype, batchsize=1, entropy=False, **kwargs):
     """
     Plot GP posterior fit to data with the option of plotting side by side acquisition function
     """
     try:
-        fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, 8))
+        fig, axes = plt.subplots(1, 1+len(gps), figsize=(28, 8))
+        ax1 = axes[-1]
+        ax0 = axes[0:-1]
     except KeyError:
         print("I didnt get an axis")
     
-
-    X_train = gp.train_inputs[0]
-    y_train = gp.train_targets
-
+    # true function + thresholds
     xv, yv = testcase.plot_meshgrid
     thresholds = testcase.thresholds
-
-    # true function + thresholds
     X_plot = torch.Tensor(testcase.X_plot).to(device, dtype)
-    truthv = testcase.true_functions[0](X_plot)
-    truthv = truthv.to(device, dtype)
-    truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
-    line0 = ax0.contour(
-        xv,
-        yv,
-        truthv,
-        thresholds,
-        colors="white",
-        linestyles="dotted",
-        label="true contour",
-    )
 
-    ##mean
-    gp.eval()
-    likelihood = gp.likelihood
-    likelihood.eval()
-    prediction = likelihood(gp(X_plot))
+    for i,func in enumerate(testcase.true_functions):
+        truthv = func(X_plot)
+        truthv = truthv.to(device, dtype)
+        truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
+        line0 = ax0[i].contour(
+            xv,
+            yv,
+            truthv,
+            thresholds,
+            colors="white",
+            linestyles="dotted",
+            label="true contour",
+        )
+    
+        gp = gps[i]
+        X_train = gp.train_inputs[0]
+        y_train = gp.train_targets
 
-    prediction = values2mesh(
-        prediction.mean.detach().cpu().numpy(),
-        testcase.rangedef,
-        testcase.invalid_region,
-    )
+        ##mean
+        gp.eval()
+        likelihood = gp.likelihood
+        likelihood.eval()
+        prediction = likelihood(gp(X_plot))
 
-    vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
+        prediction = values2mesh(
+            prediction.mean.detach().cpu().numpy(),
+            testcase.rangedef,
+            testcase.invalid_region,
+        )
 
-    contour = ax0.contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
-    line1 = ax0.contour(
-        xv, yv, prediction, thresholds, colors="white", linestyles="solid"
-    )
+        vmin, vmax = getminmax(prediction[~np.isnan(prediction)])
 
-    ##train points
-    old_points = ax0.scatter(
-        X_train[:-batchsize, 0].cpu(),
-        X_train[:-batchsize, 1].cpu(),
-        s=20,
-        edgecolor="white",
-        label="true sample",
-    )
-    new_point = ax0.scatter(
-        X_train[-batchsize:, 0].cpu(),
-        X_train[-batchsize:, 1].cpu(),
-        s=20,
-        c="r",
-        label="last added",
-    )
-    ax0.set_title("New points selected")
-    ax0.set_xlabel("x")
-    ax0.set_ylabel("y")
-    ax0.set_xlim(*testcase.rangedef[0][:2])
-    ax0.set_ylim(*testcase.rangedef[1][:2])
-    cbar0=fig.colorbar(contour, ax=ax0, shrink=0.7)
-    cbar0.ax.set_ylabel('mean GP', size=14, labelpad=20,  rotation=270)
-    ax0.legend(loc=0)
-    l0, _ = line0.legend_elements()
-    l1, _ = line1.legend_elements()
+        contour = ax0[i].contourf(xv, yv, prediction, np.linspace(vmin, vmax, 100))
+        line1 = ax0[i].contour(
+            xv, yv, prediction, thresholds, colors="white", linestyles="solid"
+        )
 
-    ax0.legend(
+        ##train points
+        old_points = ax0[i].scatter(
+            X_train[:-batchsize, 0].cpu(),
+            X_train[:-batchsize, 1].cpu(),
+            s=20,
+            edgecolor="white",
+            label="true sample",
+        )
+        new_point = ax0[i].scatter(
+            X_train[-batchsize:, 0].cpu(),
+            X_train[-batchsize:, 1].cpu(),
+            s=20,
+            c="r",
+            label="last added",
+        )
+        ax0[i].set_title(f"New points selected GP #{i}")  
+        ax0[i].set_xlabel("x")
+        ax0[i].set_ylabel("y")
+        ax0[i].set_xlim(*testcase.rangedef[0][:2])
+        ax0[i].set_ylim(*testcase.rangedef[1][:2])
+        cbar0=fig.colorbar(contour, ax=ax0[i], shrink=0.7)
+        cbar0.ax.set_ylabel('mean GP', size=14, labelpad=20,  rotation=270)
+        ax0[i].legend(loc=0)
+        l0, _ = line0.legend_elements()
+        l1, _ = line1.legend_elements()
+
+    ax0[0].legend(
         [l0[0], l1[0], old_points, new_point],
         ["True excursion set (thr=0)", "Estimation", "Observed points", "Next point"],
         #loc="bottom center",
@@ -191,14 +194,20 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1, entropy=False, **kwarg
     #plot entropy now
     acq = kwargs["acq"]
     acq_type = kwargs["acq_type"]
-    line1 = ax1.contour(
-        xv,
-        yv,
-        truthv,
-        thresholds,
-        colors="red",
-        linestyles="dotted",
-    )
+
+    for func in testcase.true_functions:
+        truthv = func(X_plot)
+        truthv = truthv.to(device, dtype)
+        truthv = values2mesh(truthv, testcase.rangedef, testcase.invalid_region)
+        line1 = ax1.contour(
+            xv,
+            yv,
+            truthv,
+            thresholds,
+            colors="red",
+            linestyles="dotted",
+        )
+
     entropies_mesh = values2mesh(
         acq.detach().cpu().numpy(),
         testcase.rangedef,
@@ -207,13 +216,13 @@ def plot_GP(ax, gp, testcase, device, dtype, batchsize=1, entropy=False, **kwarg
     entropy_vmin, entropy_vmax = getminmax(entropies_mesh[~np.isnan(entropies_mesh)])
     entropies = ax1.contourf(xv, yv, entropies_mesh, cmap="Purples")
 
-    #new_point = ax1.scatter(
-    #    X_train[-batchsize:, 0].cpu(),
-    #    X_train[-batchsize:, 1].cpu(),
-    #    s=20,
-    #    c="r",
-    #    label="last added",
-    #)
+    new_point = ax1.scatter(
+        X_train[-batchsize:, 0].cpu(),
+        X_train[-batchsize:, 1].cpu(),
+        s=20,
+        c="r",
+        label="last added",
+    )
     cbar1 = fig.colorbar(entropies, ax=ax1, shrink=0.7)
     cbar1.ax.set_ylabel('acquisition function', labelpad=20, rotation=270, size=14)
     ax1.set_title(acq_type)

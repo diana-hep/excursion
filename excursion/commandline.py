@@ -51,13 +51,13 @@ def main():
 
     # start_time = time.time()  #######
 
-    model, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
+    models, likelihood = init_gp(testcase, algorithmopts, algorithmopts["ninit"], device)
 
     # time1 = time.time()  ####
     # print("--- init_gp %s seconds ---" % (time1 - start_time))  ###
 
     estimator = ExcursionSetEstimator(
-        testcase, algorithmopts, model, likelihood, device
+        testcase, algorithmopts, models, likelihood, device
     )
 
     timestampStr = datetime.datetime.now().strftime("%d-%b-%Y_%H:%M:%S") + "/"
@@ -67,12 +67,12 @@ def main():
     while estimator.this_iteration < algorithmopts["nupdates"]:
         time2 = time.time()
 
-        estimator.step(testcase, algorithmopts, model, likelihood)
+        estimator.step(testcase, algorithmopts, models, likelihood)
 
         time3 = time.time()  ####
         print("--- step %s seconds ---" % (time3 - time2))  ###
 
-        model = estimator.update_posterior(testcase, algorithmopts, model, likelihood)
+        models = estimator.update_posterior(testcase, algorithmopts, models, likelihood)
 
         time4 = time.time()  ####
         print("--- posterior %s seconds ---" % (time4 - time3))  ###
@@ -80,11 +80,11 @@ def main():
         estimator.plot_status(
             testcase,
             algorithmopts,
-            model,
+            models,
             estimator.acq_values,
             args.outputfolder + timestampStr,
         )
-        estimator.get_diagnostics(testcase, model, likelihood)
+        estimator.get_diagnostics(testcase, models, likelihood)
 
         time5 = time.time()  ####
         print("--- get_diagnostics %s seconds ---" % (time5 - time4))  ###

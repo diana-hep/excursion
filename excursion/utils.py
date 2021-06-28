@@ -22,6 +22,8 @@ def load_example(example):
         testcase = importlib.import_module("excursion.testcases.3D_test")
     elif example == "2Dtoyanalysis":
         testcase = importlib.import_module("excursion.testcases.fast_2D")
+    elif example == "2Dtoyanalysis_multiple":
+        testcase = importlib.import_module("excursion.testcases.fast_2D_multiple")
     elif example == "darkhiggs":
         testcase = importlib.import_module("excursion.testcases.darkhiggs")
     elif example == "checkmate":

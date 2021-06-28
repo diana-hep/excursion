@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 
-
 def init_gp(testcase, algorithmopts, ninit, device):
     likelihood_type = algorithmopts["likelihood"]["type"]
     modelopts = algorithmopts["model"]["type"]
@@ -27,6 +26,7 @@ def init_gp(testcase, algorithmopts, ninit, device):
     prioropts = algorithmopts["model"]["prior"]
 
     n_dims = testcase.n_dims
+    n_funcs = len(testcase.true_functions)
     epsilon = float(algorithmopts["likelihood"]["epsilon"])
     dtype = torch.float64
 
@@ -41,7 +41,8 @@ def init_gp(testcase, algorithmopts, ninit, device):
         indexs = np.random.choice(range(len(X_grid)), size=ninit, replace=False)
         X_init = X_grid[indexs].to(device, dtype)
         noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
-        y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
+        y_init = [func(X_init) for func in testcase.true_functions]
+        # y_init = [ func(X_init)[0].to(device, dtype) + noises for func in testcase.true_functions ]
     elif init_type == "worstcase":
         X_init = [X_grid[0]]
         X_init = torch.Tensor(X_init).to(device, dtype)
@@ -71,8 +72,11 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     # GAUSSIAN PROCESS
     #
+    models = []
     if modelopts == "ExactGP" and kernelopts == "RBF":
-        model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
+        for i in range(n_funcs):
+            model = ExactGP_RBF(X_init, y_init[i], likelihood, prioropts).to(device)
+            models.append(model)
     elif modelopts == "GridGP" and kernelopts == "RBF":
         grid_bounds = testcase.rangedef[:, :-1]
         grid_n = testcase.rangedef[:, -1]
@@ -88,9 +92,11 @@ def init_gp(testcase, algorithmopts, ninit, device):
                 grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
             )
 
-        model = GridGPRegression_RBF(grid, X_init, y_init, likelihood, prioropts).to(
-            device
-        )
+        for i in range(n_funcs):
+            model = GridGPRegression_RBF(
+                grid, X_init, y_init[i], likelihood, prioropts
+            ).to(device)
+            models.append(model)
 
     else:
         raise RuntimeError("unknown gpytorch model")
@@ -98,11 +104,13 @@ def init_gp(testcase, algorithmopts, ninit, device):
     # fit
     print("X_init ", X_init)
     print("y_init ", y_init)
-    model.train()
-    likelihood.train()
-    excursion.fit_hyperparams(model, likelihood)
 
-    return model, likelihood
+    for model in models:
+        model.train()
+        likelihood.train()
+        excursion.fit_hyperparams(model, likelihood)
+
+    return models, likelihood
 
 
 def get_gp(X, y, likelihood, algorithmopts, testcase, device):
@@ -155,7 +163,9 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
 
     if optimizer == "LBFGS":
         optimizer = torch.optim.LBFGS(
-            [{"params": gp.parameters()},],  # Includes GaussianLikelihood parameters
+            [
+                {"params": gp.parameters()},
+            ],  # Includes GaussianLikelihood parameters
             lr=0.1,
             line_search_fn=None,
         )
@@ -182,7 +192,9 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
     if optimizer == "Adam":
 
         optimizer = torch.optim.Adam(
-            [{"params": gp.parameters()},],  # Includes GaussianLikelihood parameters
+            [
+                {"params": gp.parameters()},
+            ],  # Includes GaussianLikelihood parameters
             lr=0.1,
             eps=10e-6,
         )
@@ -202,9 +214,10 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
 
 
 class ExcursionSetEstimator:
-    def __init__(self, testcase, algorithmopts, model, likelihood, device):
+    def __init__(self, testcase, algorithmopts, models, likelihood, device):
         self.x_new = torch.zeros(1, testcase.n_dims, dtype=torch.float64)
         self.y_new = torch.zeros(1, 1, dtype=torch.float64)
+        self.y_new_list = []
         self.acq_values = []
 
         self.this_iteration = 0
@@ -220,7 +233,9 @@ class ExcursionSetEstimator:
         self._epsilon = algorithmopts["likelihood"]["epsilon"]
         self._n_dims = testcase.n_dims
 
-    def get_diagnostics(self, testcase, model, likelihood):
+    def get_diagnostics(self, testcase, models, likelihood):
+        model = models[0]
+
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         X_eval = testcase.X
 
@@ -270,7 +285,7 @@ class ExcursionSetEstimator:
         print("pct ", pct)
         return None
 
-    def step(self, testcase, algorithmopts, model, likelihood):
+    def step(self, testcase, algorithmopts, models, likelihood):
         # track wall time
         start_time = time.process_time()
         self.this_iteration += 1
@@ -279,10 +294,13 @@ class ExcursionSetEstimator:
 
         ################################## this should be all one step with output
         ################################## number of batches, ordered max indices in grid
+        all_acq_values_of_grid = []
+        for model in models:
+            this_acq_values_of_grid = self.get_acq_values(model, testcase)
+            all_acq_values_of_grid.append(this_acq_values_of_grid)
 
-        acq_values_of_grid = self.get_acq_values(model, testcase)
-        # print('ACQ VALUES')
-        # print(acq_values_of_grid)
+        
+        acq_values_of_grid = torch.mean(torch.vstack(all_acq_values_of_grid), dim=0)
 
         from excursion.active_learning.batch import batchGrid
 
@@ -329,25 +347,29 @@ class ExcursionSetEstimator:
 
         ##################################
 
-        # get y from selected x
+        
         gc.collect()
         torch.cuda.empty_cache()
 
-        noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
-        noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
-            self.device, self.dtype
-        )
-        self.y_new = (
-            testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
-        )
-        self.y_new = self.y_new
+        #noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+        #noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
+        #    self.device, self.dtype
+        #)
+
+        # get y from selected x
+        self.y_new_list = []
+        for func in testcase.true_functions:
+            self.y_new = (
+                func(self.x_new).to(self.device, self.dtype) #+ noise
+            )
+            self.y_new_list.append(self.y_new)
+            
 
         # track wall time
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
 
         print("x_new ", self.x_new.size(), self.x_new)
-        print("y_new ", self.y_new.size(), self.y_new)
 
         return self.x_new, self.y_new
 
@@ -355,7 +377,7 @@ class ExcursionSetEstimator:
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        if (self._acq_type == 'PES'):
+        if self._acq_type == "PES":
             acquisition_values_grid = []
 
             for x in self._X_grid:
@@ -364,7 +386,12 @@ class ExcursionSetEstimator:
                 start_time = time.time()
 
                 value = acquisition_functions[self._acq_type](
-                    model, testcase, thresholds, x, self.device, self.dtype,
+                    model,
+                    testcase,
+                    thresholds,
+                    x,
+                    self.device,
+                    self.dtype,
                 )
 
                 end_time = time.time() - start_time
@@ -382,37 +409,41 @@ class ExcursionSetEstimator:
 
         return acquisition_values_grid
 
-    def update_posterior(self, testcase, algorithmopts, model, likelihood):
+    def update_posterior(self, testcase, algorithmopts, models, likelihood):
         # track wall time
         start_time = time.process_time()
+        for i, model in enumerate(models):
+            if self._n_dims == 1:
+                inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
+                targets_i = torch.cat(
+                    (model.train_targets.flatten(), self.y_new.flatten()), dim=0
+                ).flatten()
+
+            else:
+                inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
+                targets_i = torch.cat((model.train_targets, self.y_new_list[i]), 0).flatten()
+
+            model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
+            model = get_gp(
+                inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
+            )
+
+            likelihood.train()
+            model.train()
+            fit_hyperparams(model, likelihood)
+
+            # track wall time
+            end_time = time.process_time() - start_time
+            self.walltime_posterior.append(end_time)
+
+        return models
+
+    def plot_status(self, testcase, algorithmopts, models, acq_values, outputfolder):
+
         if self._n_dims == 1:
-            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
-            targets_i = torch.cat(
-                (model.train_targets.flatten(), self.y_new.flatten()), dim=0
-            ).flatten()
-
-        else:
-            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
-            targets_i = torch.cat((model.train_targets, self.y_new), 0).flatten()
-
-        model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        model = get_gp(
-            inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
-        )
-
-        likelihood.train()
-        model.train()
-        fit_hyperparams(model, likelihood)
-
-        # track wall time
-        end_time = time.process_time() - start_time
-        self.walltime_posterior.append(end_time)
-
-        return model
-
-    def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
-
-        if self._n_dims == 1:
+            model = models[0]
+            if len(models) > 1:
+                raise NotImplementedError("Code for multiple fucntions 1D left")
             fig = plt.figure()
             plots_1D.plot_GP(
                 model,
@@ -443,13 +474,13 @@ class ExcursionSetEstimator:
                 batchsize = 1
 
             plot = plots_2D.plot_GP(
-                plt, 
-                model, 
-                testcase, 
-                self.device, 
-                self.dtype, 
-                batchsize, 
-                algorithmopts["plot_entropies"], 
+                plt,
+                models,
+                testcase,
+                self.device,
+                self.dtype,
+                batchsize,
+                algorithmopts["plot_entropies"],
                 acq=self.acq_values,
                 acq_type=self._acq_type,
             )
@@ -466,6 +497,7 @@ class ExcursionSetEstimator:
             plt.savefig(figname)
 
         elif self._n_dims == 3:
+            model = models[0]
             fig = plt.figure()
             ax = fig.add_subplot(111, projection="3d")
             plot = plots_3D.plot_GP(ax, model, testcase, self.device, self.dtype)
