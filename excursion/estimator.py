@@ -6,10 +6,7 @@ import torch
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.normal import Normal
 from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-import excursion.plotting.onedim as plots_1D
-import excursion.plotting.twodim as plots_2D
-import excursion.plotting.threedim as plots_3D
+from .plotting import *
 from excursion.models.gp import get_gp
 from excursion.acquisition import acquisition_functions
 
@@ -159,8 +156,8 @@ class ExcursionSetEstimator:
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
 
-        print("x_new ", self.x_new.size(), self.x_new)
-        print("y_new ", self.y_new.size(), self.y_new)
+        #print("x_new ", self.x_new.size(), self.x_new)
+        #print("y_new ", self.y_new.size(), self.y_new)
 
         return self.x_new, self.y_new
 
@@ -220,7 +217,7 @@ class ExcursionSetEstimator:
 
         if self._n_dims == 1:
             fig = plt.figure()
-            plots_1D.plot_GP(
+            plots_1D(
                 model,
                 testcase,
                 acq=self.acq_values,
@@ -248,7 +245,7 @@ class ExcursionSetEstimator:
             else:
                 batchsize = 1
 
-            plot = plots_2D.plot_GP(
+            plot = plots_2D(
                 plt, model, testcase, self.device, self.dtype, batchsize
             )
             plt.tight_layout()
@@ -266,7 +263,7 @@ class ExcursionSetEstimator:
         elif self._n_dims == 3:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection="3d")
-            plot = plots_3D.plot_GP(ax, model, testcase, self.device, self.dtype)
+            plot = plots_3D(ax, model, testcase, self.device, self.dtype)
             plt.tight_layout()
             figname = (
                 outputfolder
