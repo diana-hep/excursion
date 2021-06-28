@@ -1,5 +1,6 @@
 import torch
-from excursion import get_gp, fit_hyperparams
+from excursion.models.fit import fit_hyperparams
+from excursion.models.gp import get_gp
 from copy import deepcopy
 
 

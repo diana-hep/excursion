@@ -11,7 +11,7 @@ import excursion.plotting.twodim as plots_2D
 import excursion.plotting.threedim as plots_3D
 import matplotlib.pyplot as plt
 import simplejson
-from excursion import get_gp
+from excursion.models.gp import get_gp
 
 class ExcursionSetEstimator:
     def __init__(self, testcase, algorithmopts, model, likelihood, device):
@@ -193,14 +193,15 @@ class ExcursionSetEstimator:
         # track wall time
         start_time = time.process_time()
         if self._n_dims == 1:
-            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0).flatten()
+            inputs_i = torch.cat(
+                (model.train_inputs[0], self.x_new), dim=0).flatten()
             targets_i = torch.cat(
-                (model.train_targets.flatten(), self.y_new.flatten()), dim=0
-            ).flatten()
-
+                (model.train_targets.flatten(), self.y_new.flatten()), dim=0).flatten()
         else:
-            inputs_i = torch.cat((model.train_inputs[0], self.x_new), 0)
-            targets_i = torch.cat((model.train_targets, self.y_new), 0).flatten()
+            inputs_i = torch.cat(
+                (model.train_inputs[0], self.x_new), 0)
+            targets_i = torch.cat(
+                (model.train_targets, self.y_new), 0).flatten()
 
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         model = get_gp(

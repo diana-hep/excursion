@@ -1,51 +1,74 @@
-import gpytorch
-import torch
+from gpytorch.models import ExactGP
 from . import priors
+from ..kernels.kernel import Kernel
+import numpy as np
+from .fit import *
 
+def get_gp(X, y, likelihood, algorithmopts, testcase, device):
+    modelopts = algorithmopts["model"]["type"]
+    kernelopts = algorithmopts["model"]["kernel"]
+    prioropts = algorithmopts["model"]["prior"]
 
-class ExactGP_RBF(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, prior):
-        super(ExactGP_RBF, self).__init__(train_x, train_y, likelihood)
-        # prior
-        if prior == "Lineal":
-            # self.mean_module = priors.LinealMean(
-            #    ndim=train_x.shape[1]
-            self.mean_module = gpytorch.means.LinearMean()
-        elif prior == "Constant":
-            self.mean_module = gpytorch.means.ConstantMean()
-        elif prior == "Circular":
-            self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
+    #
+    # GAUSSIAN PROCESS
+    #
+
+    # to
+    X = X.to(device)
+    y = y.to(device)
+
+    #
+    # GAUSSIAN PROCESS
+    #
+    if modelopts == "ExactGP" and kernelopts == "RBF":
+        model = ExcursionGP(X, y, likelihood, prioropts).to(device)
+    elif modelopts == "GridGP" and kernelopts == "RBF":
+        model = ExcursionGP(X, y, likelihood, prioropts, grid= testcase.rangedef).to(device)
+    else:
+        raise RuntimeError("unknown gpytorch model")
+
+    # fit
+    model.train()
+    likelihood.train()
+    fit_hyperparams(model, likelihood)
+
+    return model
+
+class ExcursionGP(ExactGP):
+    def __init__(self, train_x, train_y, likelihood, prior, grid = None):
+        super(ExcursionGP, self).__init__(train_x, train_y, likelihood)
+        if grid is None:
+            self.covar_module = Kernel(model_type='ScaleKernel', base_kernel='RBFKernel').get_kernel()
+            if prior == "Lineal":
+                # self.mean_module = priors.LinealMean(
+                #    ndim=train_x.shape[1]
+                self.mean_module = gpytorch.means.LinearMean()
+            elif prior == "Constant":
+                self.mean_module = gpytorch.means.ConstantMean()
+            elif prior == "Circular":
+                self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
+            else:
+                raise NotImplementedError()
+
         else:
-            raise NotImplementedError()
+            grid_bounds = grid[:, :-1]
+            grid_n = grid[:, -1]
+            grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
 
-        self.covar_module = gpytorch.kernels.ScaleKernel(
-            gpytorch.kernels.RBFKernel(
-                lengthscale_constraint=gpytorch.constraints.GreaterThan(lower_bound=0.1)
-            )
-        )
+            for i in range(len(grid_bounds)):
+                grid[:, i] = torch.linspace(
+                    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+                )
 
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-
-
-class GridGPRegression_RBF(gpytorch.models.ExactGP):
-    def __init__(self, grid, train_x, train_y, likelihood, prior):
-        super(GridGPRegression_RBF, self).__init__(train_x, train_y, likelihood)
-        num_dims = train_x.size(-1)
-        # prior
-        if prior == "Lineal":
-            self.mean_module = priors.LinealMean(ndim=train_x.shape[1])
-        elif prior == "Constant":
-            self.mean_module = gpytorch.means.ConstantMean()
-        elif prior == "Circular":
-            self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
-        else:
-            raise NotImplementedError()
-        self.covar_module = gpytorch.kernels.GridKernel(
-            gpytorch.kernels.RBFKernel(), grid=grid
-        )
+            self.covar_module = Kernel(model_type='GridKernel', base_kernel='RBFKernel', grid = grid).get_kernel()
+            if prior == "Lineal":
+                self.mean_module = priors.LinealMean(ndim=train_x.shape[1])
+            elif prior == "Constant":
+                self.mean_module = gpytorch.means.ConstantMean()
+            elif prior == "Circular":
+                self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
+            else:
+                raise NotImplementedError()
 
     def forward(self, x):
         mean_x = self.mean_module(x)

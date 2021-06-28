@@ -4,7 +4,6 @@ from gpytorch.constraints import GreaterThan
 
 class Kernel(object):
     def __init__(self, model_type: str, base_kernel: str, grid = None):
-        self.__grid = grid
     #    try:
         if grid is None:
             self.kernel = globals()[model_type](globals()[base_kernel](
