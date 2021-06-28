@@ -4,7 +4,7 @@ import os
 sys.path.append(os.getcwd())
 
 from excursion import init_gp
-from excursion import ExcursionSetEstimator
+from excursion.estimator import ExcursionSetEstimator
 from excursion.utils import load_example
 import numpy as np
 import yaml
