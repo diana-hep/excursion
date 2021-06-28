@@ -1,5 +1,4 @@
 from gpytorch.models import ExactGP
-from . import priors
 from .kernel import Kernel
 import numpy as np
 from .fit import *
@@ -34,21 +33,13 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
 
     return model
 
+
 class ExcursionGP(ExactGP):
     def __init__(self, train_x, train_y, likelihood, prior, grid = None):
         super(ExcursionGP, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
         if grid is None:
             self.covar_module = Kernel(model_type='ScaleKernel', base_kernel='RBFKernel').get_kernel()
-            if prior == "Lineal":
-                # self.mean_module = priors.LinealMean(
-                #    ndim=train_x.shape[1]
-                self.mean_module = gpytorch.means.LinearMean()
-            elif prior == "Constant":
-                self.mean_module = gpytorch.means.ConstantMean()
-            elif prior == "Circular":
-                self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
-            else:
-                raise NotImplementedError()
 
         else:
             grid_bounds = grid[:, :-1]
@@ -61,14 +52,6 @@ class ExcursionGP(ExactGP):
                 )
 
             self.covar_module = Kernel(model_type='GridKernel', base_kernel='RBFKernel', grid = grid).get_kernel()
-            if prior == "Lineal":
-                self.mean_module = priors.LinealMean(ndim=train_x.shape[1])
-            elif prior == "Constant":
-                self.mean_module = gpytorch.means.ConstantMean()
-            elif prior == "Circular":
-                self.mean_module = priors.CircularMean(ndim=train_x.shape[1])
-            else:
-                raise NotImplementedError()
 
     def forward(self, x):
         mean_x = self.mean_module(x)
