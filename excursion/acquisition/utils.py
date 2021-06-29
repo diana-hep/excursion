@@ -11,7 +11,7 @@ def cdf(mu, sigma, t):
     return cdf
 
 def h_normal(var):
-    return torch.log(var * (2 * np.e * np.pi) ** 0.5)
+    return torch.log(var * ((2 * np.e * np.pi) ** 0.5))
 
 
 def normal_pdf(x):
