@@ -12,7 +12,7 @@ def fit_hyperparams(gp, likelihood, optimizer: str = "Adam"):
     if optimizer == "Adam":
 
         optimizer = torch.optim.Adam(
-            [{"params": gp.parameters()},],  # Includes GaussianLikelihood parameters
+            [{"params": gp.parameters()}, ],  # Includes GaussianLikelihood parameters
             lr=0.1,
             eps=10e-6,
         )

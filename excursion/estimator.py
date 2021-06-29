@@ -8,8 +8,8 @@ from torch.distributions.normal import Normal
 from sklearn.metrics import confusion_matrix
 from .plotting import *
 from excursion.models.gp import get_gp
-from excursion.acquisition import acquisition_functions
-
+from excursion.acquisition import *
+from excursion.models.fit import fit_hyperparams
 
 class ExcursionSetEstimator:
     def __init__(self, testcase, algorithmopts, model, likelihood, device):
@@ -94,7 +94,6 @@ class ExcursionSetEstimator:
         # print('ACQ VALUES')
         # print(acq_values_of_grid)
 
-        from excursion.acquisition.batch import batchGrid
 
         batchgrid = batchGrid(
             acq_values_of_grid,
@@ -207,10 +206,13 @@ class ExcursionSetEstimator:
         # model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         #
         #
-        model = get_gp(
-            inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
-        )
+        # model = get_gp(
+        #    inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device)
 
+        model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
+        model.train()
+        likelihood.train()
+        fit_hyperparams(model, likelihood)
 
         # track wall time
         end_time = time.process_time() - start_time
