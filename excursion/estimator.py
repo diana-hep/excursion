@@ -510,19 +510,40 @@ class ExcursionSetEstimator:
 
         return self.x_new, self.y_new
 
-    def get_acq_values(self, model: excursion.models.gp.ExcursionGP, testcase):
+    def get_acq_values(self, model, testcase):
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
+        if self._acq_type == "PES":
+            acquisition_values_grid = []
 
-        start_time = time.time()
+            for x in self._X_grid:
+                x = x.view(1, -1).to(self.device, self.dtype)
 
-        acquisition_values_grid = acquisition_functions[self._acq_type](
-            model, testcase, thresholds, self._X_grid, self.device, self.dtype)
+                start_time = time.time()
 
-        end_time = time.time() - start_time
+                value = acquisition_functions[self._acq_type](
+                    model,
+                    testcase,
+                    thresholds,
+                    x,
+                    self.device,
+                    self.dtype,
+                )
+
+                end_time = time.time() - start_time
+
+                acquisition_values_grid.append(value)
+
+        else:
+            start_time = time.time()
+
+            acquisition_values_grid = acquisition_functions[self._acq_type](
+                model, testcase, thresholds, self._X_grid, self.device, self.dtype)
+
+            end_time = time.time() - start_time
 
         # Used for plotting. must plot after this call to step
-        self.acq_values = acquisition_values_grid
+            self.acq_values = acquisition_values_grid
 
         return acquisition_values_grid
 
