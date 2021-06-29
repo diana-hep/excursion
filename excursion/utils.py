@@ -2,7 +2,7 @@ from scipy.stats import norm
 import numpy as np
 import torch
 import importlib
-
+import sys
 
 def cdf(value):
     return 0.5 * (
@@ -36,12 +36,8 @@ def load_example(example):
         testcase = importlib.import_module("excursion.testcases.darkhiggs")
     elif example == "checkmate":
         testcase = importlib.import_module("excursion.testcases.checkmate")
-    elif example.startswith("parabola_"):
-        n = [int(s) for s in example if s.isdigit()][0]
-        # make_parabola_script(n)
-        testcase = importlib.import_module(
-            "excursion.testcases.parabola_" + str(n) + "D"
-        )
+    elif example.startswith("parabola_nD"):
+        testcase = importlib.import_module("excursion.testcases.parabola_nD")
     # elif example == "parabola_1D":
     #    testcase = importlib.import_module("excursion.testcases.parabola_1D")
     # elif example == "parabola_2D":

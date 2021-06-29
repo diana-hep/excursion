@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 from excursion.utils import mgrid, mesh2points
-import math
-
+import sys
+import yaml
 
 def truth(x):
     # paraboloid
@@ -12,13 +12,16 @@ def truth(x):
 true_functions = [truth]
 
 # Define threshold list
-thresholds = torch.Tensor([0.0])
+thresholds = torch.Tensor([1.0])
+
+#n dimensions
+
+file = yaml.safe_load(open(sys.argv[4], "r"))
+n_dims = int(file['n'])
 
 # Define grid for acquisition function
-n_dims = 4
-
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[-1, 1, 41], [-1, 1, 41], [-1, 1, 41], [-1, 1, 41]])
+rangedef = np.array([[-2, 2, 10],] * n_dims)
 
 # meshgrid
 plot_meshgrid = mgrid(rangedef)
