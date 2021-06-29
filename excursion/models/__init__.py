@@ -32,6 +32,11 @@ def init_gp( testcase, algorithmopts, ninit, device):
         X_init = X_grid[indexs].to(device, dtype)
         noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
         y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
+    #
+    #
+    # This is broken
+    #
+    #
     elif init_type == "worstcase":
         X_init = [X_grid[0]]
         X_init = torch.Tensor(X_init).to(device, dtype)
@@ -71,8 +76,8 @@ def init_gp( testcase, algorithmopts, ninit, device):
         raise RuntimeError("unknown gpytorch model")
 
     # fit
-    print("X_init ", X_init)
-    print("y_init ", y_init)
+    # print("X_init ", X_init)
+    # print("y_init ", y_init)
     model.train()
     likelihood.train()
     fit_hyperparams(model, likelihood)
