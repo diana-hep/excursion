@@ -27,7 +27,7 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
 
     # vector of expected value H1 under S(x) for each x in X_grid
     E_S_H1 = torch.zeros(len(X_grid))  # .to(device, dtype)
-
+    thresholds = torch.tensor(thresholds, dtype=dtype)
     for j in range(len(thresholds) - 1):
 
         # vector of sigma(Y(x_candidate)|S(x)=j) truncated
