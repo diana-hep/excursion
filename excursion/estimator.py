@@ -162,13 +162,26 @@ class SetEstimator:
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        start_time = time.time()
 
-        acquisition_values_grid = acquisition_functions[self._acq_type](
-            model, testcase, thresholds, self._X_grid, self.device, self.dtype)
+        acquisition_values_grid = []
+        for x in self._X_grid:
+            x = x.view(1, -1).to(self.device, self.dtype)
+            start_time = time.time()
+            value = acquisition_functions[self._acq_type](model, testcase, thresholds, x, self.device, self.dtype,)
+
+            end_time = time.time() - start_time
+
+            acquisition_values_grid.append(value)
 
 
-        end_time = time.time() - start_time
+
+        # start_time = time.time()
+        #
+        # acquisition_values_grid = acquisition_functions[self._acq_type](
+        #     model, testcase, thresholds, self._X_grid, self.device, self.dtype)
+        #
+        #
+        # end_time = time.time() - start_time
 
         # Used for plotting. must plot after this call to step
         self.acq_values = acquisition_values_grid
