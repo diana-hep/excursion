@@ -201,12 +201,12 @@ class ExcursionSetEstimator:
             targets_i = torch.cat(
                 (model.train_targets, self.y_new), 0).flatten()
 
-
-
+        #
+        #
         # What is this line doing here?
         # model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-
-
+        #
+        #
         model = get_gp(
             inputs_i, targets_i, likelihood, algorithmopts, testcase, self.device
         )
