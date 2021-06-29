@@ -1,6 +1,7 @@
 from gpytorch.kernels import *
 from gpytorch.constraints import GreaterThan
 
+## Importlib instead of globals
 
 class Kernel(object):
 

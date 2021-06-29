@@ -1,6 +1,6 @@
 import numpy as np
 
-from .. import utils
+from excursion import utils
 
 
 def truth(x):
