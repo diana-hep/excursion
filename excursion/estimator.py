@@ -94,7 +94,6 @@ class ExcursionSetEstimator:
         # print('ACQ VALUES')
         # print(acq_values_of_grid)
 
-
         batchgrid = batchGrid(
             acq_values_of_grid,
             device=self.device,
@@ -138,18 +137,17 @@ class ExcursionSetEstimator:
 
         ##################################
 
-        # get y from selected x
         gc.collect()
         torch.cuda.empty_cache()
 
+
+        # get y from selected x
+        # This is our expensive call to a black_box function
+
         noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
-        noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
-            self.device, self.dtype
-        )
-        self.y_new = (
-            testcase.true_functions[0](self.x_new).to(self.device, self.dtype) + noise
-        )
-        self.y_new = self.y_new
+        noise = self._epsilon * noise_dist.sample(torch.Size([])).to(self.device, self.dtype)
+        self.y_new = (testcase.true_functions[0](self.x_new).to(self.device, self.dtype)
+                      + noise)
 
         # track wall time
         end_time = time.process_time() - start_time
@@ -164,24 +162,14 @@ class ExcursionSetEstimator:
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
 
-        # for x in self._X_grid:
-        #     x = x.view(1, -1).to(self.device, self.dtype)
-
-        #     start_time = time.time()
-
-        #     value = acquisition_functions[self._acq_type](
-        #         model, testcase, thresholds, x, self.device, self.dtype,
-        #     )
-
-        #     end_time = time.time() - start_time
-
-        #     acquisition_values_grid.append(value)
         start_time = time.time()
+
         acquisition_values_grid = acquisition_functions[self._acq_type](
-            model, testcase, thresholds, self._X_grid, self.device, self.dtype
-        )
+            model, testcase, thresholds, self._X_grid, self.device, self.dtype)
+
         end_time = time.time() - start_time
 
+        # Used for plotting. must plot after this call to step
         self.acq_values = acquisition_values_grid
 
         return acquisition_values_grid
@@ -220,7 +208,7 @@ class ExcursionSetEstimator:
 
         return model
 
-    def plot_status(self, testcase, algorithmopts, model, acq_values, outputfolder):
+    def plot_status(self, testcase, algorithmopts, model, outputfolder):
 
         if self._n_dims == 1:
             fig = plt.figure()
