@@ -1,6 +1,7 @@
 import torch
 from .utils import truncated_std_conditional
 from .utils import h_normal
+from torch.distributions import Normal
 
 
 def PES(gp, testcase, thresholds, x_candidate, device, dtype):
@@ -29,7 +30,7 @@ def PES(gp, testcase, thresholds, x_candidate, device, dtype):
     E_S_H1 = torch.zeros(len(X_grid))  # .to(device, dtype)
 
 
-    thresholds = torch.tensor(thresholds, dtype=dtype)
+    thresholds = torch.tensor(thresholds, dtype=dtype, device=device)
 
     for j in range(len(thresholds) - 1):
 
