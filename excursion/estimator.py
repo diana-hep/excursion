@@ -514,25 +514,10 @@ class ExcursionSetEstimator:
 
         thresholds = [-np.inf] + testcase.thresholds.tolist() + [np.inf]
         if self._acq_type == "PES":
-            acquisition_values_grid = []
+            acquisition_values_grid = acquisition_functions[self._acq_type](
+                model, testcase, thresholds, self.device, self.dtype)
 
-            for x in self._X_grid:
-                x = x.view(1, -1).to(self.device, self.dtype)
-
-                start_time = time.time()
-
-                value = acquisition_functions[self._acq_type](
-                    model,
-                    testcase,
-                    thresholds,
-                    x,
-                    self.device,
-                    self.dtype,
-                )
-
-                end_time = time.time() - start_time
-
-                acquisition_values_grid.append(value)
+            self.acq_values = acquisition_values_grid
 
         else:
             start_time = time.time()
@@ -544,6 +529,10 @@ class ExcursionSetEstimator:
 
         # Used for plotting. must plot after this call to step
             self.acq_values = acquisition_values_grid
+            # print(f"the MES acquistion_values_grid is a: {type(acquisition_values_grid)}")
+            # print(f"the MES \"          \" size is: {acquisition_values_grid.size()}")
+            # print(f"the MES \"          \" is: {acquisition_values_grid}")
+            #
 
         return acquisition_values_grid
 
