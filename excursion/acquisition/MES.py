@@ -19,11 +19,11 @@ def MES(gp, testcase, thresholds, X_grid, device, dtype):
     entropy_grid = torch.zeros(num_points,).to(device, dtype)
 
     for j in range(len(thresholds) - 1):
-        my_p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) \
+        p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) \
                  - cdf(mean_tensor, std_tensor, thresholds[j])
 
-        entropy_grid[my_p_j > 0] -= torch.log(torch.exp(my_p_j[my_p_j > 0])) \
-                                    * torch.log(torch.exp(torch.log(my_p_j[my_p_j > 0])))
+        entropy_grid[p_j > 0] -= torch.log(torch.exp(p_j[p_j > 0])) \
+                                    * torch.log(torch.exp(torch.log(p_j[p_j > 0])))
     return entropy_grid
 
 

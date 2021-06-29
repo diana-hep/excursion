@@ -3,6 +3,7 @@ from .kernel import Kernel
 import numpy as np
 from .fit import *
 
+
 def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     modelopts = algorithmopts["model"]["type"]
     kernelopts = algorithmopts["model"]["kernel"]
@@ -22,7 +23,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
     if modelopts == "ExactGP" and kernelopts == "RBF":
         model = ExcursionGP(X, y, likelihood, prioropts).to(device)
     elif modelopts == "GridGP" and kernelopts == "RBF":
-        model = ExcursionGP(X, y, likelihood, prioropts, grid= testcase.rangedef).to(device)
+        model = ExcursionGP(X, y, likelihood, prioropts, grid=testcase.rangedef).to(device)
     else:
         raise RuntimeError("unknown gpytorch model")
 
