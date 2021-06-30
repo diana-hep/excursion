@@ -8,7 +8,7 @@ example: '1Dtoyanalysis'
 ninit: 2
 
 #number of iterations
-nupdates: 5
+nupdates: 9
 
 ##Define the init training data type
 init_type: 'random'
@@ -32,6 +32,6 @@ model:
 #acquisition function
 acq:
   acq_type: 'PES'
-  batch: True
+  batch: False
   batchtype: 'KB'
   batchsize: 2
