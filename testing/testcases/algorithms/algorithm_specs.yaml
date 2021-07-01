@@ -31,7 +31,7 @@ model:
 
 #acquisition function
 acq:
-  acq_type: 'PES'
+  acq_type: 'MES'
   batch: False
   batchtype: 'KB'
   batchsize: 2
