@@ -27,7 +27,7 @@ def truth(x):
     return 3 * (torch.log(analysis(xv, yv)) - math.log(0.05))
 
 
-true_functions = [truth, lambda X: truth(X-0.05)]
+true_functions = [truth, lambda X: truth(2*X-0.2)]
 
 # Define threshold list
 thresholds = torch.Tensor([0.0])
