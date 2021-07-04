@@ -19,11 +19,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 
-def init_gp(testcase, algorithmopts, ninit, device):
+def init_gp(testcase, algorithmopts, device):
     likelihood_type = algorithmopts["likelihood"]["type"]
     modelopts = algorithmopts["model"]["type"]
     kernelopts = algorithmopts["model"]["kernel"]
     prioropts = algorithmopts["model"]["prior"]
+    ninit = int(algorithmopts["ninit"])
 
     n_dims = testcase.n_dims
     n_funcs = len(testcase.true_functions)
@@ -35,82 +36,91 @@ def init_gp(testcase, algorithmopts, ninit, device):
     #
     X_grid = torch.Tensor(testcase.X_plot).to(device, dtype)
     init_type = algorithmopts["init_type"]
-    noise_dist = MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
-
-    if init_type == "random":
-        indexs = np.random.choice(range(len(X_grid)), size=ninit, replace=False)
-        X_init = X_grid[indexs].to(device, dtype)
-        noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
-        y_init = [func(X_init) for func in testcase.true_functions]
-        # y_init = [ func(X_init)[0].to(device, dtype) + noises for func in testcase.true_functions ]
-    elif init_type == "worstcase":
-        X_init = [X_grid[0]]
-        X_init = torch.Tensor(X_init).to(device, dtype)
-        noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
-        y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
-    elif init_type == "custom":
-        raise NotImplementedError("Not implemented yet")
-    else:
-        raise RuntimeError("No init data specification found")
-
-    #
-    # LIKELIHOOD
-    #
-    if likelihood_type == "GaussianLikelihood":
-        if epsilon > 0.0:
-            likelihood = gpytorch.likelihoods.GaussianLikelihood(
-                noise=torch.tensor([epsilon])
-            ).to(device, dtype)
-        elif epsilon == 0.0:
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
-                noise=torch.tensor([epsilon])
-            ).to(device, dtype)
+    
+    if(algorithmopts['ninit'] == 0):
+        X_init = torch.Tensor([])
+        y_init = torch.Tensor([])
+        likelihood = gpytorch.likelihoods.GaussianLikelihood().to(device, dtype)
+        model = ExactGP_RBF(X_init, y_init, likelihood, prioropts).to(device)
+        return [model], likelihood
 
     else:
-        raise RuntimeError("unknown likelihood")
+        noise_dist = MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
 
-    #
-    # GAUSSIAN PROCESS
-    #
-    models = []
-    if modelopts == "ExactGP" and kernelopts == "RBF":
-        for i in range(n_funcs):
-            model = ExactGP_RBF(X_init, y_init[i], likelihood, prioropts).to(device)
-            models.append(model)
-    elif modelopts == "GridGP" and kernelopts == "RBF":
-        grid_bounds = testcase.rangedef[:, :-1]
-        grid_n = testcase.rangedef[:, -1]
+        if init_type == "random":
+            indexs = np.random.choice(range(len(X_grid)), size=ninit, replace=False)
+            X_init = X_grid[indexs].to(device, dtype)
+            noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
+            y_init = [func(X_init) for func in testcase.true_functions]
+            # y_init = [ func(X_init)[0].to(device, dtype) + noises for func in testcase.true_functions ]
+        elif init_type == "worstcase":
+            X_init = [X_grid[0]]
+            X_init = torch.Tensor(X_init).to(device, dtype)
+            noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
+            y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
+        elif init_type == "custom":
+            raise NotImplementedError("Not implemented yet")
+        else:
+            raise RuntimeError("No init data specification found")
 
-        grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
+        #
+        # LIKELIHOOD
+        #
+        if likelihood_type == "GaussianLikelihood":
+            if epsilon > 0.0:
+                likelihood = gpytorch.likelihoods.GaussianLikelihood(
+                    noise=torch.tensor([epsilon])
+                ).to(device, dtype)
+            elif epsilon == 0.0:
+                likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
+                    noise=torch.tensor([epsilon])
+                ).to(device, dtype)
 
-        for i in range(len(grid_bounds)):
-            a = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
-            )
+        else:
+            raise RuntimeError("unknown likelihood")
 
-            grid[:, i] = torch.linspace(
-                grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
-            )
+        #
+        # GAUSSIAN PROCESS
+        #
+        models = []
+        if modelopts == "ExactGP" and kernelopts == "RBF":
+            for i in range(n_funcs):
+                model = ExactGP_RBF(X_init, y_init[i], likelihood, prioropts).to(device)
+                models.append(model)
+        elif modelopts == "GridGP" and kernelopts == "RBF":
+            grid_bounds = testcase.rangedef[:, :-1]
+            grid_n = testcase.rangedef[:, -1]
 
-        for i in range(n_funcs):
-            model = GridGPRegression_RBF(
-                grid, X_init, y_init[i], likelihood, prioropts
-            ).to(device)
-            models.append(model)
+            grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds), dtype=torch.double)
 
-    else:
-        raise RuntimeError("unknown gpytorch model")
+            for i in range(len(grid_bounds)):
+                a = torch.linspace(
+                    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+                )
 
-    # fit
-    print("X_init ", X_init)
-    print("y_init ", y_init)
+                grid[:, i] = torch.linspace(
+                    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
+                )
 
-    for model in models:
-        model.train()
-        likelihood.train()
-        excursion.fit_hyperparams(model, likelihood)
+            for i in range(n_funcs):
+                model = GridGPRegression_RBF(
+                    grid, X_init, y_init[i], likelihood, prioropts
+                ).to(device)
+                models.append(model)
 
-    return models, likelihood
+        else:
+            raise RuntimeError("unknown gpytorch model")
+
+        # fit
+        print("X_init ", X_init)
+        print("y_init ", y_init)
+
+        for model in models:
+            model.train()
+            likelihood.train()
+            excursion.fit_hyperparams(model, likelihood)
+
+        return models, likelihood
 
 
 def get_gp(X, y, likelihood, algorithmopts, testcase, device):

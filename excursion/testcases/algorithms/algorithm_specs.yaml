@@ -26,7 +26,7 @@ likelihood:
 model:
   type: 'ExactGP'
   kernel: 'RBF'
-  prior: 'Constant'
+  prior: 'Constant' #Constant, Linear or Circular
 
 
 #acquisition function

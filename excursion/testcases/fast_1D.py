@@ -39,7 +39,7 @@ def function_5(X):
     return 11-10*(torch.tanh((X-0.3)*3) + 0.15*torch.sin(X*f))
 
 
-true_functions = [function_5]
+true_functions = [function_1]
 
 # Define threshold list
 thresholds = torch.Tensor([0.7])
