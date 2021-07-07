@@ -15,9 +15,9 @@ true_functions = [truth]
 thresholds = torch.Tensor([1.0])
 
 #n dimensions
-
-file = yaml.safe_load(open(sys.argv[4], "r"))
-n_dims = int(file['n'])
+n_dims = 4
+#file = yaml.safe_load(open(sys.argv[4], "r"))
+#n_dims = int(file['n'])
 
 # Define grid for acquisition function
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims

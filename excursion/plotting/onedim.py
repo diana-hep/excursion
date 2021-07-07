@@ -134,18 +134,16 @@ def plot_GP(gp, testcase, **kwargs):
     gp.eval()
 
     if (len(kwargs) == 0 and len(X_train) == 0):
-        print(gp.mean_module(torch.Tensor([0.])))
-        print(torch.Tensor([0.]).dtype)
-        print(X_plot.dtype)
         prediction_mean = gp.mean_module(X_plot.type(torch.float32)).detach()
         prediction_variance = gp.covar_module(X_plot)[0].detach()
 
-        fig = plt.figure(figsize=(12, 7))
+        fig = plt.figure(figsize=(7, 5))
         # true function + thresholds
+        noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
         for func in testcase.true_functions:
             plt.plot(
                 X_plot,
-                func(X_plot),
+                likelihood(func(X_plot)),
                 linestyle="dashed",
                 color="black",
                 label="true function",
@@ -175,14 +173,16 @@ def plot_GP(gp, testcase, **kwargs):
 
         plt.xlabel("$x$")
         plt.ylabel("$f(x)$")
-        plt.legend(loc=0)
+        plt.legend(
+            bbox_to_anchor=(1.30, 1.0),
+        )
         # plt.show()
 
     elif len(kwargs) == 0 and len(X_train) != 0:
         prediction = likelihood(gp(X_plot))
         prediction_mean = prediction.mean.detach()
         prediction_variance = prediction.variance.detach()
-        fig = plt.figure(figsize=(12, 7))
+        fig = plt.figure(figsize=(7, 5))
 
         # true function + thresholds
         for func in testcase.true_functions:
@@ -222,8 +222,9 @@ def plot_GP(gp, testcase, **kwargs):
 
         plt.xlabel("$x$")
         plt.ylabel("$f(x)$")
-        plt.legend(loc=0)
-
+        plt.legend(
+            bbox_to_anchor=(1.30, 1.0),
+        )
 
 
     else:
@@ -235,15 +236,11 @@ def plot_GP(gp, testcase, **kwargs):
         dtype = kwargs["dtype"]
 
         # axis
-        try:
-            ax0 = plt.subplot(kwargs["ax0"])
-            ax1 = plt.subplot(kwargs["ax1"])
-        except KeyError:
-            print("I didnt get an axis")
-            fig = plt.figure(figsize=(12, 7))
-            axes = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-            ax0 = plt.subplot(axes[0])
-            ax1 = plt.subplot(axes[1])
+        
+        fig = plt.figure(figsize=(7, 5));
+        axes = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+        ax0 = plt.subplot(axes[0])
+        ax1 = plt.subplot(axes[1])
 
         # GP plot
         # true function + thresholds
@@ -298,7 +295,9 @@ def plot_GP(gp, testcase, **kwargs):
         ax0.set_xlabel("$x$")
         ax0.set_ylabel("$f(x)$")
         ax0.set_ylim(-2, 10)
-        ax0.legend(loc="upper right")
+        ax0.legend(
+            bbox_to_anchor=(1.40, 1.0),
+        )
 
         # ACQ plot
 
@@ -310,7 +309,7 @@ def plot_GP(gp, testcase, **kwargs):
         X_plot = X_plot[mask]
         # plot
         ax1.plot(X_plot, acq, color="orange", label="EIG " + str(acq_type))
-        ax1.set_xlabel("x")
+        ax1.set_xlabel("$x$")
         ax1.set_ylabel("acq(x)")
         if acq_type == "MES":
             ax1.set_yscale("log")
@@ -320,10 +319,12 @@ def plot_GP(gp, testcase, **kwargs):
 
         # ax1.legend(vertical, label="maximum")
 
-        ax1.legend(loc="lower right")
+        ax1.legend(
+            bbox_to_anchor=(1.40, 1.0),
+        )
 
         plt.subplots_adjust(hspace=0.0)
-        # plt.show()
+        #plt.show()
 
 
 def plot_GP_dual(gp1, gp2, testcase, **kwargs):

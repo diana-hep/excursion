@@ -3,7 +3,7 @@
 #
 example: '1Dtoyanalysis'   # each given testcase has a name
 ninit: 2                   # number of initial points
-nupdates: 15               # number of iterations
+nupdates: 20               # number of iterations
 init_type: 'random'        # type of init training data
 
 #
@@ -11,7 +11,7 @@ init_type: 'random'        # type of init training data
 #
 likelihood:
   type: 'GaussianLikelihood'
-  epsilon: 0.
+  epsilon: 1.
 
 #
 # MODEL

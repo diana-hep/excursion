@@ -51,7 +51,7 @@ def init_gp(testcase, algorithmopts, device):
             indexs = np.random.choice(range(len(X_grid)), size=ninit, replace=False)
             X_init = X_grid[indexs].to(device, dtype)
             noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
-            y_init = [func(X_init) for func in testcase.true_functions]
+            y_init = [func(X_init) + noises for func in testcase.true_functions]
             # y_init = [ func(X_init)[0].to(device, dtype) + noises for func in testcase.true_functions ]
         elif init_type == "worstcase":
             X_init = [X_grid[0]]
@@ -363,16 +363,16 @@ class ExcursionSetEstimator:
         gc.collect()
         torch.cuda.empty_cache()
 
-        #noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
-        #noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
-        #    self.device, self.dtype
-        #)
+        noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+        noise = self._epsilon * noise_dist.sample(torch.Size([])).to(
+            self.device, self.dtype
+        )
 
         # get y from selected x
         self.y_new_list = []
         for func in testcase.true_functions:
             self.y_new = (
-                func(self.x_new).to(self.device, self.dtype) #+ noise
+                func(self.x_new).to(self.device, self.dtype) + noise
             )
             self.y_new_list.append(self.y_new)
             
@@ -381,7 +381,7 @@ class ExcursionSetEstimator:
         end_time = time.process_time() - start_time
         self.walltime_step.append(end_time)
 
-        print("x_new ", self.x_new.size(), self.x_new)
+        print(f"x_new {self.x_new}")
 
         return self.x_new, self.y_new
 
