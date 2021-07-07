@@ -77,7 +77,6 @@ pyzmq==22.0.3
 qtconsole==5.0.3
 QtPy==1.9.0
 regex==2021.4.4
-rootpy==1.0.1
 scikit-image==0.18.1
 scikit-learn==0.24.1
 scipy==1.6.0
