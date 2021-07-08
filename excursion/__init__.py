@@ -325,7 +325,7 @@ class ExcursionSetEstimator:
         if algorithmopts["acq"]["batch"]:
             batchsize = algorithmopts["acq"]["batchsize"]
             batchtype = algorithmopts["acq"]["batchtype"]
-            sampling_method = algorithmopts["acq"]["sampling"]
+            #sampling_method = algorithmopts["acq"]["sampling"]
 
             new_indexs = batchgrid.batch_types[batchtype](
                 model,

@@ -1,10 +1,5 @@
 import torch
 import matplotlib.pyplot as plt
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "sans-serif",
-    "font.sans-serif": ["Helvetica"]})
-
 
 def plot_testcase_1d(testcase, tol):
 

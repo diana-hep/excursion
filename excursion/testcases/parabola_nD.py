@@ -21,7 +21,7 @@ n_dims = 4
 
 # Define grid for acquisition function
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef = np.array([[-2, 2, 10],] * n_dims)
+rangedef = np.array([[-2, 2, 20],] * n_dims)
 
 # meshgrid
 plot_meshgrid = mgrid(rangedef)

@@ -30,3 +30,5 @@ acq:
   batch: True
   batchtype: 'KB'
   batchsize: 3
+
+plot_entropies: False
