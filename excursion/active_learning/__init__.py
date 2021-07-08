@@ -197,6 +197,6 @@ def PPES(gp, testcase, thresholds, x_candidate):
 acquisition_functions = {
     "PES": PES,
     "MES": MES,
-    "MES_gpu": MES_gpu,
-    "MES_test": MES_test,
+    "MES gpu": MES_gpu,
+    "MES test": MES_test,
 }

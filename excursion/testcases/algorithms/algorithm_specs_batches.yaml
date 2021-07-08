@@ -1,0 +1,34 @@
+#
+# GLOBAL INIT
+#
+example: '2Dtoyanalysis'   # each given testcase has a name
+ninit: 7                   # number of initial points
+nupdates: 25              # number of iterations
+init_type: 'random'        # type of init training data
+
+#
+# LIKELIHOOD
+#
+likelihood:
+  type: 'GaussianLikelihood'
+  epsilon: 0.
+
+#
+# MODEL
+#
+model:
+  type: 'ExactGP'
+  kernel: 'RBF'
+  prior: 'Constant' # Constant, Linear or Circular
+
+
+#
+# ACQUISTION FUNCTION
+#
+acq:
+  acq_type: 'MES gpu'
+  batch: True
+  batchtype: 'KB'
+  batchsize: 3
+
+plot_entropies: False

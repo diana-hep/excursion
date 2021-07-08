@@ -16,7 +16,8 @@ def test_init_gp():
     for example in ["1Dtoyanalysis", "2Dtoyanalysis", "3Dtoyanalysis"]:
         print(example)
         testcase = load_example(example)
-        gp, likelihood = init_gp(testcase, algorithmopts, ninit, device)
+        gps, likelihood = init_gp(testcase, algorithmopts, ninit, device)
+        gp = gps[0]
 
         assert type(gp.train_inputs[0]) != type(None)
         assert type(gp.train_targets) != type(None)

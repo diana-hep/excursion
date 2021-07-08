@@ -1,3 +1,4 @@
+import gpytorch
 import numpy as np
 from excursion.utils import point_entropy
 from excursion.utils import point_entropy_gpytorch
@@ -122,7 +123,7 @@ def plot_GP(gp, testcase, **kwargs):
     """
     Plot GP posterior fit to data with the option of plotting side by side acquisition function
     """
-
+    
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
     X_plot = torch.from_numpy(testcase.X_plot)
@@ -131,11 +132,57 @@ def plot_GP(gp, testcase, **kwargs):
     likelihood = gp.likelihood
     likelihood.eval()
     gp.eval()
-    prediction = likelihood(gp(X_plot))
 
-    if len(kwargs) == 0:
+    if (len(kwargs) == 0 and len(X_train) == 0):
+        prediction_mean = gp.mean_module(X_plot.type(torch.float32)).detach()
+        prediction_variance = gp.covar_module(X_plot)[0].detach()
 
-        fig = plt.figure(figsize=(12, 7))
+        fig = plt.figure(figsize=(7, 5))
+        # true function + thresholds
+        noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+        for func in testcase.true_functions:
+            plt.plot(
+                X_plot,
+                likelihood(func(X_plot)),
+                linestyle="dashed",
+                color="black",
+                label="true function",
+            )
+
+        for thr in testcase.thresholds:
+            min_X = torch.min(testcase.plot_X)
+            max_X = torch.max(testcase.plot_X)
+            plt.hlines(thr, min_X, max_X, colors="grey", label="threshold")
+
+
+        plt.plot(X_plot, prediction_mean, color="blue", label="mean")
+        variance = prediction_variance[0]
+
+        for i in [1, 2, 3, 4, 5]:
+            plt.fill_between(
+                X_plot[:],
+                prediction_mean.numpy()
+                + i * variance.numpy() ** 0.5,
+                prediction_mean.numpy()
+                - i * variance.numpy() ** 0.5,
+                color="steelblue",
+                linewidth=0,
+                alpha=0.6 / i ** 1.5,
+                label=str(i) + "$\sigma$",
+            )
+
+        plt.xlabel("$x$")
+        plt.ylabel("$f(x)$")
+        plt.legend(
+            bbox_to_anchor=(1.30, 1.0),
+        )
+        # plt.show()
+
+    elif len(kwargs) == 0 and len(X_train) != 0:
+        prediction = likelihood(gp(X_plot))
+        prediction_mean = prediction.mean.detach()
+        prediction_variance = prediction.variance.detach()
+        fig = plt.figure(figsize=(7, 5))
 
         # true function + thresholds
         for func in testcase.true_functions:
@@ -150,7 +197,7 @@ def plot_GP(gp, testcase, **kwargs):
         for thr in testcase.thresholds:
             min_X = torch.min(testcase.plot_X)
             max_X = torch.max(testcase.plot_X)
-            plt.hlines(thr, min_X, max_X, colors="purple", label="threshold")
+            plt.hlines(thr, min_X, max_X, colors="grey", label="threshold")
 
         # GP plot
         ##train points
@@ -158,25 +205,27 @@ def plot_GP(gp, testcase, **kwargs):
         for x in X_train:
             plt.axvline(x, alpha=0.2, color="grey")
 
-        plt.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
+        plt.plot(X_plot, prediction_mean, color="blue", label="mean")
 
-        ##variance
         for i in [1, 2, 3, 4, 5]:
             plt.fill_between(
                 X_plot[:],
-                prediction.mean.detach().numpy()
-                + i * prediction.variance.detach().numpy() ** 0.5,
-                prediction.mean.detach().numpy()
-                - i * prediction.variance.detach().numpy() ** 0.5,
+                prediction_mean.numpy()
+                + i * prediction_variance.numpy() ** 0.5,
+                prediction_mean.numpy()
+                - i * prediction_variance.numpy() ** 0.5,
                 color="steelblue",
+                linewidth=0,
                 alpha=0.6 / i ** 1.5,
-                label=str(i) + "sigma",
+                label=str(i) + "$\sigma$",
             )
 
-        plt.xlabel("x")
-        plt.ylabel("f(x)")
-        plt.legend(loc=0)
-        # plt.show()
+        plt.xlabel("$x$")
+        plt.ylabel("$f(x)$")
+        plt.legend(
+            bbox_to_anchor=(1.30, 1.0),
+        )
+
 
     else:
 
@@ -187,15 +236,11 @@ def plot_GP(gp, testcase, **kwargs):
         dtype = kwargs["dtype"]
 
         # axis
-        try:
-            ax0 = plt.subplot(kwargs["ax0"])
-            ax1 = plt.subplot(kwargs["ax1"])
-        except KeyError:
-            print("I didnt get an axis")
-            fig = plt.figure(figsize=(12, 7))
-            axes = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-            ax0 = plt.subplot(axes[0])
-            ax1 = plt.subplot(axes[1])
+        
+        fig = plt.figure(figsize=(7, 5));
+        axes = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+        ax0 = plt.subplot(axes[0])
+        ax1 = plt.subplot(axes[1])
 
         # GP plot
         # true function + thresholds
@@ -212,7 +257,7 @@ def plot_GP(gp, testcase, **kwargs):
         for thr in testcase.thresholds:
             min_X = torch.min(testcase.X)
             max_X = torch.max(testcase.X)
-            ax0.hlines(thr, min_X, max_X, colors="purple", label="threshold")
+            ax0.hlines(thr, min_X, max_X, colors="grey", label="threshold")
 
         ##train points
         ax0.plot(
@@ -244,17 +289,19 @@ def plot_GP(gp, testcase, **kwargs):
                 prediction.mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i,
-                label=str(i) + "sigma",
+                label=str(i) + "$\sigma$",
             )
 
-        ax0.set_xlabel("x")
-        ax0.set_ylabel("f(x)")
+        ax0.set_xlabel("$x$")
+        ax0.set_ylabel("$f(x)$")
         ax0.set_ylim(-2, 10)
-        ax0.legend(loc="upper right")
+        ax0.legend(
+            bbox_to_anchor=(1.40, 1.0),
+        )
 
         # ACQ plot
 
-        ax1.set_xticks([], [])
+        #ax1.set_xticks([], [])
         # eliminate -inf
         acq = acq.detach().numpy()
         mask = np.isfinite(acq)
@@ -262,7 +309,7 @@ def plot_GP(gp, testcase, **kwargs):
         X_plot = X_plot[mask]
         # plot
         ax1.plot(X_plot, acq, color="orange", label="EIG " + str(acq_type))
-        ax1.set_xlabel("x")
+        ax1.set_xlabel("$x$")
         ax1.set_ylabel("acq(x)")
         if acq_type == "MES":
             ax1.set_yscale("log")
@@ -272,10 +319,12 @@ def plot_GP(gp, testcase, **kwargs):
 
         # ax1.legend(vertical, label="maximum")
 
-        ax1.legend(loc="lower right")
+        ax1.legend(
+            bbox_to_anchor=(1.40, 1.0),
+        )
 
         plt.subplots_adjust(hspace=0.0)
-        # plt.show()
+        #plt.show()
 
 
 def plot_GP_dual(gp1, gp2, testcase, **kwargs):

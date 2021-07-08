@@ -3,6 +3,7 @@ import gpytorch
 import os
 import itertools
 from excursion import get_gp, fit_hyperparams
+    
 from copy import deepcopy
 
 
@@ -40,6 +41,7 @@ class batchGrid(object):
         self.batch_types = {
             "Naive": self.get_naive_batch,
             "KB": self.get_kb_batch,
+            "Distanced": self.get_distanced_batch,
             # "Cluster": self.get_cluster_batch,
         }
         self.picked_indexs = []
@@ -103,7 +105,6 @@ class batchGrid(object):
         likelihood = kwargs["likelihood"]
         algorithmopts = kwargs["algorithmopts"]
         excursion_estimator = kwargs["excursion_estimator"]
-        # print('@@@@@@ gp targets', gp.train_targets)
         gp_fake = deepcopy(gp)
 
         while len(new_indexs) < batchsize:
@@ -182,125 +183,36 @@ class batchGrid(object):
 
         return model_fake
 
+    def euclidean_distance_idxs(self, array_idxs, point_idx, testcase):
+        array = testcase.X[array_idxs]  
+        point = testcase.X[point_idx] #vector
+        d = array - point
+        d = torch.sqrt(torch.sum(d**2)) #vector
+        d = torch.min(d).item() #USE DIST
+        if(array_idxs == []):
+            return 1e8
+        else:
+            return d #returns a scalar
 
-# class batchGrid(torch.Tensor):
-#     def __init__(self, , device):
-#         torch.Tensor.__init__(self, acq_values_of_grid, device=device)
+    def get_distanced_batch(self, gp, testcase, batchsize, device, dtype, **kwargs):
+        new_indexs = []
+        #c times the minimum grid step of separation between selected points in batch
+        c = 75 #has to be > 1
+        step = min((testcase.rangedef[:,1] - testcase.rangedef[:,0])/testcase.rangedef[:,-1])
+        distance = c * step
 
+        while len(new_indexs) < batchsize:
+            max_index = self.get_first_max_index(gp, testcase, device, dtype)
+            if max_index not in new_indexs:
+                if self.euclidean_distance_idxs(new_indexs, max_index, testcase)  >= distance:
+                    new_indexs.append(max_index)
+                    self.pop(max_index)
 
-#     def pop(self, index):
-#         self[index] = -1E10
+            else:
+                self.pop(max_index)
+                max_index = self.get_first_max_index(gp, testcase, device, dtype)
 
+        return new_indexs
 
-#     def get_first_max_index(self, gp, testcase, device, dtype):
-#         X_train = gp.train_inputs[0].to(device, dtype)
-#         continue_ = True
+    
 
-#         while continue_:  # until accptance of index
-#             new_index = torch.argmax(self.grid)  # index with max ac value
-#             mask = torch.abs(
-#                 X_train - testcase.X.to(device, dtype)[new_index]
-#             )  # is X_grid[new_index] already picked?
-#             identical_elements = mask[mask.sum(dim=1) == 0]
-#             number_identical_elements = identical_elements.size()[0]
-
-#             print("new_index ", new_index)
-#             print("x ", testcase.X[new_index])
-#             print("mask ", mask)
-#             print("identical_elements ", identical_elements)
-#             print("number_identical_elements ", number_identical_elements)
-#             print("X_train ", X_train.size(), X_train)
-
-
-#             os.system("echo new_index   "+ str(new_index)) #testing
-#             os.system("echo x   "+ str(testcase.X[new_index].tolist())) #testing
-#             os.system("echo mask   "+ str(mask.tolist())) #testing
-#             os.system("echo identical_elements   "+ str(identical_elements.tolist())) #testing
-#             os.system("echo number_identical_elements   "+ str(number_identical_elements)) #testing
-#             os.system("echo X_train   "+ str(X_train.tolist())) #testing
-
-
-#             if number_identical_elements == 0:
-#                 # no, accept it, stop
-#                 return new_index.item()
-#                 continue_ = False
-#                 break
-#             else:
-#                 os.system("echo  trapped")
-#                 print("trapped")
-#                 # yes, discard index try again
-#                 self.pop(new_index)
-
-
-#     def get_naive_batch(
-#         self, gp, testcase, batchsize, device, dtype, **kwargs
-#     ):
-#         X_train = gp.train_inputs[0].to(device, dtype)
-#         new_indexs = []
-#         new_ordered_indexs = batchgrid
-
-#         while len(new_indexs) < batchsize:
-#             os.system("echo get_naive_batch not reached batchsize")
-#             max_index = get_first_max_index(self, gp, testcase, device, dtype)
-#             if max_index not in new_indexs:
-#                 os.system("echo accepted")
-#                 new_indexs.append(max_index)
-#                 batchgrid.pop(max_index)
-#                 continue
-#             else:
-#                 os.system("echo rejected call get_first_max_index again")
-#                 print('MAX_INDEX IN POP', max_index)
-#                 self.pop(max_index)
-#                 max_index = get_first_max_index(
-#                     self, gp, testcase, device, dtype
-#                 )
-
-#         print("new_indexS ", new_indexs)
-#         return new_indexs
-
-
-#     def get_kb_batch(gp, acq_values_of_grid, testcase, batchsize, device, dtype, **kwargs):
-#         X_train = gp.train_inputs[0].to(device, dtype)
-#         new_indexs = []
-#         new_xs = torch.Tensor([]).to(device, dtype)
-#         new_fake_ys = torch.Tensor([]).to(device, dtype)
-#         new_acq_values_grid = acq_values_of_grid
-
-#         likelihood = kwargs["likelihood"]
-#         algorithmopts = kwargs["algorithmopts"]
-#         self = kwargs["self"]
-#         gp_fake = gp
-
-#         while len(new_indexs) < batchsize:
-#             max_index = get_first_max_index(
-#                 gp, new_acq_values_grid, testcase, device, dtype
-#             )
-#             new_indexs.append(max_index)
-
-#             x = testcase.X.to(device, dtype)[max_index]  # .reshape(1, -1)
-#             new_xs = torch.cat((new_xs, x), 0)
-#             gp_fake.eval()
-#             likelihood.eval()
-#             y_fake = likelihood(gp_fake(x)).mean
-#             new_fake_ys = torch.cat((new_fake_ys, y_fake), 0)
-
-#             gp_fake = self.update_fake_posterior(
-#                 testcase, algorithmopts, gp_fake, likelihood, new_xs, new_fake_ys
-#             )
-#             new_acq_values_grid = self.get_acq_values(gp_fake, testcase)
-
-#         return new_indexs
-
-
-#     def get_cluster_batch(gp, ordered_indexs, testcase, batchsize, self, **kwargs):
-
-#         X_train = gp.train_inputs[0]
-#         new_indexs = []
-
-#         new_ordered_indexs = ordered_indexs
-#         algorithmopts = kwargs["algorithmopts"]
-
-#         while len(new_indexs) < batchsize:
-#             pass
-
-#         return new_indexs

@@ -34,16 +34,21 @@ def function_4(X: torch.Tensor) -> torch.Tensor:
     return f4
 
 
-true_functions = [function_2]
+def function_5(X):
+    f = 30
+    return 11-10*(torch.tanh((X-0.3)*3) + 0.15*torch.sin(X*f))
+
+
+true_functions = [function_1]
 
 # Define threshold list
-thresholds = torch.Tensor([2.0])
+thresholds = torch.Tensor([0.7])
 
 # Define grid for acquisition function
 n_dims = 1
 
 ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-rangedef_1 = [0, 5, 400]
+rangedef_1 = [0, 1, 100]
 rangedef = np.array([rangedef_1])
 
 grid_1 = torch.linspace(

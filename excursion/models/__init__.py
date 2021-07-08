@@ -7,10 +7,10 @@ class ExactGP_RBF(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, prior):
         super(ExactGP_RBF, self).__init__(train_x, train_y, likelihood)
         # prior
-        if prior == "Lineal":
+        if prior == "Linear":
             # self.mean_module = priors.LinealMean(
             #    ndim=train_x.shape[1]
-            self.mean_module = gpytorch.means.LinearMean()
+            self.mean_module = gpytorch.means.LinearMean(input_size=1)
         elif prior == "Constant":
             self.mean_module = gpytorch.means.ConstantMean()
         elif prior == "Circular":
