@@ -231,10 +231,10 @@ class SetEstimator:
             plots_1D(
                 model,
                 testcase,
+                device=self.device,
                 acq=self.acq_values,
                 acq_type=self._acq_type,
                 x_new=self.x_new,
-                device=self.device,
                 dtype=self.dtype,
             )
             plt.tight_layout()

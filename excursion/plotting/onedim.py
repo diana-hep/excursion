@@ -123,9 +123,9 @@ def plot_GP(gp, testcase, **kwargs):
     Plot GP posterior fit to data with the option of plotting side by side acquisition function
     """
 
-    X_train = gp.train_inputs[0]
-    y_train = gp.train_targets
-    X_plot = torch.from_numpy(testcase.X_plot)
+    X_train = gp.train_inputs[0].cpu()
+    y_train = gp.train_targets.cpu()
+    X_plot = torch.tensor(testcase.X, dtype=torch.float64, device=kwargs['device'])
 
     ##mean
     likelihood = gp.likelihood
@@ -133,7 +133,11 @@ def plot_GP(gp, testcase, **kwargs):
     gp.eval()
     prediction = likelihood(gp(X_plot))
 
-    if len(kwargs) == 0:
+    X_plot = torch.from_numpy(testcase.X_plot)
+    variance = prediction.variance.cpu()
+    mean = prediction.mean.cpu()
+
+    if len(kwargs) == 1:
 
         fig = plt.figure(figsize=(12, 7))
 
@@ -158,16 +162,17 @@ def plot_GP(gp, testcase, **kwargs):
         for x in X_train:
             plt.axvline(x, alpha=0.2, color="grey")
 
-        plt.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
+
+        plt.plot(X_plot, mean.detach(), color="blue", label="mean")
 
         ##variance
         for i in [1, 2, 3, 4, 5]:
             plt.fill_between(
                 X_plot[:],
-                prediction.mean.detach().numpy()
-                + i * prediction.variance.detach().numpy() ** 0.5,
-                prediction.mean.detach().numpy()
-                - i * prediction.variance.detach().numpy() ** 0.5,
+                mean.detach().numpy()
+                + i * variance.detach().numpy() ** 0.5,
+                mean.detach().numpy()
+                - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i ** 1.5,
                 label=str(i) + "sigma",
@@ -180,9 +185,9 @@ def plot_GP(gp, testcase, **kwargs):
 
     else:
 
-        acq = kwargs["acq"]
+        acq = kwargs["acq"].cpu()
         acq_type = kwargs["acq_type"]
-        xnew = kwargs["x_new"]
+        xnew = kwargs["x_new"].cpu()
         device = kwargs["device"]
         dtype = kwargs["dtype"]
 
@@ -229,19 +234,19 @@ def plot_GP(gp, testcase, **kwargs):
         ax0.axvline(X_train[-1, 0], c="red", label="new evaluation")
 
         ##mean
-        gp.eval()
-        likelihood = gp.likelihood
-        likelihood.eval()
-        prediction = likelihood(gp(testcase.X))
-        ax0.plot(X_plot, prediction.mean.detach(), color="blue", label="mean")
-        variance = prediction.covariance_matrix.diag()
+        # gp.eval()
+        # likelihood = gp.likelihood
+        # likelihood.eval()
+        # prediction = likelihood(gp(testcase.X))
+        ax0.plot(X_plot, mean.detach(), color="blue", label="mean")
+        variance = prediction.covariance_matrix.diag().cpu()
 
         ##variance
         for i in range(1, 6):
             ax0.fill_between(
                 X_plot,
-                prediction.mean.detach().numpy() + i * variance.detach().numpy() ** 0.5,
-                prediction.mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
+                mean.detach().numpy() + i * variance.detach().numpy() ** 0.5,
+                mean.detach().numpy() - i * variance.detach().numpy() ** 0.5,
                 color="steelblue",
                 alpha=0.6 / i,
                 label=str(i) + "sigma",
