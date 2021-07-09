@@ -3,5 +3,5 @@ from . import utils
 __all__ = [
     "init_gp",
     "utils",
-    "fit_hyperparams"
+    "fit_hyperparams",
 ]
