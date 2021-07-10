@@ -31,7 +31,7 @@ def PES(gp, testcase, thresholds, device, dtype):
         )
 
         # vector of expected value H1 under S(x) for each x in X_grid
-        E_S_H1 = torch.zeros(len(X_grid))  # .to(device, dtype)
+        E_S_H1 = torch.zeros(len(X_grid)).to(device, dtype)
 
 
         for j in range(len(thresholds) - 1):
@@ -46,7 +46,8 @@ def PES(gp, testcase, thresholds, device, dtype):
             p_j = Y_pred_grid.cdf(thresholds[j + 1]) - Y_pred_grid.cdf(thresholds[j])
             mask = torch.where(p_j == 0.0)
             H1_j[mask] = 0.0
-
+            # print(p_j)
+            # print(H1_j)
             E_S_H1 += p_j * H1_j  # expected value of H1 under S(x)
 
         # entropy of Y(x_candidate)
