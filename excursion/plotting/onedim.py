@@ -198,7 +198,7 @@ def plot_GP(gp, testcase, **kwargs):
         except KeyError:
             print("I didnt get an axis")
             fig = plt.figure(figsize=(12, 7))
-            axes = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+            axes = gridspec.GridSpec(2, 1, height_ratios=[5, 1])
             ax0 = plt.subplot(axes[0])
             ax1 = plt.subplot(axes[1])
 

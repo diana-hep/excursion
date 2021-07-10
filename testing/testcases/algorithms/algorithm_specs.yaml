@@ -24,7 +24,7 @@ likelihood:
 
 #model
 model:
-  type: 'GridGP'
+  type: 'ExactGP'
   kernel: 'RBF'
   prior: 'Constant'
 
