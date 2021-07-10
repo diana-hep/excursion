@@ -2,7 +2,9 @@ import torch
 from .utils import cdf
 
 # THIS MES AQC
-def MES(gp, testcase, thresholds, X_grid, device, dtype):
+def MES(gp, testcase, thresholds, device, dtype):
+
+    X_grid = testcase.X.to(device=device, dtype=dtype)
 
     # compute predictive posterior of Y(x) | train data
     likelihood = gp.likelihood
