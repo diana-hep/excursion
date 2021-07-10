@@ -12,9 +12,9 @@ class TestFullSimple(unittest.TestCase):
 
         tol = 1e-6
         device = torch.device("cpu")
-        ninit = 1
+        ninit = 2
         algorithmopts = yaml.safe_load(open("../testing/algorithm_specs_full_test.yaml", "r"))
-        print('hello\n')
+
         # three toy examples
         for example in ["1D_test"]:
             testcase = load_example(example)
