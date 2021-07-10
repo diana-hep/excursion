@@ -55,7 +55,7 @@ if not os.access('MadGraph_param_card_DMsimp_s_spin1.dat',os.R_OK):
 elif os.access('param_card.dat',os.R_OK):
     print 'ERROR: Old param card in the current directory.  Dont want to clobber it.  Please move it first.'
 else:
-    oldcard = open('MadGraph_param_card_DMsimp_s_spin1.dat','r')
+    oldcard = open('MadGraph_param_card_DMsimp_s_spin1.dat', 'r')
     newcard = open('param_card.dat','w')
 
     for line in oldcard:

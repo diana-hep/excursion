@@ -1,25 +1,18 @@
 #!/usr/bin/python
 
 import sys
-import os
 import numpy as np
-import datetime
 
 sys.path.append("/afs/ipp-garching.mpg.de/common/soft/anaconda/amd64_generic/3/5.3.0/lib/python3.7/site-packages")
-
-from matplotlib import pyplot as plotter
 
 sys.path.append("/ptmp/mpp/prieck/atlasDM/dileptonReso/madgraph5atlasval_complete/madgraph5atlasval/excursion/")
 
 import excursion
 import excursion.optimize
-import excursion.plotting.twodim as exPlot
 import excursion.utils
 
 import scan1d as scandetails
-import myTest
 import getMuLimitFast1d
-import pickle
 
 from matplotlib import pyplot as plt
 
@@ -79,7 +72,7 @@ def main():
 
 #    scandetails.truth_functions = [ getMuLimitBatch.getMuLimitBatch ]
 #    scandetails.truth_functions = [ myTest.parabola2d ]
-    scandetails.truth_functions = [ getMuLimitFast1d.getMuLimitFast1d ]
+    scandetails.truth_functions = [getMuLimitFast1d.getMuLimitFast1d]
     scandetails.thresholds      = [ 0.0 ]
 
     xTruth = []

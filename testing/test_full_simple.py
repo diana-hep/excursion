@@ -27,5 +27,5 @@ def test_full_simple():
             model = estimator.update_posterior(
                 testcase, algorithmopts, model, likelihood
             )
-
+    print(torch.abs(model.train_targets) <= tol)
     assert type(torch.abs(model.train_targets) <= tol) != type(None)

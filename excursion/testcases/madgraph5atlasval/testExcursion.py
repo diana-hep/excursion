@@ -24,8 +24,6 @@ import scan2d as scandetails
 #import scan_gl_mzp as scandetails
 import getMuLimitBatch
 
-import dmUpperLimitsForTesting
-import myTest
 
 def plot_and_save(workdir, index, gps, X, y_list, scandetails, batchsize, doSaveInput = True):
 
@@ -56,7 +54,7 @@ def main():
     
     np.warnings.filterwarnings('ignore')
     
-    scandetails.truth_functions = [ getMuLimitBatch.getMuLimitBatch ]
+    scandetails.truth_functions = [getMuLimitBatch.getMuLimitBatch]
     scandetails.thresholds      = [ 0.0 ]
     
     _n_init = 6
