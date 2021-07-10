@@ -24,14 +24,14 @@ likelihood:
 
 #model
 model:
-  type: 'GridGP'
+  type: 'ExactGP'
   kernel: 'RBF'
   prior: 'Constant'
 
 
 #acquisition function
 acq:
-  acq_type: 'MES'
-  batch: True
+  acq_type: 'PES'
+  batch: False
   batchtype: 'Naive'
   batchsize: 3
