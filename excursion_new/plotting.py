@@ -123,7 +123,6 @@ def plot_GP(gp, testcase, **kwargs):
         # likelihood.eval()
         # prediction = likelihood(gp(testcase.X))
         ax0.plot(X_plot, mean.detach(), color="blue", label="mean")
-        variance = prediction.covariance_matrix.diag().cpu()
 
         ##variance
         for i in range(1, 6):

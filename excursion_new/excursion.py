@@ -24,3 +24,5 @@ class ExcursionProblem(object):
         #     allvalid = lambda X: np.zeros_like(X[:, 0], dtype='bool')
         #     return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
+class ExcursionResult(object):
+    def __init__(self, mean, covariance, train_X, train_y, meshgrid, true_func = None, ):
