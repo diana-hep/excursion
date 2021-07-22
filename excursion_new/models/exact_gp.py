@@ -31,7 +31,7 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
         model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
         model.train()
         likelihood.train()
-        fit(model)
+        fit_hyperparams(model)
 
         return model
 

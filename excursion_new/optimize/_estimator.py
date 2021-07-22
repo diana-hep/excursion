@@ -287,7 +287,7 @@ class Optimizer(object):
         observations have been `tell`ed, after that `base_estimator` is used
         to determine the next point.
         """
-        if self._n_initial_points > 0 or self.base_estimator_ is None:
+        if self._n_initial_points > 0 or self.base_estimator is None:
             # this will not make a copy of `self.rng` and hence keep advancing
             # our random state.
             if self._initial_samples is None:
@@ -385,7 +385,7 @@ class Optimizer(object):
 
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model
-        if (fit and self._n_initial_points > 0):
+        if (fit and self._n_initial_points > 1):
 
             if not self.Xi:
                 for idx, f in enumerate(self.problem_details.functions):
@@ -394,24 +394,21 @@ class Optimizer(object):
 
             else:
                 for idx, model in enumerate(self.models):
-                    self.models[idx] = self.update(model, x, y)
+                    self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
 
             self._n_initial_points -= 1
             self.Xi.append(x)
             self.yi.append(y)
-        elif (fit and self._n_initial_points <= 0 and
-                self.base_estimator_ is not None):
-            thresholds = [-np.inf] + self.problem_details.thresholds.tolist() + [np.inf]
+        elif (fit and self._n_initial_points <= 1 and self.base_estimator is not None):
+            self._n_initial_points -= 1
             self.Xi.append(x)
             self.yi.append(y)
 
-            def evaluate(self, x, y):
-                pass
-
+            thresholds = [-np.inf] + self.problem_details.thresholds + [np.inf]
             self.next_xs_ = []
             zipped = zip(self.models, self.model_acq_funcs_)
             for idx, (model, model_acq_func) in enumerate(zipped):
-                self.models[idx] = self.update(model, x, y)
+                self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
                 next_x = model_acq_func.acquire(self.models[idx], thresholds, self.problem_details.plot_X)
                 self.next_xs_.append(next_x)
 
@@ -424,7 +421,7 @@ class Optimizer(object):
 
         # result.specs = self.specs
         # return result
-        return None
+        return
 
 
     def update(self, model, x, y):
