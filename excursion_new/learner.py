@@ -1,4 +1,4 @@
-import optimize._estimator as est
+import optimize.estimator as est
 from .excursion import ExcursionProblem
 
 

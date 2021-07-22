@@ -1,4 +1,4 @@
-from excursion_new.mesh import mgrid, mesh2points
+from excursion_new.utils import mgrid, mesh2points
 import numpy as np
 import torch
 

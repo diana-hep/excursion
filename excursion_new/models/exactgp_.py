@@ -1,5 +1,4 @@
 from .kernel import Kernel
-import numpy as np
 from .fit import *
 from .base import ExcursionModel
 
