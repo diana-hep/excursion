@@ -2,7 +2,7 @@ from excursion_new.sampler import *
 from torch.distributions.multivariate_normal import MultivariateNormal
 import torch
 import gpytorch
-from excursion_new.models import ExcursionGP, fit_hyperparams
+from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, ExactGP
 from excursion_new.acquisition import MES, AcquisitionFunction
 
 
@@ -68,6 +68,46 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
     return acq_function
 
 
+def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs):
+    """Build an acquisition function.
+     For the special acq_function called "random" the return value is None.
+     Parameters
+     ----------
+     model : "ExactGP", "GridGP", or ExcursionModel instance"
+         Should inherit from `excursion.models.ExcursionModel`.
+     kwargs : dict
+         Extra parameters provided to the acq_function at init time.
+     """
+    if model is None:
+        model = "exactgp"
+    elif isinstance(model, str):
+        model = model.lower()
+        allowed_models = ["exactgp"]
+        if model not in allowed_models:
+            raise ValueError("Valid strings for the model parameter "
+                             " are: 'ExactGP', or 'GridGP' not %s." % allowed_models)
+    elif not isinstance(model, ExcursionModel):
+        raise TypeError("acq_function has to be an ExcursionModel."
+                         "Got %s" % (str(type(model))))
+
+    if isinstance(model, str):
+        if model == "exactgp":
+            epsilon = 0.0
+            noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+            noises = epsilon * noise_dist.sample(torch.Size([])).to(device=torch.device('cuda'), dtype=torch.float64)
+            init_y = init_y.to(device=torch.device('cuda'), dtype=torch.float64) + noises
+            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=torch.device('cuda'), dtype=torch.float64)
+            model = ExactGP(init_X, init_y, likelihood).to(device=torch.device('cuda'), dtype=torch.float64)
+            likelihood = model.likelihood
+            model.train()
+            likelihood.train()
+            fit_hyperparams(model)
+
+    model.set_params(**kwargs)
+
+    return model
+
+
 def build_model_init(base_estimator: str, X_init, device, dtype, n_init_points, true_function):
     X_init = torch.from_numpy(X_init).to(device=device, dtype=dtype)
     epsilon = 0.0
@@ -90,7 +130,7 @@ def build_model_init(base_estimator: str, X_init, device, dtype, n_init_points, 
     return model
 
 
-def build_model(base_estimator: str, X_init, y_init, device, dtype, n_init_points=1):
+def build_model_old(base_estimator: str, X_init, y_init, device, dtype, n_init_points=1):
     # X_init = torch.from_numpy(X_init).to(device=device, dtype=dtype)
     epsilon = 0.0
     noise_dist = MultivariateNormal(torch.zeros(n_init_points), torch.eye(n_init_points))

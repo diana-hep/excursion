@@ -389,7 +389,7 @@ class Optimizer(object):
 
             if not self.Xi:
                 for idx, f in enumerate(self.problem_details.functions):
-                    self.models.append(build_model(self.base_estimator, x, y, device=self.device, dtype=self.problem_details.data_type))
+                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y))
                     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
 
             else:
