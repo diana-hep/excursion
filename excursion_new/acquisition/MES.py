@@ -16,7 +16,7 @@ class MES(AcquisitionFunction):
         self.device = device
         self.dtype = dtype
         self.batch = batch
-        self.grid = None
+        self.grid = self.log = None
 
     def acquire(self, gp, thresholds, meshgrid):
         X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
@@ -43,6 +43,7 @@ class MES(AcquisitionFunction):
                                       * torch.log(torch.exp(torch.log(p_j[p_j > 0])))
 
         self.grid = entropy_grid
+        self.log = torch.clone(entropy_grid)
 
         if self.batch:
             print("Will implement this later for batched results\n")

@@ -9,12 +9,6 @@ def mesh2points(grid, npoints_tuple):
     return X
 
 
-def points2mesh(X, npoints_tuple):
-    ndim = len(npoints_tuple)
-    grid = np.moveaxis(X.reshape(*(npoints_tuple + [ndim,])), ndim, 0)
-    return grid
-
-
 def mgrid(rangedef):
     _rangedef = np.array(rangedef, dtype="complex128")
     slices = [slice(*_r) for _r in _rangedef]
@@ -35,6 +29,12 @@ def values2mesh(values, rangedef, invalid, invalid_value=np.nan):
     if np.any(inv):
         allv[inv] = invalid_value
     return allv.reshape(*map(int, rangedef[:, 2]))
+
+
+def points2mesh(X, npoints_tuple):
+    ndim = len(npoints_tuple)
+    grid = np.moveaxis(X.reshape(*(npoints_tuple + [ndim,])), ndim, 0)
+    return grid
 
 
 def point_entropy(mu_stds, thresholds):

@@ -4,7 +4,7 @@ import torch
 
 
 class ExcursionProblem(object):
-    def __init__(self, functions, thresholds=[0.0], ndim=1, bounding_box=None, plot_npoints=None, init_n_points=2):
+    def __init__(self, functions, thresholds=[0.5], ndim=1, bounding_box=None, plot_npoints=None, init_n_points=2):
         self.functions = functions
         self.thresholds = thresholds
         self.bounding_box = np.asarray(bounding_box or [[0, 1]] * ndim)
@@ -24,5 +24,12 @@ class ExcursionProblem(object):
         #     allvalid = lambda X: np.zeros_like(X[:, 0], dtype='bool')
         #     return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
+
 class ExcursionResult(object):
-    def __init__(self, mean, covariance, train_X, train_y, meshgrid, true_func = None, ):
+    def __init__(self, gp, aqc, true_func, meshgrid, rangedef, mgrid):
+        self.gp = gp
+        self.aqc = aqc
+        self.func = true_func
+        self.plot_X = meshgrid
+        self.plot_G = mgrid
+        self.range = rangedef

@@ -4,7 +4,7 @@ import time, simplejson, gc
 from .builders import build_sampler, build_model, build_acquisition_func
 import numpy as np
 import torch
-from excursion_new.excursion import ExcursionProblem
+from excursion_new.excursion import ExcursionProblem, ExcursionResult
 from excursion_new.models import ExcursionModel
 from excursion_new.models.fit import fit_hyperparams
 from ._estimator import _Estimator
@@ -194,13 +194,13 @@ class Optimizer(_Estimator):
             if self.base_estimator not in base_estimator:
                 raise ValueError("expected base_estimator to be in %s, got %s" %
                                  (",".join(allowed_acq_funcs), self.acq_func))
-        # for idx, f in enumerate(problem_details.functions):
-        #     self.models.append(build_model_init(base_estimator, problem_details.init_X_points, device=device_type, dtype=problem_details.data_type, n_init_points=n_initial_points, true_function=f))
+        # for idx, f in enumerate(details.functions):
+        #     self.models.append(build_model_init(base_estimator, details.init_X_points, device=device_type, dtype=details.data_type, n_init_points=n_initial_points, true_function=f))
         #     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
 
         self.Xi = []
         self.yi = []
-        self.problem_details = problem_details
+        self.details = problem_details
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
@@ -234,7 +234,7 @@ class Optimizer(_Estimator):
                    # # flavours of `cl_x` strategies. # #
         """
         if n_points is None:
-            return self._suggest().reshape(1, self.problem_details.ndim)
+            return self._suggest().reshape(1, self.details.ndim)
 
 
         if not (isinstance(n_points, int) and n_points > 0):
@@ -292,7 +292,7 @@ class Optimizer(_Estimator):
             # our random state.
             if self._initial_samples is None:
                 # Not sure I can ever get to this piece of code
-                return self._initial_point_generator.generate(1, self.problem_details.plot_X)
+                return self._initial_point_generator.generate(1, self.details.plot_X)
             else:
                 # The samples are evaluated starting form initial_samples[0]
                 return self._initial_samples[
@@ -315,9 +315,9 @@ class Optimizer(_Estimator):
 
     def tell(self, x, y, fit=True):
         if not isinstance(x, torch.Tensor):
-            x = torch.Tensor(x).to(device=self.device, dtype=self.problem_details.data_type)
+            x = torch.Tensor(x).to(device=self.device, dtype=self.details.data_type)
         if not isinstance(y, torch.Tensor):
-            y = torch.Tensor(y).to(device=self.device, dtype=self.problem_details.data_type)
+            y = torch.Tensor(y).to(device=self.device, dtype=self.details.data_type)
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
         `ask()` or other points. By default a new model will be fit to all
@@ -388,7 +388,7 @@ class Optimizer(_Estimator):
         if (fit and self._n_initial_points > 1):
 
             if not self.Xi:
-                for idx, f in enumerate(self.problem_details.functions):
+                for idx, f in enumerate(self.details.functions):
                     self.models.append(build_model(self.base_estimator, init_X=x, init_y=y))
                     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
 
@@ -404,12 +404,12 @@ class Optimizer(_Estimator):
             self.Xi.append(x)
             self.yi.append(y)
 
-            thresholds = [-np.inf] + self.problem_details.thresholds + [np.inf]
+            thresholds = [-np.inf] + self.details.thresholds + [np.inf]
             self.next_xs_ = []
             zipped = zip(self.models, self.model_acq_funcs_)
             for idx, (model, model_acq_func) in enumerate(zipped):
                 self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
-                next_x = model_acq_func.acquire(self.models[idx], thresholds, self.problem_details.plot_X)
+                next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
                 self.next_xs_.append(next_x)
 
         ## Placeholder until I do multiple functions
@@ -421,7 +421,9 @@ class Optimizer(_Estimator):
 
         # result.specs = self.specs
         # return result
-        return
+        return ExcursionResult(gp=self.models[0], aqc=self.model_acq_funcs_[0].log, true_func=self.details.functions[0],
+                               meshgrid=self.details.plot_X, rangedef=self.details.plot_rangedef,
+                               mgrid=self.details.plot_G)
 
     def update_next(self):
         """Updates the value returned by opt.ask(). Useful if a parameter

@@ -35,34 +35,3 @@ bounding_box = [[0.0, 1.5], [0.0, 1.5], [0, 1.5]]
 ndim = 3
 plot_npoints = [41]*ndim
 
-
-# true_functions = [truth]
-#
-# # Define threshold list
-# thresholds = torch.Tensor([0.0])
-#
-# # Define grid for acquisition function
-# n_dims = 3
-#
-# ## rangedef[i] = [lower_i, upper_i, n_i] for i in n_dims
-# rangedef = np.array([[0.0, 1.5, 41], [0.0, 1.5, 41], [0, 1.5, 41]])
-#
-# # meshgrid
-# plot_meshgrid = mgrid(rangedef)
-#
-# # 2D points
-# X_plot = mesh2points(plot_meshgrid, rangedef[:, 2])
-# X = torch.from_numpy(X_plot)
-#
-#
-# def invalid_region(x):
-#     return np.array([False] * len(x))
-#
-
-# acq_rd = np.array([[0.0, 1.5, 16], [0.0, 1.5, 16], [0.0, 1.5, 16]])
-# acqG = utils.mgrid(acq_rd)
-# acqX = utils.mesh2points(acqG, acq_rd[:, 2])
-
-# mn_rd = np.array([[0.0, 1.5, 16], [0, 1.5, 16], [0.0, 1.5, 16]])
-# mnG = utils.mgrid(mn_rd)
-# meanX = utils.mesh2points(mnG, mn_rd[:, 2])
