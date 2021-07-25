@@ -4,7 +4,7 @@ import time, simplejson, gc
 from .builders import build_sampler, build_model, build_acquisition_func
 import numpy as np
 import torch
-from excursion_new.excursion import ExcursionProblem, ExcursionResult
+from excursion_new.excursion import ExcursionProblem, ExcursionResult, build_result
 from excursion_new.models import ExcursionModel
 from excursion_new.models.fit import fit_hyperparams
 from ._estimator import _Estimator
@@ -140,7 +140,7 @@ class Optimizer(_Estimator):
        """
     def __init__(self,  problem_details: ExcursionProblem, n_funcs: int, device_type,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator = "random",
-                 acq_func = "MES", acq_optimizer = None, acq_func_kwargs={}, acq_optimzer_kwargs={}, ):
+                 acq_func = "MES", acq_optimizer = None, acq_func_kwargs={}, acq_optimzer_kwargs={}, n_jump_starts = None ):
         self.specs = {'args': copy.copy(inspect.currentframe().f_locals), 'function': 'Optimizer'}
 
         # Configure acquisition function set:
@@ -168,7 +168,7 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(n_initial_points))
         self._n_initial_points = n_initial_points
         self.n_initial_points_ = n_initial_points
-
+        self.n_jump_starts = n_jump_starts
         # Configure initial_point_generator
 
         self._initial_samples = None
@@ -295,8 +295,9 @@ class Optimizer(_Estimator):
                 return self._initial_point_generator.generate(1, self.details.plot_X)
             else:
                 # The samples are evaluated starting form initial_samples[0]
-                return self._initial_samples[
+                self._next_x = self._initial_samples[
                     len(self._initial_samples) - self._n_initial_points]
+                return self._next_x
 
         else:
             if not self.models:
@@ -313,7 +314,7 @@ class Optimizer(_Estimator):
             # return point computed from last call to tell()
             return next_x
 
-    def tell(self, x, y, fit=True):
+    def tell(self, x, y, fit=True) -> ExcursionResult:
         if not isinstance(x, torch.Tensor):
             x = torch.Tensor(x).to(device=self.device, dtype=self.details.data_type)
         if not isinstance(y, torch.Tensor):
@@ -351,7 +352,7 @@ class Optimizer(_Estimator):
 
         return self._tell(x, y, fit=fit)
 
-    def _tell(self, x, y, fit=True):
+    def _tell(self, x, y, fit=True) -> ExcursionResult:
         """Perform the actual work of incorporating one or more new points.
         See `tell()` for the full description.
         This method exists to give access to the internals of adding points
@@ -385,22 +386,23 @@ class Optimizer(_Estimator):
 
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model
-        if (fit and self._n_initial_points > 1):
+        if (fit and self._n_initial_points > 0):
 
             if not self.Xi:
+                self.Xi.append(x)
+                self.yi.append(y)
                 for idx, f in enumerate(self.details.functions):
                     self.models.append(build_model(self.base_estimator, init_X=x, init_y=y))
                     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
 
             else:
+                self.Xi.append(x)
+                self.yi.append(y)
                 for idx, model in enumerate(self.models):
                     self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
 
             self._n_initial_points -= 1
-            self.Xi.append(x)
-            self.yi.append(y)
-        elif (fit and self._n_initial_points <= 1 and self.base_estimator is not None):
-            self._n_initial_points -= 1
+        elif (fit and self._n_initial_points <= 0 and self.base_estimator is not None):
             self.Xi.append(x)
             self.yi.append(y)
 
@@ -418,12 +420,10 @@ class Optimizer(_Estimator):
         # # Pack results
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
         #                       models=self.models)
-
+        result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, x)
         # result.specs = self.specs
         # return result
-        return ExcursionResult(gp=self.models[0], aqc=self.model_acq_funcs_[0].log, true_func=self.details.functions[0],
-                               meshgrid=self.details.plot_X, rangedef=self.details.plot_rangedef,
-                               mgrid=self.details.plot_G)
+        return result
 
     def update_next(self):
         """Updates the value returned by opt.ask(). Useful if a parameter

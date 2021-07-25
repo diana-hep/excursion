@@ -5,7 +5,7 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 from torch.distributions.normal import Normal
 from sklearn.metrics import confusion_matrix
 import excursion.models.gp
-from excursion_new.plotting import *
+from excursion_new.plotting_ import *
 from excursion.models.gp import get_gp
 from excursion.acquisition import *
 from excursion.models.fit import fit_hyperparams
@@ -248,7 +248,7 @@ class ExcursionSetEstimator:
 
         end_time = time.time() - start_time
 
-        # Used for plotting. must plot after this call to step
+        # Used for plotting_. must plot after this call to step
         self.acq_values = acquisition_values_grid
             # print(f"the MES acquistion_values_grid is a: {type(acquisition_values_grid)}")
             # print(f"the MES \"          \" size is: {acquisition_values_grid.size()}")

@@ -35,7 +35,7 @@ def function_4(X: torch.Tensor) -> torch.Tensor:
 
 
 true_functions = [function_1]
-thresholds = [0.7]
+thresholds = [0.7, 8.7, 14.7]
 bounding_box = [[-1, 1]]
 ndim = 1
 plot_npoints = [100]
