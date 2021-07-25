@@ -8,6 +8,8 @@ from excursion_new.excursion import ExcursionProblem, ExcursionResult, build_res
 from excursion_new.models import ExcursionModel
 from excursion_new.models.fit import fit_hyperparams
 from ._estimator import _Estimator
+from collections import OrderedDict
+
 
 
 class Optimizer(_Estimator):
@@ -58,6 +60,11 @@ class Optimizer(_Estimator):
            Number of evaluations of `func` with initialization points
            before approximating it with `base_estimator`. Initial point
            generator can be changed by setting `initial_point_generator`.
+
+       jump_start : bool, default: False
+           If True then it will add all initial points before fitting
+           the model. If it false then the model will have each initial pointed
+           added one by one and trained after each point.
 
        initial_point_generator : str, SampleGenerator instance, \
                default: `"random"`
@@ -112,11 +119,10 @@ class Optimizer(_Estimator):
            Set random state to something other than None for reproducible
            results.
 
-       n_funcs : list, default: None
-           The number of functions to run in parallel in the base_estimator,
-           if the base_estimator supports n_jobs as parameter and
-           base_estimator was given as string.
-           If -1, then the number of jobs is set to the number of cores.
+       n_funcs : int, default: 0
+           The number of true functions if provided, determines if truth values can
+           be graphed or if the model can be jump started. (At present, will have
+           jump start available for provided init_y in future)
 
        acq_func_kwargs : dict
            Additional arguments to be passed to the acquisition function.
@@ -138,16 +144,19 @@ class Optimizer(_Estimator):
            space used to sample points, bounds, and type of parameters.
 
        """
-    def __init__(self,  problem_details: ExcursionProblem, n_funcs: int, device_type,
-                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator = "random",
-                 acq_func = "MES", acq_optimizer = None, acq_func_kwargs={}, acq_optimzer_kwargs={}, n_jump_starts = None ):
-        self.specs = {'args': copy.copy(inspect.currentframe().f_locals), 'function': 'Optimizer'}
+    def __init__(self, problem_details: ExcursionProblem, device_type, n_funcs: int = None,
+                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
+                 initial_point_generator="random", acq_func: str = "MES", acq_optimizer = None, acq_func_kwargs={},
+                 acq_optimzer_kwargs={}, jump_start: bool = True):
 
         # Configure acquisition function set:
         self.device = device_type
         self.acq_func = acq_func
         self.acq_func_kwarsgs = acq_func_kwargs
-        self.n_funcs = len(problem_details.functions)
+        self.n_funcs = len(problem_details.functions) if not n_funcs else n_funcs
+        if self.n_funcs <= 0:
+            raise ValueError("n_funcs must be greater than 0")
+        self.details = problem_details
         allowed_acq_funcs = ["PES", "MES"]
         if self.acq_func not in allowed_acq_funcs:
             raise ValueError("expected acq_func to be in %s, got %s" %
@@ -168,7 +177,7 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(n_initial_points))
         self._n_initial_points = n_initial_points
         self.n_initial_points_ = n_initial_points
-        self.n_jump_starts = n_jump_starts
+        self.jump_start = jump_start = False
         # Configure initial_point_generator
 
         self._initial_samples = None
@@ -184,29 +193,70 @@ class Optimizer(_Estimator):
         problem_details.init_X_points = self._initial_point_generator.generate(self._n_initial_points, problem_details.plot_X)
         self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type, device=self.device)
 
+
+        self.base_estimator = base_estimator
+
+
         self.models = []
         self.model_acq_funcs_ = []
-        self.base_estimator = base_estimator
+
+        self.data_ = self._Data()
+        if self.n_funcs > 1:
+            for n in range(self.n_funcs):
+                self.data_[n] = self._Data()
+
 
         # build base_estimator if doesn't exist
         if isinstance(self.base_estimator, str):
             allowed_base_estimators = ["ExactGP", "GridGP"]
-            if self.base_estimator not in base_estimator:
+            if self.base_estimator not in allowed_base_estimators:
                 raise ValueError("expected base_estimator to be in %s, got %s" %
                                  (",".join(allowed_acq_funcs), self.acq_func))
-        # for idx, f in enumerate(details.functions):
-        #     self.models.append(build_model_init(base_estimator, details.init_X_points, device=device_type, dtype=details.data_type, n_init_points=n_initial_points, true_function=f))
-        #     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
-
-        self.Xi = []
-        self.yi = []
-        self.details = problem_details
+        # If I want to add all init points first
+        if not jump_start and n_funcs:
+            init_y = []
+            init_X = []
+            if self.details.ndim == 1:
+                self._initial_samples = self._initial_samples.reshape(self.n_initial_points_)
+            for f in self.details.functions:
+                x = self._initial_samples
+                y = f(x)
+                self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=self.n_initial_points_))
+                self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
+                init_y.append(y)
+                init_X.append(x)
+            self._n_initial_points -= len((self._initial_samples))
+            # Need to get a next_x so call private tell
+            # Have to make sure _tell can handle lists of objects for multiple functions
+            self._tell(init_X, init_y)
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
         # self.cache_ = {}
 
+    class _Data(OrderedDict):
+        """ Store estimator x and y data of each model on each iteration. Tracks the order of
+        insertion to be able to back step through algorithm training process. Provide speed
+        advantages over list of lists (assumed, but should be O(1) access time for hashmap)
+        """
+
+        def __init__(self, maxsize=1000, /, *args, **kwds):
+            self.maxsize = maxsize
+            super().__init__(*args, **kwds)
+
+        def __getitem__(self, key):
+            value = super().__getitem__(key)
+            self.move_to_end(key)
+            return value
+
+        def __setitem__(self, key, value):
+            if key in self:
+                self.move_to_end(key)
+            super().__setitem__(key, value)
+            if len(self) > self.maxsize:
+                oldest = next(iter(self))
+                del self[oldest]
 
     def suggest(self, n_points=None, batch_kwarg={}):
         """Query point or multiple points at which objective should be evaluated.
@@ -359,6 +409,20 @@ class Optimizer(_Estimator):
         by side stepping all input validation and transformation."""
 
 
+
+        # Will always demand a int > 0 for n_funcs. this will store data in ordered dict with x as key, y as value
+        if isinstance(x, list):
+            zipped = zip(x, y)
+            if self.n_funcs > 1:
+                for func in range(self.n_funcs):
+                    for xi, yi in zipped:
+                        self.data_[func][yi] = xi
+            else:
+                for xi, yi in zipped:
+                    self.data_[yi] = xi
+        else:
+            self.data_[y] = x
+
         # if "ps" in self.acq_func:
         #     if is_2Dlistlike(x):
         #         self.Xi.extend(x)
@@ -384,43 +448,43 @@ class Optimizer(_Estimator):
         # # optimizer learned something new - discard cache
         # self.cache_ = {}
 
-        # after being "told" n_initial_points we switch from sampling
-        # random points to using a surrogate model
+            # after being "told" n_initial_points we switch from sampling
+            # random points to using a surrogate model
         if (fit and self._n_initial_points > 0):
-
-            if not self.Xi:
-                self.Xi.append(x)
-                self.yi.append(y)
-                for idx, f in enumerate(self.details.functions):
-                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y))
+            if not self.models:
+                for idx in range(self.n_funcs):
+                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=1))
                     self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
 
             else:
-                self.Xi.append(x)
-                self.yi.append(y)
                 for idx, model in enumerate(self.models):
                     self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
 
             self._n_initial_points -= 1
-        elif (fit and self._n_initial_points <= 0 and self.base_estimator is not None):
-            self.Xi.append(x)
-            self.yi.append(y)
 
-            thresholds = [-np.inf] + self.details.thresholds + [np.inf]
+        elif (fit and self._n_initial_points <= 0 and self.base_estimator is not None):
             self.next_xs_ = []
+            thresholds = [-np.inf] + self.details.thresholds + [np.inf]
             zipped = zip(self.models, self.model_acq_funcs_)
-            for idx, (model, model_acq_func) in enumerate(zipped):
-                self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
-                next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
-                self.next_xs_.append(next_x)
+
+            if not self.jump_start:
+                self.jump_start = True # So that this won't happen again. may be confusing behavior..
+                for idx, (model, model_acq_func) in enumerate(zipped):
+                    next_x = model_acq_func.acquire(model, thresholds, self.details.plot_X)
+                    self.next_xs_.append(next_x)
+
+            else:
+                for idx, (model, model_acq_func) in enumerate(zipped):
+                    self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
+                    next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
+                    self.next_xs_.append(next_x)
 
         ## Placeholder until I do multiple functions
-            self._next_x = self.next_xs_[0]
-
+            self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
         # # Pack results
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
         #                       models=self.models)
-        result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, x)
+        result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x)
         # result.specs = self.specs
         # return result
         return result

@@ -26,12 +26,16 @@ def init_gp( testcase, algorithmopts, ninit, device):
     X_grid = torch.Tensor(testcase.X_plot).to(device, dtype)
     init_type = algorithmopts["init_type"]
     noise_dist = MultivariateNormal(torch.zeros(ninit), torch.eye(ninit))
-
+    print(X_grid.size())
     if init_type == "random":
         indexs = np.random.choice(range(len(X_grid)), size=ninit, replace=False)
         X_init = X_grid[indexs].to(device, dtype)
+        print(X_init)
+        print(X_init.size())
         noises = epsilon * noise_dist.sample(torch.Size([])).to(device, dtype)
         y_init = testcase.true_functions[0](X_init).to(device, dtype) + noises
+        print(y_init)
+        print(y_init.size())
     #
     #
     # This is broken

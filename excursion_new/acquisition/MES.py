@@ -22,11 +22,14 @@ class MES(AcquisitionFunction):
         X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
 
     # compute predictive posterior of Y(x) | trin data
+        # print(gp.train_inputs)
+
         likelihood = gp.likelihood
         gp.eval()
         likelihood.eval()
 
     # ok
+        test = gp(X_grid)
         Y_pred_grid = likelihood(gp(X_grid))
         mean_tensor = Y_pred_grid.mean
 

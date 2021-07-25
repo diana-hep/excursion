@@ -35,3 +35,4 @@ def fit_hyperparams(gp, optimizer: str = "Adam"):
 
     else:
         raise NotImplementedError
+    return gp

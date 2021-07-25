@@ -51,7 +51,7 @@ class Learner(_Learner):
         if snapshot:
             raise NotImplementedError("Must initialize estimator with stored data in details")
         else:
-            self.estimator = est.Optimizer(problem_details=self.details, n_funcs=1, device_type="cuda")
+            self.estimator = est.Optimizer(problem_details=self.details, n_funcs=1, device_type="cuda", jump_start=False)
 
     def suggest(self, npoints: int = None):
         """

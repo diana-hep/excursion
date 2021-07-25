@@ -93,7 +93,7 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
     if isinstance(model, str):
         if model == "exactgp":
             epsilon = 0.0
-            noise_dist = MultivariateNormal(torch.zeros(1), torch.eye(1))
+            noise_dist = MultivariateNormal(torch.zeros(kwargs['n_init_points']), torch.eye(kwargs['n_init_points']))
             noises = epsilon * noise_dist.sample(torch.Size([])).to(device=torch.device('cuda'), dtype=torch.float64)
             init_y = init_y.to(device=torch.device('cuda'), dtype=torch.float64) + noises
             likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=torch.device('cuda'), dtype=torch.float64)
@@ -101,9 +101,9 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
             likelihood = model.likelihood
             model.train()
             likelihood.train()
-            fit_hyperparams(model)
+            model = fit_hyperparams(model)
 
-    model.set_params(**kwargs)
+    #model.set_params(**kwargs)
 
     return model
 
