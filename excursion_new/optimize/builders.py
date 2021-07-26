@@ -62,7 +62,7 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
 
     if isinstance(acq_function, str):
         if acq_function == "mes":
-            acq_function = MES(device=torch.device('cuda'), dtype=torch.float64)
+            acq_function = MES(device=kwargs['device'], dtype=kwargs['dtype'])
     acq_function.set_params(**kwargs)
 
     return acq_function
@@ -94,16 +94,16 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
         if model == "exactgp":
             epsilon = 0.0
             noise_dist = MultivariateNormal(torch.zeros(kwargs['n_init_points']), torch.eye(kwargs['n_init_points']))
-            noises = epsilon * noise_dist.sample(torch.Size([])).to(device=torch.device('cuda'), dtype=torch.float64)
-            init_y = init_y.to(device=torch.device('cuda'), dtype=torch.float64) + noises
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=torch.device('cuda'), dtype=torch.float64)
-            model = ExactGP(init_X, init_y, likelihood).to(device=torch.device('cuda'), dtype=torch.float64)
+            noises = epsilon * noise_dist.sample(torch.Size([])).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            init_y = init_y.to(device=kwargs['device'], dtype=kwargs['dtype']) + noises
+            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
             likelihood = model.likelihood
             model.train()
             likelihood.train()
             model = fit_hyperparams(model)
 
-    #model.set_params(**kwargs)
+    model.set_params(**kwargs)
 
     return model
 

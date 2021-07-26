@@ -1,0 +1,43 @@
+#
+# ALGORITHM OPTS
+#
+
+example: 'Simple Learner Usage' #'1D2D3Dtoyanalysis'
+
+#number of initial points
+ninit: 3
+
+#number of iterations
+#nupdates: 100
+
+##Define the init training data type
+init_type: 'random'
+
+#Decide to add all initial samples then fit the model,
+#or add initial samples one by one fitting each time.
+#True : 1
+#False : 0
+jump_start: false
+
+#Device type: 'cpu', 'cuda', 'auto'
+# 'auto' will only select the gpytorch b/w gpytorch implementations
+device: 'auto'
+
+#likelihood
+#likelihood:
+#  type: 'GaussianLikelihood'
+#  epsilon: 0.
+
+#model
+model:
+  type: 'ExactGP'
+#  kernel: 'RBF'
+#  prior: 'Constant'
+
+
+#acquisition function
+acq:
+  acq_type: 'MES'
+#  batch: False
+#  batchtype: 'KB'
+#  batchsize: 12

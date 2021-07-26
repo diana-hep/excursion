@@ -144,19 +144,32 @@ class Optimizer(_Estimator):
            space used to sample points, bounds, and type of parameters.
 
        """
-    def __init__(self, problem_details: ExcursionProblem, device_type, n_funcs: int = None,
+    def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer = None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
         # Configure acquisition function set:
         self.device = device_type
+        if isinstance(self.device, str):
+            allowed_devices = ['auto', 'cpu', 'cuda']
+            self.device = self.device.lower()
+            if self.device not in allowed_devices:
+                raise ValueError("expected device_type to be in %s, got %s" %
+                                 (",".join(allowed_devices), self.device))
+            if self.device == 'auto':
+                self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        else:
+            raise TypeError("Expected type str, got %s" % type(self.device))
+
+        self.device = torch.device(self.device)
         self.acq_func = acq_func
         self.acq_func_kwarsgs = acq_func_kwargs
         self.n_funcs = len(problem_details.functions) if not n_funcs else n_funcs
         if self.n_funcs <= 0:
             raise ValueError("n_funcs must be greater than 0")
         self.details = problem_details
+
         allowed_acq_funcs = ["PES", "MES"]
         if self.acq_func not in allowed_acq_funcs:
             raise ValueError("expected acq_func to be in %s, got %s" %
@@ -168,16 +181,18 @@ class Optimizer(_Estimator):
             acq_func_kwargs = dict()
         self.eta = acq_func_kwargs.get("eta", 1.0)
 
-        if isinstance(n_initial_points, int) and n_initial_points < 0:
-            raise ValueError(
-                "Expected `n_initial_points` > 0, got %d" % n_initial_points)
-        elif n_initial_points is None:
+
+        if n_initial_points is None:
             n_initial_points = problem_details.init_n_points
+        elif isinstance(n_initial_points, int):
+            if n_initial_points < 0:
+                raise ValueError(
+                    "Expected `n_initial_points` > 0, got %d" % n_initial_points)
         else:
             raise TypeError("Expected type int or None, got %s" % type(n_initial_points))
         self._n_initial_points = n_initial_points
         self.n_initial_points_ = n_initial_points
-        self.jump_start = jump_start = False
+        self.jump_start = jump_start
         # Configure initial_point_generator
 
         self._initial_samples = None
@@ -195,8 +210,6 @@ class Optimizer(_Estimator):
 
 
         self.base_estimator = base_estimator
-
-
         self.models = []
         self.model_acq_funcs_ = []
 
@@ -213,7 +226,7 @@ class Optimizer(_Estimator):
                 raise ValueError("expected base_estimator to be in %s, got %s" %
                                  (",".join(allowed_acq_funcs), self.acq_func))
         # If I want to add all init points first
-        if not jump_start and n_funcs:
+        if not self.jump_start:
             init_y = []
             init_X = []
             if self.details.ndim == 1:
@@ -221,8 +234,9 @@ class Optimizer(_Estimator):
             for f in self.details.functions:
                 x = self._initial_samples
                 y = f(x)
-                self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=self.n_initial_points_))
-                self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
+                self.models.append(build_model(self.base_estimator, init_X=x, init_y=y,
+                                               n_init_points=self.n_initial_points_, device=self.device, dtype=self.details.data_type))
+                self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
                 init_y.append(y)
                 init_X.append(x)
             self._n_initial_points -= len((self._initial_samples))
@@ -284,7 +298,7 @@ class Optimizer(_Estimator):
                    # # flavours of `cl_x` strategies. # #
         """
         if n_points is None:
-            return self._suggest().reshape(1, self.details.ndim)
+            return self._suggest()
 
 
         if not (isinstance(n_points, int) and n_points > 0):
@@ -346,7 +360,7 @@ class Optimizer(_Estimator):
             else:
                 # The samples are evaluated starting form initial_samples[0]
                 self._next_x = self._initial_samples[
-                    len(self._initial_samples) - self._n_initial_points]
+                    len(self._initial_samples) - self._n_initial_points].reshape(1, self.details.ndim)
                 return self._next_x
 
         else:
@@ -453,8 +467,9 @@ class Optimizer(_Estimator):
         if (fit and self._n_initial_points > 0):
             if not self.models:
                 for idx in range(self.n_funcs):
-                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=1))
-                    self.model_acq_funcs_.append(build_acquisition_func(acq_function="MES"))
+                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=1,
+                                                   device=self.device, dtype=self.details.data_type))
+                    self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
 
             else:
                 for idx, model in enumerate(self.models):
@@ -484,7 +499,7 @@ class Optimizer(_Estimator):
         # # Pack results
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
         #                       models=self.models)
-        result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x)
+        result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.data_type)
         # result.specs = self.specs
         # return result
         return result

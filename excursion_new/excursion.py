@@ -29,10 +29,10 @@ class ExcursionProblem(object):
         return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
 
-def build_result(details: ExcursionProblem, model, acquisition, next_x):
+def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs):
     train_X = model.train_inputs[0].cpu().detach().numpy()
     train_y = model.train_targets.cpu().detach().numpy()
-    plot_X = torch.from_numpy(details.plot_X).to(device=torch.device('cuda'), dtype=details.data_type)
+    plot_X = torch.from_numpy(details.plot_X).to(device=kwargs['device'], dtype=kwargs['dtype'])
     likelihood = model.likelihood
     likelihood.eval()
     model.eval()

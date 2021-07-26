@@ -36,22 +36,30 @@ class _Learner(object):
     def evaluate_and_tell(self, x):
         raise NotImplementedError()
 
+    def run(self, n_iterations, plot_result=False):
+        raise NotImplementedError()
+
     def evaluate_metrics(self):
         raise NotImplementedError()
 
 
 class Learner(_Learner):
-    def __init__(self, testcase):
+    def __init__(self, testcase, options):
         super(Learner, self).__init__(details=ExcursionProblem(testcase.true_functions, ndim=testcase.ndim,
                                                                thresholds=testcase.thresholds,
                                                                bounding_box=testcase.bounding_box,
-                                                               plot_npoints=testcase.plot_npoints))
+                                                               plot_npoints=testcase.plot_npoints),
+                                      algorithm_options=options)
 
     def initialize(self, snapshot=False):
         if snapshot:
             raise NotImplementedError("Must initialize estimator with stored data in details")
         else:
-            self.estimator = est.Optimizer(problem_details=self.details, n_funcs=1, device_type="cuda", jump_start=False)
+            self.estimator = est.Optimizer(problem_details=self.details, base_estimator=self.options['model']['type'],
+                                           acq_func=self.options['acq']['acq_type'],
+                                           jump_start=self.options['jump_start'], device_type=self.options['device'],
+                                           n_initial_points=self.options['ninit'],
+                                           initial_point_generator=self.options['init_type'])
 
     def suggest(self, npoints: int = None):
         """
@@ -76,6 +84,11 @@ class Learner(_Learner):
     def evaluate_and_tell(self, x):
         y = self.evaluate(x)
         return self.tell(x, y)
+
+    def run(self, n_iterations, plot_result=False):
+        for iter in range(n_iterations):
+            result = self.evaluate_and_tell(self.suggest())
+            if plot_result: result.plot()
 
     def evaluate_metrics(self):
         raise NotImplementedError()
