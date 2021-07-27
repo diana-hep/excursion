@@ -3,7 +3,7 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 import torch
 import gpytorch
 from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, ExactGP
-from excursion_new.acquisition import MES, AcquisitionFunction
+from excursion_new.acquisition import MES, AcquisitionFunction, PES
 
 
 def build_sampler(generator: SampleGenerator, **kwargs):
@@ -52,10 +52,10 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
         acq_function = "MES"
     elif isinstance(acq_function, str):
         acq_function = acq_function.lower()
-        allowed_genators = ["mes"]
-        if acq_function not in allowed_genators:
+        allowed_acq_funcs = ["mes", "pes"]
+        if acq_function not in allowed_acq_funcs:
             raise ValueError("Valid strings for the acq_function parameter "
-                             " are: 'MES', or 'PES' not %s." % acq_function)
+                             " are: %s, not %s." %  (",".join(allowed_acq_funcs) ,acq_function))
     elif not isinstance(acq_function, AcquisitionFunction):
         raise TypeError("acq_function has to be an AcquisitionFunction."
                          "Got %s" % (str(type(acq_function))))
@@ -63,6 +63,8 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
     if isinstance(acq_function, str):
         if acq_function == "mes":
             acq_function = MES(device=kwargs['device'], dtype=kwargs['dtype'])
+        if acq_function == "pes":
+            acq_function = PES()
     acq_function.set_params(**kwargs)
 
     return acq_function

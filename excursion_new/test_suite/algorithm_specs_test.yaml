@@ -21,7 +21,7 @@ jump_start: false
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'auto'
+device: 'cpu'
 
 #likelihood
 #likelihood:
