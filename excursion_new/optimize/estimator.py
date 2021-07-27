@@ -57,7 +57,7 @@ class Optimizer(_Estimator):
 
        n_initial_points : int or None, default: 2
            Number of evaluations of `func` with initialization points
-           before approximating it with `base_estimator`. Initial point
+           before approximating it with `base_model`. Initial point
            generator can be changed by setting `initial_point_generator`.
 
        jump_start : bool, default: False
@@ -102,7 +102,7 @@ class Optimizer(_Estimator):
            with `acq_optimizer`.
 
            - If set to `"auto"`, then `acq_optimizer` is configured on the
-             basis of the base_estimator and the space searched over.
+             basis of the base_model and the space searched over.
              If the space is Categorical or if the estimator provided based on
              tree-models then this is set to be `"sampling"`.
            - If set to `"sampling"`, then `acq_func` is optimized by computing
@@ -208,12 +208,13 @@ class Optimizer(_Estimator):
                                  (",".join(allowed_init_point_generator), self._initial_point_generator))
 
         self._initial_point_generator = build_sampler(self._initial_point_generator)
-        problem_details.init_X_points = self._initial_point_generator.generate(self._n_initial_points,
-                                                                               problem_details.plot_X)
-        self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
+        problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
+            self._n_initial_points, problem_details.plot_X)
+        if self.device != "skcpu":
+            self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
                                                                                device=self.device)
 
-        self.base_estimator = base_estimator
+        self.base_model = base_estimator
         self.models = []
         self.model_acq_funcs_ = []
 
@@ -222,12 +223,15 @@ class Optimizer(_Estimator):
             for n in range(self.n_funcs):
                 self.data_[n] = self._Data()
 
-        # build base_estimator if doesn't exist
-        if isinstance(self.base_estimator, str):
-            allowed_base_estimators = ["ExactGP", "GridGP"]
-            if self.base_estimator not in allowed_base_estimators:
-                raise ValueError("expected base_estimator to be in %s, got %s" %
-                                 (",".join(allowed_base_estimators), self.base_estimator))
+        # build base_model if doesn't exist
+        # Also currently being done in the builder methods
+        # if isinstance(self.base_model, str):
+        #     allowed_base_estimators = ["ExactGP", "GridGP"]
+        #     if self.base_model not in allowed_base_estimators:
+        #         raise ValueError("expected base_model to be in %s, got %s" %
+        #                          (",".join(allowed_base_estimators), self.base_model))
+
+
         # If I want to add all init points first
         if not self.jump_start:
             init_y = []
@@ -237,7 +241,7 @@ class Optimizer(_Estimator):
             for f in self.details.functions:
                 x = self._initial_samples
                 y = f(x)
-                self.models.append(build_model(self.base_estimator, init_X=x, init_y=y,
+                self.models.append(build_model(self.base_model, init_X=x, init_y=y,
                                                n_init_points=self.n_initial_points_, device=self.device,
                                                dtype=self.details.data_type))
                 # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
@@ -351,10 +355,10 @@ class Optimizer(_Estimator):
     def _suggest(self):
         """Suggest next point at which to evaluate the objective.
         Return a random point while not at least `n_initial_points`
-        observations have been `tell`ed, after that `base_estimator` is used
+        observations have been `tell`ed, after that `base_model` is used
         to determine the next point.
         """
-        if self._n_initial_points > 0 or self.base_estimator is None:
+        if self._n_initial_points > 0 or self.base_model is None:
             # this will not make a copy of `self.rng` and hence keep advancing
             # our random state.
             if self._initial_samples is None:
@@ -382,9 +386,9 @@ class Optimizer(_Estimator):
             return next_x
 
     def tell(self, x, y, fit=True) -> ExcursionResult:
-        if not isinstance(x, torch.Tensor):
+        if not isinstance(x, torch.Tensor) and self.device != "skcpu":
             x = torch.Tensor(x).to(device=self.device, dtype=self.details.data_type)
-        if not isinstance(y, torch.Tensor):
+        if not isinstance(y, torch.Tensor) and self.device != "skcpu":
             y = torch.Tensor(y).to(device=self.device, dtype=self.details.data_type)
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
@@ -464,7 +468,7 @@ class Optimizer(_Estimator):
         if (fit and self._n_initial_points > 0):
             if not self.models:
                 for idx in range(self.n_funcs):
-                    self.models.append(build_model(self.base_estimator, init_X=x, init_y=y, n_init_points=1,
+                    self.models.append(build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
                                                    device=self.device, dtype=self.details.data_type))
                     # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
 
@@ -473,8 +477,10 @@ class Optimizer(_Estimator):
                     self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
 
             self._n_initial_points -= 1
+            acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
+                                              dtype=self.details.data_type)
 
-        elif (fit and self._n_initial_points <= 0 and self.base_estimator is not None):
+        elif (fit and self._n_initial_points <= 0 and self.base_model is not None):
             self.next_xs_ = []
             thresholds = [-np.inf] + self.details.thresholds + [np.inf]
             zipped = zip(self.models, self.model_acq_funcs_)

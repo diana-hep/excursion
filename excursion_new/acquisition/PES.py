@@ -2,16 +2,9 @@ import torch
 from .utils import truncated_std_conditional
 from .utils import h_normal
 from .base import AcquisitionFunction
-# THIS MES AQC
+
 
 class PES(AcquisitionFunction):
-    # def __init__(self, device, dtype, X_init, batch = False, ):
-    #     self.prev_acq_point_index = []
-    #     self.device = device
-    #     self.dtype = dtype
-    #     self.batch = batch
-    #     self.grid = None
-
     def __init__(self, device=None, dtype=None, batch=False, ):
         self._prev_acq_point_index = []
         self.device = device

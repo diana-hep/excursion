@@ -89,7 +89,6 @@ def init_gp( testcase, algorithmopts, ninit, device):
 
 
 
-
 class ExcursionSetEstimator:
     def __init__(self, testcase, algorithmopts, model, likelihood, device):
         self.x_new = torch.zeros(1, testcase.n_dims, dtype=torch.float64)

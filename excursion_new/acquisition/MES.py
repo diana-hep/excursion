@@ -1,16 +1,9 @@
 import torch
 from .utils import cdf
 from .base import AcquisitionFunction
-# THIS MES AQC
+
 
 class MES(AcquisitionFunction):
-    # def __init__(self, device, dtype, X_init, batch = False, ):
-    #     self.prev_acq_point_index = []
-    #     self.device = device
-    #     self.dtype = dtype
-    #     self.batch = batch
-    #     self.grid = None
-
     def __init__(self, device, dtype, batch=False, ):
         self._prev_acq_point_index = []
         self.device = device
@@ -22,14 +15,11 @@ class MES(AcquisitionFunction):
         X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
 
     # compute predictive posterior of Y(x) | trin data
-        # print(gp.train_inputs)
-
         likelihood = gp.likelihood
         gp.eval()
         likelihood.eval()
 
     # ok
-        test = gp(X_grid)
         Y_pred_grid = likelihood(gp(X_grid))
         mean_tensor = Y_pred_grid.mean
 
