@@ -217,6 +217,10 @@ class Optimizer(_Estimator):
         self.models = []
         self.model_acq_funcs_ = []
 
+        self.data_ = self._Data()
+        if self.n_funcs > 1:
+            for n in range(self.n_funcs):
+                self.data_[n] = self._Data()
 
         # build base_estimator if doesn't exist
         if isinstance(self.base_estimator, str):
@@ -244,10 +248,6 @@ class Optimizer(_Estimator):
             # Have to make sure _tell can handle lists of objects for multiple functions
             self._tell(init_X, init_y)
 
-        self.data_ = self._Data()
-        if self.n_funcs > 1:
-            for n in range(self.n_funcs):
-                self.data_[n] = self._Data()
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
