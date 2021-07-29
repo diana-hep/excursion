@@ -474,7 +474,7 @@ class Optimizer(_Estimator):
 
             else:
                 for idx, model in enumerate(self.models):
-                    self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
+                    self.models[idx] = model.update_model(model, x, y, fit_hyperparams)
 
             self._n_initial_points -= 1
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
@@ -500,7 +500,7 @@ class Optimizer(_Estimator):
             else:
                 # for idx, (model, model_acq_func) in enumerate(zipped):
                 for idx, (model) in enumerate(self.models):
-                    self.models[idx] = model.fit_model(model, x, y, fit_hyperparams)
+                    self.models[idx] = model.update_model(model, x, y, fit_hyperparams)
                     # next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
                     next_x = acq_test.acquire(self.models[idx], thresholds, self.details.plot_X)
                     self.next_xs_.append(next_x)

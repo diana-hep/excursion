@@ -14,10 +14,10 @@ ninit: 3
 init_type: 'random'
 
 #Decide to add all initial samples then fit the model,
-#or add initial samples one by one fitting each time.
+#or if true add initial samples one by one fitting each time.
 #True : 1
 #False : 0
-jump_start: true
+jump_start: false
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
@@ -37,7 +37,7 @@ model:
 
 #acquisition function
 acq:
-  acq_type: 'mes'
+  acq_type: mes
 #  batch: False
 #  batchtype: 'KB'
 #  batchsize: 12

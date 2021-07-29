@@ -2,8 +2,11 @@ from collections import defaultdict
 
 
 class ExcursionModel(object):
-    def fit_model(self, model, x, y):
-        raise NotImplemented
+    def _model(self, model, x, y):
+        raise NotImplementedError()
+
+    def update_model(self, x, y):
+        raise NotImplementedError()
 
     def set_params(self, **params):
         """

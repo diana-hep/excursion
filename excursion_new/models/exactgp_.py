@@ -14,23 +14,23 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
-    def fit_model(self, model, x, y, fit):
+    def update_model(self, model, x, y, fit):
         if x.shape[1] == 1:
             inputs_i = torch.cat(
-                (model.train_inputs[0], x), dim=0).flatten()
+                (self.train_inputs[0], x), dim=0).flatten()
             targets_i = torch.cat(
-                (model.train_targets.flatten(), y.flatten()), dim=0).flatten()
+                (self.train_targets.flatten(), y.flatten()), dim=0).flatten()
         else:
             inputs_i = torch.cat(
-                (model.train_inputs[0], x), 0)
+                (self.train_inputs[0], x), dim=0)
             targets_i = torch.cat(
-                (model.train_targets, y), 0).flatten()
+                (self.train_targets, y), dim=0).flatten()
 
-        likelihood = model.likelihood
-        model.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        model.train()
+        self.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
+        likelihood = self.likelihood
         likelihood.train()
-        fit_hyperparams(model)
+        self.train()
+        fit_hyperparams(self)
 
         return model
 
