@@ -29,12 +29,12 @@ class Optimizer(_Estimator):
            List of search space dimensions.
            Each search dimension can be defined either as
 
-           - a `(lower_bound, upper_bound)` tuple (for `Real` or `Integer`
-             dimensions),
-           - a `(lower_bound, upper_bound, "prior")` tuple (for `Real`
-             dimensions),
+           # - a `(lower_bound, upper_bound)` tuple (for `Real` or `Integer`
+           #   dimensions),
+           # - a `(lower_bound, upper_bound, "prior")` tuple (for `Real`
+           #   dimensions),
 
-           ##                                                              ##
+           # #                                                              ##
            ## - as a list of categories (for `Categorical` dimensions), or ##
            ## - an instance of a `Dimension` object (`Real`, `Integer` or  ##
            ##  `Categorical`).                                             ##
@@ -42,7 +42,7 @@ class Optimizer(_Estimator):
 
        base_estimator : str, `"GridGP"`, `"ExactGP"`, or excursion custom model, \
                default: `"ExactGP"`
-               ## (future, list of str or ExcursionGP) ##
+               ## (future, list of str or ExcursionGP - better multioutput gpytorch model) ##
            Should inherit from :obj:`excursion.models.ExcursionGP`.
            Which should be initialized before hand
            It has parameters:
@@ -81,19 +81,19 @@ class Optimizer(_Estimator):
 
            - `"MES"` maximum entropy search
            - `"PES"` predictive entropy search
-           - `"PPES"` posterior predictive entropy search.
-           - `"gp_hedge"` Probabilistically choose one of the above three
-             acquisition functions at every iteration.
-
-             - The gains `g_i` are initialized to zero.
-             - At every iteration,
-
-               - Each acquisition function is optimised independently to
-                 propose an candidate point `X_i`.
-               - Out of all these candidate points, the next point `X_best` is
-                 chosen by :math:`softmax(\\eta g_i)`
-               - After fitting the surrogate model with `(X_best, y_best)`,
-                 the gains are updated such that :math:`g_i -= \\mu(X_i)`
+           # # - `"PPES"` posterior predictive entropy search.
+           # # - `"gp_hedge"` Probabilistically choose one of the above three
+           # #   acquisition functions at every iteration.
+           #
+           #   - The gains `g_i` are initialized to zero.
+           #   - At every iteration,
+           #
+           #     - Each acquisition function is optimised independently to
+           #       propose an candidate point `X_i`.
+           #     - Out of all these candidate points, the next point `X_best` is
+           #       chosen by :math:`softmax(\\eta g_i)`
+           #     - After fitting the surrogate model with `(X_best, y_best)`,
+           #       the gains are updated such that :math:`g_i -= \\mu(X_i)`
 
 
        acq_optimizer : string, `"Adam"` or `"lbfgs"`, default: `"Adam"`
@@ -101,13 +101,11 @@ class Optimizer(_Estimator):
            is updated with the optimal value obtained by optimizing `acq_func`
            with `acq_optimizer`.
 
-           - If set to `"auto"`, then `acq_optimizer` is configured on the
-             basis of the base_model and the space searched over.
-             If the space is Categorical or if the estimator provided based on
-             tree-models then this is set to be `"sampling"`.
-           - If set to `"sampling"`, then `acq_func` is optimized by computing
-             `acq_func` at `n_points` randomly sampled points.
-           - If set to `"lbfgs"`, then `acq_func` is optimized by
+           # - If set to `"auto"`, then `acq_optimizer` is configured on the
+           #   basis of the base_model and the space searched over.
+           # - If set to `"sampling"`, then `acq_func` is optimized by computing
+           #   `acq_func` at `n_points` randomly sampled points.
+           # - If set to `"lbfgs"`, then `acq_func` is optimized by
                -
              # - Sampling `n_restarts_optimizer` points randomly.
              # - `"lbfgs"` is run for 20 iterations with these points as initial
@@ -120,7 +118,7 @@ class Optimizer(_Estimator):
 
        n_funcs : int, default: None
            The number of true functions if provided, determines if truth values can
-           be graphed or if the model can be jump started. (At present, will have
+           be graphed or if the model can be jump started. (will have
            jump start available for provided init_y in future)
 
        acq_func_kwargs : dict
@@ -131,26 +129,20 @@ class Optimizer(_Estimator):
 
        Attributes
        ----------
-       Xi : list
-           Points at which objective has been evaluated.
-       yi : scalar
-           Values of objective at corresponding points in `Xi`.
-       models : list
+       # Xi : list
+       #     Points at which objective has been evaluated.
+       # yi : scalar
+       #     Values of objective at corresponding points in `Xi`.
+       models : ExcursionModel (list or multioutput gp in future)
            Regression models used to fit observations and compute acquisition
            function.
-       space : Space
-           An instance of :class:`skopt.space.Space`. Stores parameter search
-           space used to sample points, bounds, and type of parameters.
+       # space : Space
+       #     An instance of :class:`skopt.space.Space`. Stores parameter search
+       #     space used to sample points, bounds, and type of parameters.
 
        """
 
-    def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
-                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
-                 initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
-                 acq_optimzer_kwargs={}, jump_start: bool = True):
-
-        # Configure acquisition function set:
-        self.device = device_type
+    def cook_device(self):
         if isinstance(self.device, str):
             allowed_devices = ['auto', 'cpu', 'cuda']
             self.device = self.device.lower()
@@ -161,25 +153,34 @@ class Optimizer(_Estimator):
                 self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
             raise TypeError("Expected type str, got %s" % type(self.device))
-
         self.device = torch.device(self.device)
-        self.acq_func = acq_func
-        self.acq_func_kwarsgs = acq_func_kwargs
+
+    def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
+                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
+                 initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
+                 acq_optimzer_kwargs={}, jump_start: bool = True):
+
+
         self.n_funcs = len(problem_details.functions) if not n_funcs else n_funcs
         if self.n_funcs <= 0:
             raise ValueError("n_funcs must be greater than 0")
-        self.details = problem_details
 
+        # Create the device, currently only supports strings and initializes torch.device objects.
+        self.device = device_type
+        self.cook_device()
 
-        # Currently being done in build_acq, need to get a proxy object to do this for me
-        # It would be more readable if I knew input validation was done for me somewhere else.
+        # Configure acquisition function set:
+
+        # Check that acq func details are valid. redundant code
+        # checked in build_acq, need a proxy in future
         # allowed_acq_funcs = ["PES", "MES"]
         # if self.acq_func not in allowed_acq_funcs:
         #     raise ValueError("expected acq_func to be in %s, got %s" %
         #                      (",".join(allowed_acq_funcs), self.acq_func))
 
-        problem_details.acq_func = acq_func
+        problem_details.acq_func = self.acq_func = acq_func
         self.cand_acq_funcs_ = [self.acq_func]
+        self.acq_func_kwarsgs = acq_func_kwargs
 
         if acq_func_kwargs is None:
             acq_func_kwargs = dict()
@@ -210,6 +211,7 @@ class Optimizer(_Estimator):
         self._initial_point_generator = build_sampler(self._initial_point_generator)
         problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
             self._n_initial_points, problem_details.plot_X)
+
         if self.device != "skcpu":
             self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
                                                                                device=self.device)
@@ -218,6 +220,7 @@ class Optimizer(_Estimator):
         self.models = []
         self.model_acq_funcs_ = []
 
+        self.details = problem_details
         self.data_ = self._Data()
         if self.n_funcs > 1:
             for n in range(self.n_funcs):
@@ -241,9 +244,9 @@ class Optimizer(_Estimator):
             for f in self.details.functions:
                 x = self._initial_samples
                 y = f(x)
-                self.models.append(build_model(self.base_model, init_X=x, init_y=y,
+                self.model = build_model(self.base_model, init_X=x, init_y=y,
                                                n_init_points=self.n_initial_points_, device=self.device,
-                                               dtype=self.details.data_type).fit_model(fit_hyperparams))
+                                               dtype=self.details.data_type).fit_model(fit_hyperparams)
                 # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
                 init_y.append(y)
                 init_X.append(x)
@@ -371,7 +374,7 @@ class Optimizer(_Estimator):
                 return self._next_x
 
         else:
-            if not self.models:
+            if not self.model:
                 raise RuntimeError("Random evaluations exhausted and no "
                                    "model has been fit.")
 
@@ -465,17 +468,15 @@ class Optimizer(_Estimator):
 
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model
-        if (fit and self._n_initial_points > 0):
-            if not self.models:
-                for idx in range(self.n_funcs):
-                    self.models.append(build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
-                                                   device=self.device, dtype=self.details.data_type).fit_model(fit_hyperparams))
+        if fit and self._n_initial_points > 0:
+            if not self.model:
+                self.model = build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
+                                               device=self.device, dtype=self.details.data_type).fit_model(fit_hyperparams)
                     # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
 
             else:
-                for idx, model in enumerate(self.models):
-                    self.models[idx] = model.update_model(x, y)
-                    self.models[idx] = model.fit_model(fit_hyperparams)
+                self.model.update_model(x, y)
+                self.model.fit_model(fit_hyperparams)
 
             self._n_initial_points -= 1
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
@@ -492,20 +493,14 @@ class Optimizer(_Estimator):
 
             if not self.jump_start:
                 self.jump_start = True  # So that this won't happen again. may be confusing behavior..
-                # for idx, (model, model_acq_func) in enumerate(zipped):
-                for idx, (model) in enumerate(self.models):
-                    # next_x = model_acq_func.acquire(model, thresholds, self.details.plot_X)
-                    next_x = acq_test.acquire(model, thresholds, self.details.plot_X)
-                    self.next_xs_.append(next_x)
+                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
+                self.next_xs_.append(next_x)
 
             else:
-                # for idx, (model, model_acq_func) in enumerate(zipped):
-                for idx, (model) in enumerate(self.models):
-                    self.models[idx] = model.update_model(x, y)
-                    self.models[idx] = model.fit_model(fit_hyperparams)
-                    # next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
-                    next_x = acq_test.acquire(self.models[idx], thresholds, self.details.plot_X)
-                    self.next_xs_.append(next_x)
+                self.model.update_model(x, y)
+                self.model.fit_model(fit_hyperparams)
+                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
+                self.next_xs_.append(next_x)
 
             ## Placeholder until I do multiple functions
             self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
@@ -514,7 +509,7 @@ class Optimizer(_Estimator):
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
         #                       models=self.models)
 
-        result = build_result(self.details, self.models[0], acq_test.log, self._next_x, device=self.device,
+        result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
                               dtype=self.details.data_type)
 
         # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.data_type)
