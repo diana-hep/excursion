@@ -212,7 +212,7 @@ class Optimizer(_Estimator):
         # Configure initial_point_generator
 
 
-
+        self.model = None
         self.base_model = base_estimator
         self.model_acq_funcs_ = []
 
