@@ -14,7 +14,7 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
-    def update_model(self, model, x, y, fit):
+    def update_model(self, x, y):
         if x.shape[1] == 1:
             inputs_i = torch.cat(
                 (self.train_inputs[0], x), dim=0).flatten()
@@ -30,5 +30,9 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
         fit_hyperparams(self)
 
         return self
+
+    def fit_model(self, fit):
+        pass
+
 
 
