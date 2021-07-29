@@ -25,11 +25,20 @@ class Optimizer(_Estimator):
 
        Parameters
        ----------
-       dimensions : tuple, shape (n_dims, meshgrid)
-           Tuple of search space dimensions.
-           The search dimension is an int, and the meshgrid
-           is a numpy.meshgrid or torch.meshgrid (or ndarray) of the true function
-           domain that we wish to search.
+       dimensions : list, shape (n_dims,)
+           List of search space dimensions.
+           Each search dimension can be defined either as
+
+           # - a `(lower_bound, upper_bound)` tuple (for `Real` or `Integer`
+           #   dimensions),
+           # - a `(lower_bound, upper_bound, "prior")` tuple (for `Real`
+           #   dimensions),
+
+           # #                                                              ##
+           ## - as a list of categories (for `Categorical` dimensions), or ##
+           ## - an instance of a `Dimension` object (`Real`, `Integer` or  ##
+           ##  `Categorical`).                                             ##
+           ##                                                              ##
 
        base_estimator : str, `"GridGP"`, `"ExactGP"`, or excursion custom model, \
                default: `"ExactGP"`
@@ -156,7 +165,7 @@ class Optimizer(_Estimator):
         else:
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
 
-    def __init__(self, problem_details: ExcursionProblem, device: str, n_funcs: int = None,
+    def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
@@ -168,7 +177,7 @@ class Optimizer(_Estimator):
             raise ValueError("n_funcs must be greater than 0")
 
         # Create the device, currently only supports strings and initializes torch.device objects.
-        self.device = device
+        self.device = device_type
         self.cook_device()
 
         # Create the special ordered dict to track iterations

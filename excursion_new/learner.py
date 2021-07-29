@@ -57,7 +57,7 @@ class Learner(_Learner):
         else:
             self.estimator = est.Optimizer(problem_details=self.details, base_estimator=self.options['model']['type'],
                                            acq_func=self.options['acq']['acq_type'],
-                                           jump_start=self.options['jump_start'], device_type=self.options['device'],
+                                           jump_start=self.options['jump_start'], device=self.options['device'],
                                            n_initial_points=self.options['ninit'],
                                            initial_point_generator=self.options['init_type'])
 
