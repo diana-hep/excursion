@@ -155,11 +155,22 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type str, got %s" % type(self.device))
         self.device = torch.device(self.device)
 
+    def cook_init_points(self):
+        if self.n_initial_points_ is None:
+            self.n_initial_points_ = self._n_initial_points = self.details.init_n_points
+        if isinstance(self.n_initial_points_, int):
+            if self.n_initial_points_ < 0:
+                raise ValueError(
+                    "Expected `n_initial_points` > 0, got %d" % self.n_initial_points_)
+        else:
+            raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
+
     def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
+        self.details = problem_details
 
         self.n_funcs = len(problem_details.functions) if not n_funcs else n_funcs
         if self.n_funcs <= 0:
@@ -168,6 +179,13 @@ class Optimizer(_Estimator):
         # Create the device, currently only supports strings and initializes torch.device objects.
         self.device = device_type
         self.cook_device()
+
+        # Create the special ordered dict to track iterations
+        self.data_ = self._Data()
+        # if self.n_funcs > 1:
+        #     for n in range(self.n_funcs):
+        #         self.data_[n] = self._Data()
+
 
         # Configure acquisition function set:
 
@@ -186,16 +204,11 @@ class Optimizer(_Estimator):
             acq_func_kwargs = dict()
         self.eta = acq_func_kwargs.get("eta", 1.0)
 
-        if n_initial_points is None:
-            n_initial_points = problem_details.init_n_points
-        elif isinstance(n_initial_points, int):
-            if n_initial_points < 0:
-                raise ValueError(
-                    "Expected `n_initial_points` > 0, got %d" % n_initial_points)
-        else:
-            raise TypeError("Expected type int or None, got %s" % type(n_initial_points))
         self._n_initial_points = n_initial_points
         self.n_initial_points_ = n_initial_points
+        self.cook_init_points()
+
+
         self.jump_start = jump_start
         # Configure initial_point_generator
 
@@ -220,20 +233,8 @@ class Optimizer(_Estimator):
         self.models = []
         self.model_acq_funcs_ = []
 
+        # Some things were updated in problem_details
         self.details = problem_details
-        self.data_ = self._Data()
-        if self.n_funcs > 1:
-            for n in range(self.n_funcs):
-                self.data_[n] = self._Data()
-
-        # build base_model if doesn't exist
-        # Also currently being done in the builder methods
-        # if isinstance(self.base_model, str):
-        #     allowed_base_estimators = ["ExactGP", "GridGP"]
-        #     if self.base_model not in allowed_base_estimators:
-        #         raise ValueError("expected base_model to be in %s, got %s" %
-        #                          (",".join(allowed_base_estimators), self.base_model))
-
 
         # If I want to add all init points first
         if not self.jump_start:
