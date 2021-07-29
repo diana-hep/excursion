@@ -27,11 +27,8 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
                 (self.train_targets, y), dim=0).flatten()
 
         self.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        likelihood = self.likelihood
-        likelihood.train()
-        self.train()
         fit_hyperparams(self)
 
-        return model
+        return self
 
 

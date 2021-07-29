@@ -3,6 +3,11 @@ import torch, gpytorch
 
 def fit_hyperparams(gp, optimizer: str = "Adam"):
 
+    likelihood = gp.likelihood
+    likelihood.train()
+    gp.train()
+
+
     #### THIS HYPERPARAMETER MATTERS A LOT.
 
     training_iter = 50

@@ -100,9 +100,6 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
             init_y = init_y.to(device=kwargs['device'], dtype=kwargs['dtype']) + noises
             likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=kwargs['device'], dtype=kwargs['dtype'])
             model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
-            likelihood = model.likelihood
-            model.train()
-            likelihood.train()
             model = fit_hyperparams(model)
 
     model.set_params(**kwargs)
