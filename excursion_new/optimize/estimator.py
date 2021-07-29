@@ -243,7 +243,7 @@ class Optimizer(_Estimator):
                 y = f(x)
                 self.models.append(build_model(self.base_model, init_X=x, init_y=y,
                                                n_init_points=self.n_initial_points_, device=self.device,
-                                               dtype=self.details.data_type)) #.fit_model(None))
+                                               dtype=self.details.data_type).fit_model(fit_hyperparams))
                 # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
                 init_y.append(y)
                 init_X.append(x)
@@ -469,12 +469,13 @@ class Optimizer(_Estimator):
             if not self.models:
                 for idx in range(self.n_funcs):
                     self.models.append(build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
-                                                   device=self.device, dtype=self.details.data_type)) # .fit_model(None))
+                                                   device=self.device, dtype=self.details.data_type).fit_model(fit_hyperparams))
                     # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
 
             else:
                 for idx, model in enumerate(self.models):
                     self.models[idx] = model.update_model(x, y)
+                    self.models[idx] = model.fit_model(fit_hyperparams)
 
             self._n_initial_points -= 1
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
@@ -501,6 +502,7 @@ class Optimizer(_Estimator):
                 # for idx, (model, model_acq_func) in enumerate(zipped):
                 for idx, (model) in enumerate(self.models):
                     self.models[idx] = model.update_model(x, y)
+                    self.models[idx] = model.fit_model(fit_hyperparams)
                     # next_x = model_acq_func.acquire(self.models[idx], thresholds, self.details.plot_X)
                     next_x = acq_test.acquire(self.models[idx], thresholds, self.details.plot_X)
                     self.next_xs_.append(next_x)

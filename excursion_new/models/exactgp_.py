@@ -1,6 +1,7 @@
 from .kernel import Kernel
-from .fit import *
 from .base import ExcursionModel
+import torch
+import gpytorch
 
 
 class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
@@ -27,12 +28,11 @@ class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
                 (self.train_targets, y), dim=0).flatten()
 
         self.set_train_data(inputs=inputs_i, targets=targets_i, strict=False)
-        fit_hyperparams(self)
 
         return self
 
     def fit_model(self, fit):
-        pass
+        return fit(self)
 
 
 
