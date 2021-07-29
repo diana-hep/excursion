@@ -21,8 +21,8 @@ def build_sampler(generator: SampleGenerator, **kwargs):
         generator = "random"
     elif isinstance(generator, str):
         generator = generator.lower()
-        allowed_genators = ["random"]
-        if generator not in allowed_genators:
+        allowed_generator = ["random"]
+        if generator not in allowed_generator:
             raise ValueError("Valid strings for the generator parameter "
                              " are: 'latin', 'latin_hypercube', or 'random' not "
                              "%s." % generator)

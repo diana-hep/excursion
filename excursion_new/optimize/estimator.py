@@ -208,29 +208,21 @@ class Optimizer(_Estimator):
         self.n_initial_points_ = n_initial_points
         self.cook_init_points()
 
-
-        self.jump_start = jump_start
-        # Configure initial_point_generator
-
         self._initial_samples = None
-        self._initial_point_generator = initial_point_generator
-
-        if isinstance(self._initial_point_generator, str):
-            allowed_init_point_generator = ["random", "latin_grid", "latin_hypercube"]
-            if self._initial_point_generator not in allowed_init_point_generator:
-                raise ValueError("expected initial_point_generator to be in %s, got %s" %
-                                 (",".join(allowed_init_point_generator), self._initial_point_generator))
-
-        self._initial_point_generator = build_sampler(self._initial_point_generator)
+        self._initial_point_generator = build_sampler(initial_point_generator)
         problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
             self._n_initial_points, problem_details.plot_X)
-
         if self.device != "skcpu":
             self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
                                                                                device=self.device)
 
+
+        self.jump_start = jump_start
+        # Configure initial_point_generator
+
+
+
         self.base_model = base_estimator
-        self.models = []
         self.model_acq_funcs_ = []
 
         # Some things were updated in problem_details
@@ -430,17 +422,6 @@ class Optimizer(_Estimator):
         by side stepping all input validation and transformation."""
 
         # Will always demand a int > 0 for n_funcs. this will store data in ordered dict with x as key, y as value
-        if isinstance(x, list):
-            zipped = zip(x, y)
-            if self.n_funcs > 1:
-                for func in range(self.n_funcs):
-                    for xi, yi in zipped:
-                        self.data_[func][yi] = xi
-            else:
-                for xi, yi in zipped:
-                    self.data_[yi] = xi
-        else:
-            self.data_[y] = x
 
         # if "ps" in self.acq_func:
         #     if is_2Dlistlike(x):
@@ -486,7 +467,6 @@ class Optimizer(_Estimator):
         elif (fit and self._n_initial_points <= 0 and self.base_model is not None):
             self.next_xs_ = []
             thresholds = [-np.inf] + self.details.thresholds + [np.inf]
-            zipped = zip(self.models, self.model_acq_funcs_)
 
             ## Had to add bc memory overloaded
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
@@ -503,8 +483,20 @@ class Optimizer(_Estimator):
                 next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
                 self.next_xs_.append(next_x)
 
-            ## Placeholder until I do multiple functions
+            ## Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
+
+        if isinstance(x, list):
+            zipped = zip(x, y)
+            if self.n_funcs > 1:
+                for func in range(self.n_funcs):
+                    for xi, yi in zipped:
+                        self.data_[func][yi] = xi
+            else:
+                for xi, yi in zipped:
+                    self.data_[yi] = xi
+        else:
+            self.data_[y] = x
 
         # # Pack results
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
