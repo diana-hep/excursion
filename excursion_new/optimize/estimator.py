@@ -184,29 +184,30 @@ class Optimizer(_Estimator):
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
-        # Return untrained and empty model
+        # Store the model (might be a str)
         self.base_model = base_estimator
-        self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
 
-        # Configure acquisition function:
+        # Store acquisition function (must be a str originally):
         details.acq_func = self.acq_func = acq_func
-        if acq_func_kwargs is None:
-            acq_func_kwargs = dict()
-        self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
-        self.acq_func_kwarsgs = acq_func_kwargs
+
+        # if acq_func_kwargs is None:
+        #     acq_func_kwargs = dict()
+        # self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
+        # self.acq_func_kwarsgs = acq_func_kwargs
 
         # Some things were updated in details
         self.details = details
 
+        self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
+        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype)
         # If I want to add all init points first
         if jump_start:
             self._n_initial_points = 0
             x = self._initial_samples
             y = self.details.functions[0](x)
-                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
             # Need to get a next_x so call private tell
-            # Have to make sure _tell can handle lists of objects for multiple functions
-            self._tell(x, y)
+            # Have to make sure _tell can handle lists of objects for multiple init data
+            self._tell(self._initial_samples, self.details.functions[0](self._initial_samples))
 
 
         # Initialize cache for `ask` method responses

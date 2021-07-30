@@ -5,7 +5,7 @@
 example: 'Simple Learner Usage' #'1D2D3Dtoyanalysis'
 
 #number of initial points
-ninit: 7
+ninit: 1
 
 #number of iterations
 #nupdates: 100
@@ -21,7 +21,7 @@ jump_start: true
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'cuda'
+device: 'cpu'
 
 #likelihood
 #likelihood:
