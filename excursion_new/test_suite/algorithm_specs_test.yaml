@@ -5,7 +5,7 @@
 example: 'Simple Learner Usage' #'1D2D3Dtoyanalysis'
 
 #number of initial points
-ninit: 3
+ninit: 7
 
 #number of iterations
 #nupdates: 100
@@ -14,14 +14,14 @@ ninit: 3
 init_type: 'random'
 
 #Decide to add all initial samples then fit the model,
-#or if true add initial samples one by one fitting each time.
+#or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
 #True : 1
 #False : 0
 jump_start: true
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'cpu'
+device: 'cuda'
 
 #likelihood
 #likelihood:
@@ -30,7 +30,7 @@ device: 'cpu'
 
 #model
 model:
-  type: 'ExactGP'
+  type: 'test'
 #  kernel: 'RBF'
 #  prior: 'Constant'
 

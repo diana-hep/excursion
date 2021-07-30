@@ -20,7 +20,7 @@ class ExcursionProblem(object):
         self.init_X_points = None
         self.init_n_points = init_n_points
         self.acq_func = None
-        self.data_type = torch.float64
+        self.dtype = torch.float64
         self._invalid_region = None
         # # For check_x_valid # #
 

@@ -6,7 +6,7 @@ from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, E
 from excursion_new.acquisition import MES, AcquisitionFunction, PES
 
 
-def build_sampler(generator: SampleGenerator, **kwargs):
+def build_sampler(generator: str or SampleGenerator, **kwargs):
     """Build a default random sample generator.
      For the special generator called "random" the return value is None.
      Parameters
@@ -27,7 +27,7 @@ def build_sampler(generator: SampleGenerator, **kwargs):
                              " are: 'latin', 'latin_hypercube', or 'random' not "
                              "%s." % generator)
     elif not isinstance(generator, SampleGenerator):
-        raise ValueError("generator has to be an SampleGenerator."
+        raise ValueError("generator has to be a SampleGenerator or str."
                          "Got %s" % (str(type(generator))))
 
     if isinstance(generator, str):
@@ -84,7 +84,7 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
         model = "exactgp"
     elif isinstance(model, str):
         model = model.lower()
-        allowed_models = ["exactgp"]
+        allowed_models = ["exactgp", "test"]
         if model not in allowed_models:
             raise ValueError("Valid strings for the model parameter "
                              " are: 'ExactGP', or 'GridGP' not %s." % allowed_models)
@@ -100,7 +100,10 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
             init_y = init_y.to(device=kwargs['device'], dtype=kwargs['dtype']) + noises
             likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=kwargs['device'], dtype=kwargs['dtype'])
             model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
-            model = fit_hyperparams(model)
+        elif model == "test":
+            print("built test model\n\n")
+            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([0])).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
 
     model.set_params(**kwargs)
 

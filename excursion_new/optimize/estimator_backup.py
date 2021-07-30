@@ -213,8 +213,8 @@ class Optimizer(_Estimator):
         problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
             self._n_initial_points, problem_details.plot_X)
         if self.device != "skcpu":
-            self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
-                                                                               device=self.device)
+            self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.dtype,
+                                                                                   device=self.device)
 
 
         self.jump_start = jump_start
@@ -238,9 +238,9 @@ class Optimizer(_Estimator):
                 x = self._initial_samples
                 y = f(x)
                 self.model = build_model(self.base_model, init_X=x, init_y=y,
-                                               n_init_points=self.n_initial_points_, device=self.device,
-                                               dtype=self.details.data_type).fit_model(fit_hyperparams)
-                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
+                                         n_init_points=self.n_initial_points_, device=self.device,
+                                         dtype=self.details.dtype).fit_model(fit_hyperparams)
+                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
                 init_y.append(y)
                 init_X.append(x)
             self._n_initial_points -= len((self._initial_samples))
@@ -383,9 +383,9 @@ class Optimizer(_Estimator):
 
     def tell(self, x, y, fit=True) -> ExcursionResult:
         if not isinstance(x, torch.Tensor) and self.device != "skcpu":
-            x = torch.Tensor(x).to(device=self.device, dtype=self.details.data_type)
+            x = torch.Tensor(x).to(device=self.device, dtype=self.details.dtype)
         if not isinstance(y, torch.Tensor) and self.device != "skcpu":
-            y = torch.Tensor(y).to(device=self.device, dtype=self.details.data_type)
+            y = torch.Tensor(y).to(device=self.device, dtype=self.details.dtype)
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
         `ask()` or other points. By default a new model will be fit to all
@@ -453,8 +453,8 @@ class Optimizer(_Estimator):
         if fit and self._n_initial_points > 0:
             if not self.model:
                 self.model = build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
-                                               device=self.device, dtype=self.details.data_type).fit_model(fit_hyperparams)
-                    # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
+                                         device=self.device, dtype=self.details.dtype).fit_model(fit_hyperparams)
+                    # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
 
             else:
                 self.model.update_model(x, y)
@@ -462,7 +462,7 @@ class Optimizer(_Estimator):
 
             self._n_initial_points -= 1
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                              dtype=self.details.data_type)
+                                              dtype=self.details.dtype)
 
         elif (fit and self._n_initial_points <= 0 and self.base_model is not None):
             self.next_xs_ = []
@@ -470,7 +470,7 @@ class Optimizer(_Estimator):
 
             ## Had to add bc memory overloaded
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                              dtype=self.details.data_type)
+                                              dtype=self.details.dtype)
 
             if not self.jump_start:
                 self.jump_start = True  # So that this won't happen again. may be confusing behavior..
@@ -503,9 +503,9 @@ class Optimizer(_Estimator):
         #                       models=self.models)
 
         result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
-                              dtype=self.details.data_type)
+                              dtype=self.details.dtype)
 
-        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.data_type)
+        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.dtype)
 
         # result.specs = self.specs
         return result

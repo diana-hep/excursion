@@ -148,22 +148,21 @@ class Optimizer(_Estimator):
 
     def cook_init_points(self):
         if self.n_initial_points_ is None:
-            self.n_initial_points_ = self._n_initial_points = self.details.init_n_points
+            self.n_initial_points_ = self.details.init_n_points
         if isinstance(self.n_initial_points_, int):
             if self.n_initial_points_ < 0:
                 raise ValueError(
                     "Expected `n_initial_points` > 0, got %d" % self.n_initial_points_)
         else:
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
+        self._n_initial_points = self.n_initial_points_
 
-    def __init__(self, problem_details: ExcursionProblem, device: str, n_funcs: int = None,
+    def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
-        self.details = problem_details
-
-        self.n_funcs = len(problem_details.functions) if not n_funcs else n_funcs
+        self.n_funcs = len(details.functions) if not n_funcs else n_funcs
         if self.n_funcs <= 0:
             raise ValueError("n_funcs must be greater than 0")
 
@@ -173,71 +172,41 @@ class Optimizer(_Estimator):
 
         # Create the special ordered dict to track iterations
         self.data_ = self._Data()
-        # if self.n_funcs > 1:
-        #     for n in range(self.n_funcs):
-        #         self.data_[n] = self._Data()
 
-
-        # Configure acquisition function set:
-
-        # Check that acq func details are valid. redundant code
-        # checked in build_acq, need a proxy in future
-        # allowed_acq_funcs = ["PES", "MES"]
-        # if self.acq_func not in allowed_acq_funcs:
-        #     raise ValueError("expected acq_func to be in %s, got %s" %
-        #                      (",".join(allowed_acq_funcs), self.acq_func))
-
-        problem_details.acq_func = self.acq_func = acq_func
-        self.cand_acq_funcs_ = [self.acq_func]
-        self.acq_func_kwarsgs = acq_func_kwargs
-
-        if acq_func_kwargs is None:
-            acq_func_kwargs = dict()
-        self.eta = acq_func_kwargs.get("eta", 1.0)
-
-        self._n_initial_points = n_initial_points
+        # Will check this param is set correctly and set private n_initial_points variable
         self.n_initial_points_ = n_initial_points
         self.cook_init_points()
 
-        self._initial_samples = None
-        self._initial_point_generator = build_sampler(initial_point_generator)
-        problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
-            self._n_initial_points, problem_details.plot_X)
-        if self.device != "skcpu":
-            self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.data_type,
-                                                                               device=self.device)
-
-
-        self.jump_start = jump_start
         # Configure initial_point_generator
+        self._initial_point_generator = build_sampler(initial_point_generator)
+        details.init_X_points = self._initial_samples = \
+            self._initial_point_generator.generate(self._n_initial_points, details.plot_X)
+        if self.device != "skcpu":
+            self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
-
-        self.model = None
+        # Return untrained and empty model
         self.base_model = base_estimator
-        self.model_acq_funcs_ = []
+        self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
 
-        # Some things were updated in problem_details
-        self.details = problem_details
+        # Configure acquisition function:
+        details.acq_func = self.acq_func = acq_func
+        if acq_func_kwargs is None:
+            acq_func_kwargs = dict()
+        self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
+        self.acq_func_kwarsgs = acq_func_kwargs
+
+        # Some things were updated in details
+        self.details = details
 
         # If I want to add all init points first
-        if not self.jump_start:
-            init_y = []
-            init_X = []
-            if self.details.ndim == 1:
-                self._initial_samples = self._initial_samples.reshape(self.n_initial_points_)
-            for f in self.details.functions:
-                x = self._initial_samples
-                y = f(x)
-                self.model = build_model(self.base_model, init_X=x, init_y=y,
-                                               n_init_points=self.n_initial_points_, device=self.device,
-                                               dtype=self.details.data_type).fit_model(fit_hyperparams)
-                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
-                init_y.append(y)
-                init_X.append(x)
-            self._n_initial_points -= len((self._initial_samples))
+        if jump_start:
+            self._n_initial_points = 0
+            x = self._initial_samples
+            y = self.details.functions[0](x)
+                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
             # Need to get a next_x so call private tell
             # Have to make sure _tell can handle lists of objects for multiple functions
-            self._tell(init_X, init_y)
+            self._tell(x, y)
 
 
         # Initialize cache for `ask` method responses
@@ -374,9 +343,9 @@ class Optimizer(_Estimator):
 
     def tell(self, x, y, fit=True) -> ExcursionResult:
         if not isinstance(x, torch.Tensor) and self.device != "skcpu":
-            x = torch.Tensor(x).to(device=self.device, dtype=self.details.data_type)
+            x = torch.Tensor(x).to(device=self.device, dtype=self.details.dtype)
         if not isinstance(y, torch.Tensor) and self.device != "skcpu":
-            y = torch.Tensor(y).to(device=self.device, dtype=self.details.data_type)
+            y = torch.Tensor(y).to(device=self.device, dtype=self.details.dtype)
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
         `ask()` or other points. By default a new model will be fit to all
@@ -412,48 +381,24 @@ class Optimizer(_Estimator):
         This method exists to give access to the internals of adding points
         by side stepping all input validation and transformation."""
 
-        # Will always demand a int > 0 for n_funcs. this will store data in ordered dict with x as key, y as value
-
-        # if "ps" in self.acq_func:
-        #     if is_2Dlistlike(x):
-        #         self.Xi.extend(x)
-        #         self.yi.extend(y)
-        #         self._n_initial_points -= len(y)
-        #     elif is_listlike(x):
-        #         self.Xi.append(x)
-        #         self.yi.append(y)
-        #         self._n_initial_points -= 1
-        # # if y isn't a scalar it means we have been handed a batch of points
-        # elif is_listlike(y) and is_2Dlistlike(x):
-        #     self.Xi.extend(x)
-        #     self.yi.extend(y)
-        #     self._n_initial_points -= len(y)
-        # elif is_listlike(x):
-        #     self.Xi.append(x)
-        #     self.yi.append(y)
-        #     self._n_initial_points -= 1
-        # else:
-        #     raise ValueError("Type of arguments `x` (%s) and `y` (%s) "
-        #                      "not compatible." % (type(x), type(y)))
-
         # # optimizer learned something new - discard cache
         # self.cache_ = {}
 
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model
         if fit and self._n_initial_points > 0:
-            if not self.model:
-                self.model = build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
-                                               device=self.device, dtype=self.details.data_type).fit_model(fit_hyperparams)
-                    # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.data_type))
-
-            else:
-                self.model.update_model(x, y)
-                self.model.fit_model(fit_hyperparams)
+            # if not self.model:
+            #     self.model.update_model(x, y)
+            #     self.model.fit_model(fit_hyperparams)
+            #
+            #         # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
+            #
+            # else:
+            self.model.update_model(x, y)
+            self.model.fit_model(fit_hyperparams)
 
             self._n_initial_points -= 1
-            acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                              dtype=self.details.data_type)
+            acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype)
 
         elif (fit and self._n_initial_points <= 0 and self.base_model is not None):
             self.next_xs_ = []
@@ -461,18 +406,12 @@ class Optimizer(_Estimator):
 
             ## Had to add bc memory overloaded
             acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                              dtype=self.details.data_type)
+                                              dtype=self.details.dtype)
 
-            if not self.jump_start:
-                self.jump_start = True  # So that this won't happen again. may be confusing behavior..
-                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
-                self.next_xs_.append(next_x)
-
-            else:
-                self.model.update_model(x, y)
-                self.model.fit_model(fit_hyperparams)
-                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
-                self.next_xs_.append(next_x)
+            self.model.update_model(x, y)
+            self.model.fit_model(fit_hyperparams)
+            next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
+            self.next_xs_.append(next_x)
 
             ## Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
@@ -494,9 +433,9 @@ class Optimizer(_Estimator):
         #                       models=self.models)
 
         result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
-                              dtype=self.details.data_type)
+                              dtype=self.details.dtype)
 
-        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.data_type)
+        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.dtype)
 
         # result.specs = self.specs
         return result
