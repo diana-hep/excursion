@@ -209,7 +209,9 @@ class Optimizer(_Estimator):
         # Some things were updated in details
         self.details = details
 
-        self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
+        # If it was None, then tell will return a None result and behavior will be just asking for random points
+        if self.base_model is not None:
+            self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
         self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype)
         # If I want to add all init points first
         if jump_start:
@@ -336,9 +338,8 @@ class Optimizer(_Estimator):
                 return self._initial_point_generator.generate(1, self.details.plot_X)
             else:
                 # The samples are evaluated starting form initial_samples[0]
-                self._next_x = self._initial_samples[
+                return self._initial_samples[
                     len(self._initial_samples) - self._n_initial_points].reshape(1, self.details.ndim)
-                return self._next_x
 
         else:
             if not self.model:
@@ -397,48 +398,30 @@ class Optimizer(_Estimator):
 
         # # optimizer learned something new - discard cache
         # self.cache_ = {}
+        result = None
 
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model
-        if fit and self._n_initial_points > 0:
-            # if not self.model:
-            #     self.model.update_model(x, y)
-            #     self.model.fit_model(fit_hyperparams)
-            #
-            #         # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
-            #
-            # else:
+
+        if self.base_model is not None:
             self.model.update_model(x, y)
-            self.model.fit_model(fit_hyperparams)
-
-            self._n_initial_points -= 1
-            acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype)
-
-        elif (fit and self._n_initial_points <= 0 and self.base_model is not None):
-            self.next_xs_ = []
-            thresholds = [-np.inf] + self.details.thresholds + [np.inf]
-
-            ## Had to add bc memory overloaded
-            acq_test = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                              dtype=self.details.dtype)
-
-            self.model.update_model(x, y)
-            self.model.fit_model(fit_hyperparams)
-            next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
-            self.next_xs_.append(next_x)
-
-            ## Placeholder until I do batch acq functions
-            self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
+            if self._n_initial_points > 0: self._n_initial_points -= 1
+            if fit: self.model.fit_model(fit_hyperparams)
+            # Build result of current state, _tell will update to state n+1
+            result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device,
+                                  dtype=self.details.dtype)
+            if self._n_initial_points <= 0:
+                self.next_xs_ = []
+                thresholds = [-np.inf] + self.details.thresholds + [np.inf]
+                next_x = self.acq_func.acquire(self.model, thresholds, self.details.plot_X)
+                self.next_xs_.append(next_x)
+                ## Placeholder until I do batch acq functions
+                self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
 
         if isinstance(x, list):
             zipped = zip(x, y)
-            if self.n_funcs > 1:
-                for func in range(self.n_funcs):
-                    for xi, yi in zipped:
-                        self.data_[func][yi] = xi
-            else:
-                for xi, yi in zipped:
-                    self.data_[yi] = xi
+            for xi, yi in zipped:
+                self.data_[yi] = xi
         else:
             self.data_[y] = x
 
@@ -446,8 +429,7 @@ class Optimizer(_Estimator):
         # result = create_result(self.Xi, self.yi, self.space, self.rng,
         #                       models=self.models)
 
-        result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
-                              dtype=self.details.dtype)
+
 
         # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.dtype)
 
