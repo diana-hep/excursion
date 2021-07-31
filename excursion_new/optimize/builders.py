@@ -87,7 +87,7 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
         allowed_models = ["exactgp", "test"]
         if model not in allowed_models:
             raise ValueError("Valid strings for the model parameter "
-                             " are: 'ExactGP', or 'GridGP' not %s." % allowed_models)
+                             " are: 'ExactGP', or 'GridGP' not %s." % model)
     elif not isinstance(model, ExcursionModel):
         raise TypeError("model has to be an ExcursionModel."
                          "Got %s" % (str(type(model))))

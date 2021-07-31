@@ -1,5 +1,6 @@
 import optimize.estimator as est
 from .excursion import ExcursionProblem
+from .plotting import plot
 
 
 class _Learner(object):
@@ -88,7 +89,7 @@ class Learner(_Learner):
     def run(self, n_iterations, plot_result=False):
         for iter in range(n_iterations):
             result = self.evaluate_and_tell(self.suggest())
-            if plot_result: result.plot()
+            if plot_result: plot(result)
 
     def evaluate_metrics(self):
         raise NotImplementedError()

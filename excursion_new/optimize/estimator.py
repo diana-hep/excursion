@@ -133,7 +133,10 @@ class Optimizer(_Estimator):
 
        """
 
-    def cook_device(self):
+    #
+    # Some helpers for the initializer. Handles error checking
+    #
+    def check_and_set_device(self):
         if isinstance(self.device, str):
             allowed_devices = ['auto', 'cpu', 'cuda']
             self.device = self.device.lower()
@@ -146,7 +149,8 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type str, got %s" % type(self.device))
         self.device = torch.device(self.device)
 
-    def cook_init_points(self):
+    # Another helper
+    def check_and_set_init_points(self):
         if self.n_initial_points_ is None:
             self.n_initial_points_ = self.details.init_n_points
         if isinstance(self.n_initial_points_, int):
@@ -162,29 +166,36 @@ class Optimizer(_Estimator):
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
-        self.n_funcs = len(details.functions) if not n_funcs else n_funcs
-        if self.n_funcs <= 0:
-            raise ValueError("n_funcs must be greater than 0")
+        # Currently only supports 1 func
+        self.n_funcs = n_funcs if n_funcs else len(details.functions)
+        if self.n_funcs != 1:
+            raise ValueError("Expected 'n_funcs' = 1, got %d" % self.n_funcs)
+            #     <= 0:
+            # raise ValueError("n_funcs must be greater than 0")
 
         # Create the device, currently only supports strings and initializes torch.device objects.
         self.device = device
-        self.cook_device()
+        self.check_and_set_device()
 
         # Create the special ordered dict to track iterations
         self.data_ = self._Data()
 
-        # Will check this param is set correctly and set private n_initial_points variable
+        # Will check this param is set correctly and set a private n_init_points counter
         self.n_initial_points_ = n_initial_points
-        self.cook_init_points()
+        self.check_and_set_init_points()
 
-        # Configure initial_point_generator
+        # Configure private initial_point_generator
         self._initial_point_generator = build_sampler(initial_point_generator)
+
+        # May want to move this and only give the problem details the init x when
+        # the model gets them
         details.init_X_points = self._initial_samples = \
             self._initial_point_generator.generate(self._n_initial_points, details.plot_X)
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
         # Store the model (might be a str)
+        # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
 
         # Store acquisition function (must be a str originally):
@@ -268,23 +279,25 @@ class Optimizer(_Estimator):
 
         if not (isinstance(n_points, int) and n_points > 0):
             raise ValueError(
-                "n_points should be int > 0, got " + str(n_points)
+                "Expected 'n_points' is an int > 0, got %s with type %s" % (str(n_points), str(type(n_points)))
             )
 
-        X = []
 
-        if 'batch_type' in batch_kwarg.keys():
-            supported_batch_types = ["kb", "naive"]
-            if not isinstance(batch_kwarg['batch_type'], str):
-                raise TypeError("Expected batch_type to be one of type str" +
-                                " got %s" % str(type(batch_kwarg['batch_type']))
-                                )
-            if batch_kwarg['batch_type'] not in supported_batch_types:
-                raise ValueError(
-                    "Expected batch_type to be one of " +
-                    str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
-                )
-        else:
+
+        # X = []
+        #
+        # if 'batch_type' in batch_kwarg.keys():
+        #     supported_batch_types = ["kb", "naive"]
+        #     if not isinstance(batch_kwarg['batch_type'], str):
+        #         raise TypeError("Expected batch_type to be one of type str" +
+        #                         " got %s" % str(type(batch_kwarg['batch_type']))
+        #                         )
+        #     if batch_kwarg['batch_type'] not in supported_batch_types:
+        #         raise ValueError(
+        #             "Expected batch_type to be one of " +
+        #             str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
+        #         )
+        # else:
             ## Need to decide how to handle batches
             # X_new = [self.model_acq_funcs_[idx].acquire(model, thresholds) for idx, model in enumerate(self.models)]
             # X.append(X_new)
@@ -299,15 +312,15 @@ class Optimizer(_Estimator):
             # oiptimizer is simply discarded)
             # opt = self.copy(random_state=self.rng.randint(0,
             #                                               np.iinfo(np.int32).max))
-
-            for i in range(n_points):
-                X_new = self.suggest()
-                X.append(X_new)
+            pass
+            # for i in range(n_points):
+                # X_new = self.suggest()
+                # X.append(X_new)
                 # self._tell(X_new, y_lie)
 
         # self.cache_ = {(n_points, strategy): X}  # cache_ the result
 
-        return X
+        return []
 
     def _suggest(self):
         """Suggest next point at which to evaluate the objective.

@@ -1,9 +1,6 @@
 from excursion_new.utils import mgrid, mesh2points
 import numpy as np
 import torch
-from plotting import plot_1D, plot_2D
-plot_n = {1: plot_1D,
-          2: plot_2D}
 
 
 class ExcursionProblem(object):
@@ -28,6 +25,8 @@ class ExcursionProblem(object):
         allvalid = lambda X: np.zeros_like(X[:, 0], dtype='bool')
         return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
+
+### move this into the excursion result, unless we add scikit learn implementation
 
 def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs):
     train_X = model.train_inputs[0].cpu().detach().numpy()
@@ -67,9 +66,3 @@ class ExcursionResult(object):
         self.true_y = true_y
         self.invalid_region = invalid_region
         self.ndim = ndim
-
-    def plot(self):
-        return plot_n[self.ndim](acq=self.acq, train_y=self.train_y, train_X=self.train_X, plot_X=self.plot_X,
-                                 plot_G=self.plot_G, rangedef=self.rangedef, pred_mean=self.mean, pred_cov=self.cov,
-                                 thresholds=self.thr, next_x=self.next_x, true_y=self.true_y,
-                                 invalid_region=self.invalid_region)

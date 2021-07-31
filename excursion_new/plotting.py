@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from .excursion import ExcursionResult
 
 def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
 
@@ -176,3 +176,16 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         fig_ax2.legend(loc="lower right")
 
     plt.show()
+
+
+plot_n = {1: plot_1D,
+          2: plot_2D}
+
+
+def plot(result: ExcursionResult):
+    return plot_n[result.ndim](acq=result.acq, train_y=result.train_y, train_X=result.train_X, plot_X=result.plot_X,
+                             plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean, pred_cov=result.cov,
+                             thresholds=result.thr, next_x=result.next_x, true_y=result.true_y,
+                             invalid_region=result.invalid_region)
+
+

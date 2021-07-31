@@ -5,7 +5,7 @@
 example: 'Simple Learner Usage' #'1D2D3Dtoyanalysis'
 
 #number of initial points
-ninit: 1
+ninit: 3
 
 #number of iterations
 #nupdates: 100
@@ -17,7 +17,7 @@ init_type: 'random'
 #or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
 #True : 1
 #False : 0
-jump_start: true
+jump_start: false
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
