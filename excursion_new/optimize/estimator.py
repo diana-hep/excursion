@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from excursion_new.excursion import ExcursionProblem, ExcursionResult, build_result
 from excursion_new.models import ExcursionModel
-from excursion_new.models.fit import fit_hyperparams
 from ._estimator import _Estimator
 from collections import OrderedDict
 
@@ -87,10 +86,13 @@ class Optimizer(_Estimator):
            #       the gains are updated such that :math:`g_i -= \\mu(X_i)`
 
 
-       acq_optimizer : string, `"Adam"` or `"lbfgs"`, default: `"Adam"`
-           Method to minimize the acquisition function. The fit model
-           is updated with the optimal value obtained by optimizing `acq_func`
-           with `acq_optimizer`.
+       fit_optimizer : string, `"Adam"` or `"lbfgs"`, default: `None`
+           Method to train the hyperparamters of the model's Gaussian process. The fit model
+           is used to compute the next acquisition function call after being fit to initial
+           samples.
+
+           Only available if ExcursionModel instance supports it. default 'None' will use
+           model's default fit_optimizer.
 
            # - If set to `"auto"`, then `acq_optimizer` is configured on the
            #   basis of the base_model and the space searched over.
@@ -124,7 +126,7 @@ class Optimizer(_Estimator):
        #     Points at which objective has been evaluated.
        # yi : scalar
        #     Values of objective at corresponding points in `Xi`.
-       models : ExcursionModel (list or multioutput gp in future)
+       model : ExcursionModel (list or multioutput gp in future)
            Regression models used to fit observations and compute acquisition
            function.
        # space : Space
@@ -163,7 +165,7 @@ class Optimizer(_Estimator):
 
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
-                 initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
+                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
         # Currently only supports 1 func
@@ -197,9 +199,15 @@ class Optimizer(_Estimator):
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
+        # If it was None, then tell will return a None result and behavior will be just asking for random points
+        if self.base_model is not None:
+            self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
+
+        self.fit_optimizer = fit_optimizer
 
         # Store acquisition function (must be a str originally):
         details.acq_func = self.acq_func = acq_func
+        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
         # if acq_func_kwargs is None:
         #     acq_func_kwargs = dict()
@@ -209,10 +217,7 @@ class Optimizer(_Estimator):
         # Some things were updated in details
         self.details = details
 
-        # If it was None, then tell will return a None result and behavior will be just asking for random points
-        if self.base_model is not None:
-            self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
-        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype)
+
         # If I want to add all init points first
         if jump_start:
             self._n_initial_points = 0
@@ -220,7 +225,7 @@ class Optimizer(_Estimator):
             y = self.details.functions[0](x)
             # Need to get a next_x so call private tell
             # Have to make sure _tell can handle lists of objects for multiple init data
-            self._tell(self._initial_samples, self.details.functions[0](self._initial_samples))
+            self._tell(x, y)
 
 
         # Initialize cache for `ask` method responses
@@ -400,16 +405,15 @@ class Optimizer(_Estimator):
         # self.cache_ = {}
         result = None
 
-        # after being "told" n_initial_points we switch from sampling
-        # random points to using a surrogate model
-
         if self.base_model is not None:
             self.model.update_model(x, y)
             if self._n_initial_points > 0: self._n_initial_points -= 1
-            if fit: self.model.fit_model(fit_hyperparams)
+            if fit: self.model.fit_model(self.fit_optimizer)
             # Build result of current state, _tell will update to state n+1
             result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device,
                                   dtype=self.details.dtype)
+            # after being "told" n_initial_points we switch from sampling
+            # random points to using a surrogate model
             if self._n_initial_points <= 0:
                 self.next_xs_ = []
                 thresholds = [-np.inf] + self.details.thresholds + [np.inf]
@@ -424,14 +428,6 @@ class Optimizer(_Estimator):
                 self.data_[yi] = xi
         else:
             self.data_[y] = x
-
-        # # Pack results
-        # result = create_result(self.Xi, self.yi, self.space, self.rng,
-        #                       models=self.models)
-
-
-
-        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.dtype)
 
         # result.specs = self.specs
         return result

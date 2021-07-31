@@ -60,7 +60,8 @@ class Learner(_Learner):
                                            acq_func=self.options['acq']['acq_type'],
                                            jump_start=self.options['jump_start'], device=self.options['device'],
                                            n_initial_points=self.options['ninit'],
-                                           initial_point_generator=self.options['init_type'])
+                                           initial_point_generator=self.options['init_type'],
+                                           fit_optimizer=self.options['model']['fit_optimizer'])
 
     def suggest(self, npoints: int = None):
         """

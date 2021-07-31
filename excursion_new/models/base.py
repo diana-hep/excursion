@@ -2,7 +2,7 @@ from collections import defaultdict
 
 
 class ExcursionModel(object):
-    def fit_model(self, fit):
+    def fit_model(self, fit_optimizer):
         raise NotImplementedError()
 
     def update_model(self, x, y):

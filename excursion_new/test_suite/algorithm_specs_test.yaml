@@ -17,7 +17,7 @@ init_type: 'random'
 #or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
 #True : 1
 #False : 0
-jump_start: false
+jump_start: true
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
@@ -31,6 +31,9 @@ device: 'cpu'
 #model
 model:
   type: 'test'
+  # This can be 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
+  # will use the default method of the given ExcursionModel. (e.g. ExactGP default is Adam)
+  fit_optimizer: 'Adam'
 #  kernel: 'RBF'
 #  prior: 'Constant'
 
