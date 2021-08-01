@@ -210,7 +210,6 @@ class Optimizer(_Estimator):
             if device != 'skcpu':
                     self.epsilon = base_estimator_kwargs['epsilon']
                     if isinstance(self.epsilon, float) and self.epsilon > 0.0:
-                        print(self.epsilon)
                         likelihood = build_likelihood(base_estimator_kwargs['type'], base_estimator_kwargs['epsilon'],
                                                       device=self.device, dtype=details.dtype)
                         self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(self._initial_samples)),
@@ -223,7 +222,6 @@ class Optimizer(_Estimator):
                         raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float > 0, got %s" % str(self.epsilon))
                     else:
                         raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float > 0, got %s" % str(type(self.epsilon)))
-        print(self.noise)
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
@@ -424,8 +422,6 @@ class Optimizer(_Estimator):
         if self.details.ndim == 1:
             y = y.flatten()
         if self.noise is not None:
-            print("adding noise to y")
-            print(len(y))
             self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(y)),
                                                       torch.eye(len(y))) \
                 .sample(torch.Size([])).to(device=self.device, dtype=self.details.dtype)
