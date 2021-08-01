@@ -61,7 +61,8 @@ class Learner(_Learner):
                                            jump_start=self.options['jump_start'], device=self.options['device'],
                                            n_initial_points=self.options['ninit'],
                                            initial_point_generator=self.options['init_type'],
-                                           fit_optimizer=self.options['model']['fit_optimizer'])
+                                           fit_optimizer=self.options['model']['fit_optimizer'],
+                                           base_estimator_kwargs=self.options['likelihood'])
 
     def suggest(self, npoints: int = None):
         """

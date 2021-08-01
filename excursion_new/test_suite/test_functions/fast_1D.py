@@ -33,10 +33,17 @@ def function_4(X: torch.Tensor) -> torch.Tensor:
     f4 = X
     return f4
 
+#
+# true_functions = [function_1]
+# thresholds = [0.7]
+# bounding_box = [[-1, 1]]
+# ndim = 1
+# plot_npoints = [100]
+#
 
-true_functions = [function_1]
-thresholds = [0.7]
-bounding_box = [[-1, 1]]
+true_functions = [function_2]
+thresholds = [2.]
+bounding_box = [[0, 5]]
 ndim = 1
 plot_npoints = [100]
 

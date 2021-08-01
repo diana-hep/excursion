@@ -1,13 +1,14 @@
 import copy
 import inspect
 import time, simplejson, gc
-from .builders import build_sampler, build_model, build_acquisition_func
+from .builders import build_sampler, build_model, build_acquisition_func, build_likelihood
 import numpy as np
 import torch
 from excursion_new.excursion import ExcursionProblem, ExcursionResult, build_result
 from excursion_new.models import ExcursionModel
 from ._estimator import _Estimator
 from collections import OrderedDict
+from torch.distributions.multivariate_normal import MultivariateNormal
 
 
 class Optimizer(_Estimator):
@@ -44,6 +45,12 @@ class Optimizer(_Estimator):
            prior_kwargs: dict, these will be the options for the mean_module
 
            This will allow us to have anytype of regression GP we want to make? maybe.
+
+       base_estimator_kwargs : dict, default: {'likelihood': 'GaussianLikelihood', 'noise': 0.0}
+            Additional arguments to be passed to the model builder.
+           The type of gpytorch likelihood that should be used for a gpytorch model.
+           If device type is "sk
+
 
        n_initial_points : int or None, default: 2
            Number of evaluations of `func` with initialization points
@@ -105,9 +112,9 @@ class Optimizer(_Estimator):
              #   points to find local minima.
              # - The optimal of these local minima is used to update the prior.
 
-       random_state : int, RandomState instance, or None (default)
-           Set random state to something other than None for reproducible
-           results.
+       # random_state : int, RandomState instance, or None (default)
+       #     Set random state to something other than None for reproducible
+       #     results.
 
        n_funcs : int, default: None
            The number of true functions if provided, determines if truth values can
@@ -165,7 +172,7 @@ class Optimizer(_Estimator):
 
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
-                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, acq_func_kwargs={},
+                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, base_estimator_kwargs=None,
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
         # Currently only supports 1 func
@@ -196,12 +203,31 @@ class Optimizer(_Estimator):
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
+        # Initialize the likelihood object (specifically for gpytorch currently)
+        likelihood = None
+        self.noise = None
+        if base_estimator_kwargs is not None:
+            if device != 'skcpu':
+                    self.epsilon = base_estimator_kwargs['epsilon']
+                    if isinstance(self.epsilon, float) and self.epsilon > 0.0:
+                        print(self.epsilon)
+                        likelihood = build_likelihood(base_estimator_kwargs['type'], base_estimator_kwargs['epsilon'],
+                                                      device=self.device, dtype=details.dtype)
+                        self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(self._initial_samples)),
+                                                                  torch.eye(len(self._initial_samples)))\
+                            .sample(torch.Size([])).to(device=self.device, dtype=details.dtype)
+                    elif isinstance(self.epsilon, float) and self.epsilon == 0.0:
+                        likelihood = build_likelihood(base_estimator_kwargs['type'],
+                                                      device=self.device, dtype=details.dtype)
+                    else:
+                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type int > 0, got %s" % str(type(self.epsilon)))
+        print(self.noise)
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
-            self.model = build_model(self.base_model, device=self.device, dtype=details.dtype)
+            self.model = build_model(self.base_model, likelihood=likelihood, device=self.device, dtype=details.dtype)
 
         self.fit_optimizer = fit_optimizer
 
@@ -225,7 +251,7 @@ class Optimizer(_Estimator):
             y = self.details.functions[0](x)
             # Need to get a next_x so call private tell
             # Have to make sure _tell can handle lists of objects for multiple init data
-            self._tell(x, y)
+            self.tell(x, y)
 
 
         # Initialize cache for `ask` method responses
@@ -393,6 +419,15 @@ class Optimizer(_Estimator):
         # record information about computation times here, have it be stored in the
         # x data and come from acquisition
 
+        if self.details.ndim == 1:
+            y = y.flatten()
+        if self.noise is not None:
+            print("adding noise to y")
+            print(len(y))
+            self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(y)),
+                                                      torch.eye(len(y))) \
+                .sample(torch.Size([])).to(device=self.device, dtype=self.details.dtype)
+            y = y + self.noise
         return self._tell(x, y, fit=fit)
 
     def _tell(self, x, y, fit=True) -> ExcursionResult:

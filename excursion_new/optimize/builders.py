@@ -4,7 +4,7 @@ import torch
 import gpytorch
 from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, ExactGP
 from excursion_new.acquisition import MES, AcquisitionFunction, PES
-
+from gpytorch.likelihoods import _GaussianLikelihoodBase
 
 def build_sampler(generator: str or SampleGenerator, **kwargs):
     """Build a default random sample generator.
@@ -93,15 +93,9 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
                          "Got %s" % (str(type(model))))
 
     if isinstance(model, str):
-        if model == "exactgp":
-            epsilon = 0.0
-            noise_dist = MultivariateNormal(torch.zeros(kwargs['n_init_points']), torch.eye(kwargs['n_init_points']))
-            noises = epsilon * noise_dist.sample(torch.Size([])).to(device=kwargs['device'], dtype=kwargs['dtype'])
-            init_y = init_y.to(device=kwargs['device'], dtype=kwargs['dtype']) + noises
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([epsilon])).to(device=kwargs['device'], dtype=kwargs['dtype'])
-            model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
-        elif model == "test":
-            print("built test model\n\n")
+        if model == "test":
+            model = ExactGP(init_X, init_y, likelihood=kwargs['likelihood']).to(device=kwargs['device'], dtype=kwargs['dtype'])
+        elif model == "exactgp":
             likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([0])).to(device=kwargs['device'], dtype=kwargs['dtype'])
             model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
 
@@ -109,7 +103,40 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
 
     return model
 
+def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
+    """Build a gpytorch likelihood object for use in building a gpytorch model.
+     For the default likelihood is give 0 noise a gpytorch FixGaussianLikelihood object.
+     Parameters
+     ----------
+     type : str, default: '"Gaussianlikelihood"'
+         Should inherit from `gpytorch.likelihoods._GaussianLikelihoodBase`.
+     kwargs : dict
+         Extra parameters provided to the acq_function at init time.
+     """
+    if likelihood is None:
+        likelihood = "gaussianlikelihood"
+    elif isinstance(likelihood, str):
+        likelihood_check = likelihood.lower()
+        allowed_likelihoods = ["gaussianlikelihood"]
+        if likelihood_check not in allowed_likelihoods:
+            raise ValueError("Valid strings for the model parameter "
+                             " are: 'Gaussianlikelihood' not %s." % likelihood)
+        likelihood = likelihood_check
+    elif not isinstance(likelihood, _GaussianLikelihoodBase):
+        raise TypeError("model has to be an _GaussianLikelihoodBase."
+                         "Got %s" % (str(type(likelihood))))
 
+    if isinstance(likelihood, str):
+        if likelihood == "gaussianlikelihood":
+            if noise == 0.0:
+                likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([noise]))\
+                    .to(device=kwargs['device'], dtype=kwargs['dtype'])
+            else:
+                print('noise>0')
+                likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([noise]))\
+                    .to(device=kwargs['device'], dtype=kwargs['dtype'])
+
+    return likelihood
 # def build_model_init(base_model: str, X_init, device, dtype, n_init_points, true_function):
 #     X_init = torch.from_numpy(X_init).to(device=device, dtype=dtype)
 #     epsilon = 0.0

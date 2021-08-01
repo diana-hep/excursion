@@ -21,12 +21,13 @@ jump_start: true
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'cpu'
+device: 'cuda'
 
 #likelihood
-#likelihood:
-#  type: 'GaussianLikelihood'
-#  epsilon: 0.
+likelihood:
+  type: 'GaussianLikelihood'
+  # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
+  epsilon: 0.0
 
 #model
 model:

@@ -10,7 +10,7 @@ def fit_hyperparams(gp, optimizer: str = "Adam"):
 
     #### THIS HYPERPARAMETER MATTERS A LOT.
 
-    training_iter = 50
+    training_iter = 150
     X_train = gp.train_inputs[0]
     y_train = gp.train_targets
 
