@@ -219,8 +219,10 @@ class Optimizer(_Estimator):
                     elif isinstance(self.epsilon, float) and self.epsilon == 0.0:
                         likelihood = build_likelihood(base_estimator_kwargs['type'],
                                                       device=self.device, dtype=details.dtype)
+                    elif isinstance(self.epsilon, float) and self.epsilon != 0.0:
+                        raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float > 0, got %s" % str(self.epsilon))
                     else:
-                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type int > 0, got %s" % str(type(self.epsilon)))
+                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float > 0, got %s" % str(type(self.epsilon)))
         print(self.noise)
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
