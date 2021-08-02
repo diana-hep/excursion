@@ -14,15 +14,12 @@ class Kernel(object):
         else:
             grid_bounds = grid[:, :-1]
             grid_n = grid[:, -1]
-            grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds)) #, dtype=kwargs['dtype'], device=kwargs['device'])
-
+            grid = torch.zeros(int(np.max(grid_n)), len(grid_bounds))
             for i in range(len(grid_bounds)):
                 grid[:, i] = torch.linspace(
-                    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]) #, dtype=kwargs['dtype'], device=kwargs['device']
-                )
+                    grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]))
 
-            self.kernel = globals()[model_type](globals()[base_kernel](),
-                                                grid=grid)
+            self.kernel = globals()[model_type](globals()[base_kernel](), grid=grid)
 
     def get_kernel(self):
         return self.kernel

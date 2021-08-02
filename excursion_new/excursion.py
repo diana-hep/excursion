@@ -1,6 +1,8 @@
 from excursion_new.utils import mgrid, mesh2points
 import numpy as np
 import torch
+from sklearn.metrics import confusion_matrix
+from torch.distributions.normal import Normal
 
 
 class ExcursionProblem(object):
@@ -66,3 +68,23 @@ class ExcursionResult(object):
         self.true_y = true_y
         self.invalid_region = invalid_region
         self.ndim = ndim
+
+
+def get_diagnostics(y_true, y_pred_mean, plot_X, thresholds):
+    thresholds = [-np.inf] + thresholds.tolist() + [np.inf]
+
+    def label(y):
+        for j in range(len(thresholds) - 1):
+            if y < thresholds[j + 1] and y >= thresholds[j]:
+                return int(j)
+
+    labels_pred = np.array([label(y) for y in y_pred_mean])
+    isnan_vector = np.isnan(labels_pred)
+    labels_true = np.array([label(y) for y in y_true])
+
+    conf_matrix = confusion_matrix(labels_true, labels_pred)
+    self.confusion_matrix.append(conf_matrix)
+    pct = np.diag(conf_matrix).sum() * 1.0 / len(plot_X)
+    self.pct_correct.append(pct)
+    print("pct ", pct)
+    return None

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .excursion import ExcursionResult
 
+
 def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
 
     def values2mesh(values, plot_X, plot_rangedef, invalid, invalid_value = np.nan):
