@@ -131,7 +131,6 @@ def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
                 likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([noise]))\
                     .to(device=kwargs['device'], dtype=kwargs['dtype'])
             else:
-                print('noise>0')
                 likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([noise]))\
                     .to(device=kwargs['device'], dtype=kwargs['dtype'])
 

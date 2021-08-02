@@ -170,6 +170,9 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
         self._n_initial_points = self.n_initial_points_
 
+    def check_and_set_likelihood(self):
+        pass
+
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "TorchGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, base_estimator_kwargs=None,
@@ -185,7 +188,6 @@ class Optimizer(_Estimator):
         # Create the device, currently only supports strings and initializes torch.device objects.
         self.device = device
         self.check_and_set_device()
-
         # Create the special ordered dict to track iterations
         self.data_ = self._Data()
 
@@ -203,25 +205,35 @@ class Optimizer(_Estimator):
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
+        # if acq_func_kwargs is None:
+        #     acq_func_kwargs = dict()
+        # self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
+        # self.acq_func_kwarsgs = acq_func_kwargs
+
+        # Store acquisition function (must be a str originally):
+        details.acq_func = self.acq_func = acq_func
+        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
+
+
+        # Some things were updated in details
+        self.details = details
+
         # Initialize the likelihood object (specifically for gpytorch currently)
         likelihood = None
         self.noise = None
-        if base_estimator_kwargs is not None:
-            if device != 'skcpu':
-                    self.epsilon = base_estimator_kwargs['epsilon']
+        self.base_estimator_kwargs = base_estimator_kwargs
+        if self.base_estimator_kwargs is not None:
+            if self.device != 'skcpu':
+                    self.epsilon = self.base_estimator_kwargs['epsilon']
                     if isinstance(self.epsilon, float) and self.epsilon > 0.0:
-                        likelihood = build_likelihood(base_estimator_kwargs['type'], base_estimator_kwargs['epsilon'],
-                                                      device=self.device, dtype=details.dtype)
-                        self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(self._initial_samples)),
-                                                                  torch.eye(len(self._initial_samples)))\
-                            .sample(torch.Size([])).to(device=self.device, dtype=details.dtype)
-                    elif isinstance(self.epsilon, float) and self.epsilon == 0.0:
-                        likelihood = build_likelihood(base_estimator_kwargs['type'],
-                                                      device=self.device, dtype=details.dtype)
+                        self.noise = self.epsilon
                     elif isinstance(self.epsilon, float) and self.epsilon != 0.0:
-                        raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float > 0, got %s" % str(self.epsilon))
+                        raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(self.epsilon))
                     else:
-                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float > 0, got %s" % str(type(self.epsilon)))
+                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(self.epsilon)))
+                    likelihood = build_likelihood(self.base_estimator_kwargs['type'], self.epsilon,
+                                                  device=self.device, dtype=self.details.dtype)
+
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
@@ -230,18 +242,6 @@ class Optimizer(_Estimator):
             self.model = build_model(self.base_model, grid=details.plot_rangedef, likelihood=likelihood, device=self.device, dtype=details.dtype)
 
         self.fit_optimizer = fit_optimizer
-
-        # Store acquisition function (must be a str originally):
-        details.acq_func = self.acq_func = acq_func
-        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
-
-        # if acq_func_kwargs is None:
-        #     acq_func_kwargs = dict()
-        # self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
-        # self.acq_func_kwarsgs = acq_func_kwargs
-
-        # Some things were updated in details
-        self.details = details
 
 
         # If I want to add all init points first
