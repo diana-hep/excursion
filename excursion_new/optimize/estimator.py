@@ -31,8 +31,8 @@ class Optimizer(_Estimator):
            is a numpy.meshgrid or torch.meshgrid (or ndarray) of the true function
            domain that we wish to search.
 
-       base_estimator : str, `"GridGP"`, `"ExactGP"`, or excursion custom model, \
-               default: `"ExactGP"`
+       base_estimator : str, `"GridGP"`, `"TorchGP"`, or excursion custom model, \
+               default: `"TorchGP"`
                ## (future, list of str or ExcursionGP - better multioutput gpytorch model) ##
            Should inherit from :obj:`excursion.models.ExcursionGP`.
            Which should be initialized before hand
@@ -171,7 +171,7 @@ class Optimizer(_Estimator):
         self._n_initial_points = self.n_initial_points_
 
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
-                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
+                 base_estimator: str or list or ExcursionModel = "TorchGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, base_estimator_kwargs=None,
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
@@ -227,7 +227,7 @@ class Optimizer(_Estimator):
         self.base_model = base_estimator
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
-            self.model = build_model(self.base_model, likelihood=likelihood, device=self.device, dtype=details.dtype)
+            self.model = build_model(self.base_model, grid=details.plot_rangedef, likelihood=likelihood, device=self.device, dtype=details.dtype)
 
         self.fit_optimizer = fit_optimizer
 

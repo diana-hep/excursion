@@ -25,15 +25,17 @@ device: 'cuda'
 
 #likelihood
 likelihood:
+  # Options: None
   type: 'GaussianLikelihood'
   # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
   epsilon: 0.
 
 #model
 model:
-  type: 'test'
-  # This can be 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
-  # will use the default method of the given ExcursionModel. (e.g. ExactGP default is Adam)
+  # Options: GridGP or ExactGP
+  type: 'ExactGP'
+  # Options: 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
+  # will use the default method of the given ExcursionModel. (e.g. TorchGP default is Adam)
   fit_optimizer: 'Adam'
 #  kernel: 'RBF'
 #  prior: 'Constant'
@@ -41,7 +43,8 @@ model:
 
 #acquisition function
 acq:
-  acq_type: mes
+  # Options: PES or MES
+  acq_type: MES
 #  batch: False
 #  batchtype: 'KB'
 #  batchsize: 12

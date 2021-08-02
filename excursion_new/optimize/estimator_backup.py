@@ -40,8 +40,8 @@ class Optimizer(_Estimator):
            ##  `Categorical`).                                             ##
            ##                                                              ##
 
-       base_estimator : str, `"GridGP"`, `"ExactGP"`, or excursion custom model, \
-               default: `"ExactGP"`
+       base_estimator : str, `"GridGP"`, `"TorchGP"`, or excursion custom model, \
+               default: `"TorchGP"`
                ## (future, list of str or ExcursionGP - better multioutput gpytorch model) ##
            Should inherit from :obj:`excursion.models.ExcursionGP`.
            Which should be initialized before hand
@@ -166,7 +166,7 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
 
     def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
-                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
+                 base_estimator: str or list or ExcursionModel = "TorchGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 

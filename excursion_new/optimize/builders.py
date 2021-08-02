@@ -2,7 +2,7 @@ from excursion_new.sampler import *
 from torch.distributions.multivariate_normal import MultivariateNormal
 import torch
 import gpytorch
-from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, ExactGP
+from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, TorchGP
 from excursion_new.acquisition import MES, AcquisitionFunction, PES
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 
@@ -70,12 +70,12 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
     return acq_function
 
 
-def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs):
+def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **kwargs):
     """Build an acquisition function.
      For the special acq_function called "random" the return value is None.
      Parameters
      ----------
-     model : "ExactGP", "GridGP", or ExcursionModel instance"
+     model : "TorchGP", "GridGP", or ExcursionModel instance"
          Should inherit from `excursion.models.ExcursionModel`.
      kwargs : dict
          Extra parameters provided to the acq_function at init time.
@@ -84,7 +84,7 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
         model = "exactgp"
     elif isinstance(model, str):
         model = model.lower()
-        allowed_models = ["exactgp", "test"]
+        allowed_models = ["exactgp", "gridgp"]
         if model not in allowed_models:
             raise ValueError("Valid strings for the model parameter "
                              " are: 'ExactGP', or 'GridGP' not %s." % model)
@@ -93,11 +93,10 @@ def build_model(model: str or ExcursionModel, init_X=None, init_y=None, **kwargs
                          "Got %s" % (str(type(model))))
 
     if isinstance(model, str):
-        if model == "test":
-            model = ExactGP(init_X, init_y, likelihood=kwargs['likelihood']).to(device=kwargs['device'], dtype=kwargs['dtype'])
+        if model == "gridgp":
+            model = TorchGP(init_X, init_y, likelihood=kwargs['likelihood'], model_type='GridKernel', grid=grid).to(device=kwargs['device'], dtype=kwargs['dtype'])
         elif model == "exactgp":
-            likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([0])).to(device=kwargs['device'], dtype=kwargs['dtype'])
-            model = ExactGP(init_X, init_y, likelihood).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = TorchGP(init_X, init_y, likelihood=kwargs['likelihood'], model_type='ScaleKernel').to(device=kwargs['device'], dtype=kwargs['dtype'])
 
     model.set_params(**kwargs)
 
@@ -149,7 +148,7 @@ def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
 #     elif epsilon == 0.0:
 #         likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
 #             noise=torch.tensor([epsilon])).to(device, dtype)
-#     if base_model == "ExactGP":
+#     if base_model == "TorchGP":
 #         model = ExcursionGP(X_init, y_init, likelihood).to(device=device, dtype=dtype)
 #     model.train()
 #     likelihood = model.likelihood.train()
@@ -171,7 +170,7 @@ def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
 #     elif epsilon == 0.0:
 #         likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(
 #             noise=torch.tensor([epsilon])).to(device, dtype)
-#     if base_model == "ExactGP":
+#     if base_model == "TorchGP":
 #         model = ExcursionGP(X_init, y_init, likelihood).to(device=device, dtype=dtype)
 #     model.train()
 #     likelihood = model.likelihood

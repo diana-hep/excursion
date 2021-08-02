@@ -5,11 +5,11 @@ import torch
 import gpytorch
 
 
-class ExactGP(ExcursionModel, gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood):
-        super(ExactGP, self).__init__(train_x, train_y, likelihood)
+class TorchGP(ExcursionModel, gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood, model_type, grid=None):
+        super(TorchGP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = Kernel(model_type='ScaleKernel', base_kernel='RBFKernel').get_kernel()
+        self.covar_module = Kernel(model_type=model_type, base_kernel='RBFKernel', grid=grid).get_kernel()
 
     def forward(self, x):
         mean_x = self.mean_module(x)
