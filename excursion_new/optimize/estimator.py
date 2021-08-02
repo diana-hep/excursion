@@ -220,19 +220,18 @@ class Optimizer(_Estimator):
 
         # Initialize the likelihood object (specifically for gpytorch currently)
         likelihood = None
-        self.noise = None
+        self.epsilon = None
         self.base_estimator_kwargs = base_estimator_kwargs
-        if self.base_estimator_kwargs is not None:
-            if self.device != 'skcpu':
-                    self.epsilon = self.base_estimator_kwargs['epsilon']
-                    if isinstance(self.epsilon, float) and self.epsilon > 0.0:
-                        self.noise = self.epsilon
-                    elif isinstance(self.epsilon, float) and self.epsilon != 0.0:
-                        raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(self.epsilon))
-                    else:
-                        raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(self.epsilon)))
-                    likelihood = build_likelihood(self.base_estimator_kwargs['type'], self.epsilon,
-                                                  device=self.device, dtype=self.details.dtype)
+        if self.base_estimator_kwargs is not None and self.device != 'skcpu':
+            epsilon = self.base_estimator_kwargs['epsilon']
+            if not isinstance(epsilon, float):
+                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(epsilon)))
+            elif epsilon > 0.0:
+                self.epsilon = epsilon
+            elif epsilon < 0.0:
+                raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(epsilon))
+            likelihood = build_likelihood(self.base_estimator_kwargs['type'], epsilon,
+                                          device=self.device, dtype=self.details.dtype)
 
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
@@ -421,11 +420,11 @@ class Optimizer(_Estimator):
 
         if self.details.ndim == 1:
             y = y.flatten()
-        if self.noise is not None:
-            self.noise = self.epsilon * MultivariateNormal(torch.zeros(len(y)),
+        if self.epsilon is not None:
+            noise = self.epsilon * MultivariateNormal(torch.zeros(len(y)),
                                                       torch.eye(len(y))) \
                 .sample(torch.Size([])).to(device=self.device, dtype=self.details.dtype)
-            y = y + self.noise
+            y = y + noise
         return self._tell(x, y, fit=fit)
 
     def _tell(self, x, y, fit=True) -> ExcursionResult:
