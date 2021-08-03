@@ -2,8 +2,7 @@ from excursion_new.utils import mgrid, mesh2points
 import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
-from torch.distributions.normal import Normal
-
+import matplotlib.pyplot as plt
 
 class ExcursionProblem(object):
     def __init__(self, functions, thresholds=[0.5], ndim=1, bounding_box=None, plot_npoints=None, init_n_points=2):
@@ -68,23 +67,23 @@ class ExcursionResult(object):
         self.true_y = true_y
         self.invalid_region = invalid_region
         self.ndim = ndim
+        self.confusion_matrix = self.get_confusion_matrix()
+        self.pct_correct = self.get_percent_correct()
 
+    def get_percent_correct(self):
+        pct_correct = np.diag(self.confusion_matrix).sum() * 1.0 / len(self.plot_X)
+        print("Accuracy %", pct_correct)
+        return pct_correct
 
-def get_diagnostics(y_true, y_pred_mean, plot_X, thresholds):
-    thresholds = [-np.inf] + thresholds.tolist() + [np.inf]
+    def get_confusion_matrix(self):
+        thresholds = [-np.inf] + self.thr + [np.inf]
 
-    def label(y):
-        for j in range(len(thresholds) - 1):
-            if y < thresholds[j + 1] and y >= thresholds[j]:
-                return int(j)
+        def label(y):
+            for j in range(len(thresholds) - 1):
+                if y < thresholds[j + 1] and y >= thresholds[j]:
+                    return int(j)
 
-    labels_pred = np.array([label(y) for y in y_pred_mean])
-    isnan_vector = np.isnan(labels_pred)
-    labels_true = np.array([label(y) for y in y_true])
-
-    conf_matrix = confusion_matrix(labels_true, labels_pred)
-    self.confusion_matrix.append(conf_matrix)
-    pct = np.diag(conf_matrix).sum() * 1.0 / len(plot_X)
-    self.pct_correct.append(pct)
-    print("pct ", pct)
-    return None
+        labels_pred = np.array([label(y) for y in self.mean])
+        isnan_vector = np.isnan(labels_pred)
+        labels_true = np.array([label(y) for y in self.true_y])
+        return confusion_matrix(labels_true, labels_pred)

@@ -3,6 +3,24 @@ import matplotlib.pyplot as plt
 from .excursion import ExcursionResult
 
 
+def plot_confusion_matrix(confusion_matrix, pct_correct: int):
+    plt.title("Confusion Matrix, "+str(pct_correct)+"% Accuracy")
+    # plt.xticks(tick_marks, c, rotation=45)
+    # plt.yticks(tick_marks, c)
+    plt.imshow(confusion_matrix, cmap="binary")
+    for i1 in range(confusion_matrix.shape[0]):
+        for i2 in range(confusion_matrix.shape[1]):
+            plt.text(
+                i1,
+                i2,
+                confusion_matrix[i1][i2],
+                ha="center",
+                va="center",
+                color="red",
+            )
+    plt.show()
+
+
 def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
 
     def values2mesh(values, plot_X, plot_rangedef, invalid, invalid_value = np.nan):
@@ -179,11 +197,17 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     plt.show()
 
 
+def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
+    return
+
 plot_n = {1: plot_1D,
-          2: plot_2D}
+          2: plot_2D,
+          3: plot_3D}
 
 
-def plot(result: ExcursionResult):
+def plot(result: ExcursionResult, show_confusion_matrix=False):
+    if show_confusion_matrix:
+        plot_confusion_matrix(result.confusion_matrix, result.pct_correct)
     return plot_n[result.ndim](acq=result.acq, train_y=result.train_y, train_X=result.train_X, plot_X=result.plot_X,
                              plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean, pred_cov=result.cov,
                              thresholds=result.thr, next_x=result.next_x, true_y=result.true_y,
