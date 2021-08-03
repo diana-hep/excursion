@@ -1,14 +1,13 @@
 import copy
 import inspect
 import time, simplejson, gc
-from .builders import build_sampler, build_model, build_acquisition_func, build_likelihood
+from .builders import build_sampler, build_model, build_acquisition_func
 import numpy as np
 import torch
 from excursion_new.excursion import ExcursionProblem, ExcursionResult, build_result
 from excursion_new.models import ExcursionModel
 from ._estimator import _Estimator
 from collections import OrderedDict
-from torch.distributions.multivariate_normal import MultivariateNormal
 
 
 class Optimizer(_Estimator):
@@ -17,19 +16,16 @@ class Optimizer(_Estimator):
        An `Estimator` represents the steps of a excursion set optimisation loop. To
        use it you need to provide your own loop mechanism.
 
-       #The various#
-       #optimisers provided by `skopt` use this class under the hood.#
-
        Use this class directly if you want to control the iterations of your
        bayesian optimisation loop.
 
        Parameters
        ----------
-       dimensions : tuple, shape (n_dims, meshgrid)
-           Tuple of search space dimensions.
-           The search dimension is an int, and the meshgrid
-           is a numpy.meshgrid or torch.meshgrid (or ndarray) of the true function
-           domain that we wish to search.
+       # dimensions : tuple, shape (n_dims, meshgrid)
+       #     Tuple of search space dimensions.
+       #     The search dimension is an int, and the meshgrid
+       #     is a numpy.meshgrid or torch.meshgrid (or ndarray) of the true function
+       #     domain that we wish to search.
 
        base_estimator : str, `"GridGP"`, `"TorchGP"`, or excursion custom model, \
                default: `"TorchGP"`
@@ -51,7 +47,6 @@ class Optimizer(_Estimator):
            The type of gpytorch likelihood that should be used for a gpytorch model.
            If device type is "sk
 
-
        n_initial_points : int or None, default: 2
            Number of evaluations of `func` with initialization points
            before approximating it with `base_model`. Initial point
@@ -67,11 +62,8 @@ class Optimizer(_Estimator):
            Sets a initial points generator. Can be either
 
            - `"random"` for uniform random numbers,
-           # # - `"sobol"` for a Sobol sequence,
-           # # - `"halton"` for a Halton sequence,
-           # # - `"hammersly"` for a Hammersly sequence,
-           - `"lhs"` for a latin hypercube sequence,
-           - `"grid"` for a uniform grid sequence
+           # - `"lhs"` for a latin hypercube sequence,
+           # - `"grid"` for a uniform grid sequence
 
        acq_func : string, default: `"MES"`
            Function to minimize over the posterior distribution. Can be either
@@ -81,17 +73,6 @@ class Optimizer(_Estimator):
            # # - `"PPES"` posterior predictive entropy search.
            # # - `"gp_hedge"` Probabilistically choose one of the above three
            # #   acquisition functions at every iteration.
-           #
-           #   - The gains `g_i` are initialized to zero.
-           #   - At every iteration,
-           #
-           #     - Each acquisition function is optimised independently to
-           #       propose an candidate point `X_i`.
-           #     - Out of all these candidate points, the next point `X_best` is
-           #       chosen by :math:`softmax(\\eta g_i)`
-           #     - After fitting the surrogate model with `(X_best, y_best)`,
-           #       the gains are updated such that :math:`g_i -= \\mu(X_i)`
-
 
        fit_optimizer : string, `"Adam"` or `"lbfgs"`, default: `None`
            Method to train the hyperparamters of the model's Gaussian process. The fit model
@@ -101,21 +82,6 @@ class Optimizer(_Estimator):
            Only available if ExcursionModel instance supports it. default 'None' will use
            model's default fit_optimizer.
 
-           # - If set to `"auto"`, then `acq_optimizer` is configured on the
-           #   basis of the base_model and the space searched over.
-           # - If set to `"sampling"`, then `acq_func` is optimized by computing
-           #   `acq_func` at `n_points` randomly sampled points.
-           # - If set to `"lbfgs"`, then `acq_func` is optimized by
-               -
-             # - Sampling `n_restarts_optimizer` points randomly.
-             # - `"lbfgs"` is run for 20 iterations with these points as initial
-             #   points to find local minima.
-             # - The optimal of these local minima is used to update the prior.
-
-       # random_state : int, RandomState instance, or None (default)
-       #     Set random state to something other than None for reproducible
-       #     results.
-
        n_funcs : int, default: None
            The number of true functions if provided, determines if truth values can
            be graphed or if the model can be jump started. (will have
@@ -124,8 +90,8 @@ class Optimizer(_Estimator):
        acq_func_kwargs : dict
            Additional arguments to be passed to the acquisition function.
 
-       acq_optimizer_kwargs : dict
-           Additional arguments to be passed to the acquisition optimizer.
+       fit_optimizer_kwargs : dict, default: 'None'
+           Additional arguments to be passed to the fit optimizer.
 
        Attributes
        ----------
@@ -136,9 +102,6 @@ class Optimizer(_Estimator):
        model : ExcursionModel (list or multioutput gp in future)
            Regression models used to fit observations and compute acquisition
            function.
-       # space : Space
-       #     An instance of :class:`skopt.space.Space`. Stores parameter search
-       #     space used to sample points, bounds, and type of parameters.
 
        """
 
@@ -172,8 +135,8 @@ class Optimizer(_Estimator):
 
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
-                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, base_estimator_kwargs=None,
-                 acq_optimzer_kwargs={}, jump_start: bool = True):
+                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None,
+                 base_estimator_kwargs=None, fit_optimizer_kwargs=None, acq_func_kwargs=None, jump_start: bool = True):
 
         # Currently only supports 1 func
         self.n_funcs = n_funcs if n_funcs else len(details.functions)
@@ -202,10 +165,14 @@ class Optimizer(_Estimator):
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
+        # currently do not support any batches, or acq_func_kwargs. This is place holder
+        # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
+        # should return acq(X) and not argmax(acq(X))
         # if acq_func_kwargs is None:
         #     acq_func_kwargs = dict()
-        # self.epsilon = acq_func_kwargs.get("epsilon", 0.0)
-        # self.acq_func_kwarsgs = acq_func_kwargs
+        # # Number of points to get per call to ask()
+        # self.npoints = acq_func_kwargs.get('batch_size')
+        # self.acq_func_kwargs = acq_func_kwargs
 
         # Store acquisition function (must be a str originally):
         details.acq_func = self.acq_func = acq_func
@@ -214,7 +181,6 @@ class Optimizer(_Estimator):
         # Some things were updated in details
         self.details = details
 
-        # Initialize the likelihood object (specifically for gpytorch currently)
         if base_estimator_kwargs is None:
             raise ValueError("base_estimator_kwargs cannot be type None")
 
@@ -298,42 +264,39 @@ class Optimizer(_Estimator):
             raise ValueError(
                 "Expected 'n_points' is an int > 0, got %s with type %s" % (str(n_points), str(type(n_points)))
             )
+        pass
 
+        X = []
 
-
-        # X = []
-        #
-        # if 'batch_type' in batch_kwarg.keys():
-        #     supported_batch_types = ["kb", "naive"]
-        #     if not isinstance(batch_kwarg['batch_type'], str):
-        #         raise TypeError("Expected batch_type to be one of type str" +
-        #                         " got %s" % str(type(batch_kwarg['batch_type']))
-        #                         )
-        #     if batch_kwarg['batch_type'] not in supported_batch_types:
-        #         raise ValueError(
-        #             "Expected batch_type to be one of " +
-        #             str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
-        #         )
+        if 'batch_type' in batch_kwarg.keys():
+            supported_batch_types = ["kb", "naive"]
+            if not isinstance(batch_kwarg['batch_type'], str):
+                raise TypeError("Expected batch_type to be one of type str" +
+                                " got %s" % str(type(batch_kwarg['batch_type']))
+                                )
+            if batch_kwarg['batch_type'] not in supported_batch_types:
+                raise ValueError(
+                    "Expected batch_type to be one of " +
+                    str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
+                )
         # else:
-            ## Need to decide how to handle batches
-            # X_new = [self.model_acq_funcs_[idx].acquire(model, thresholds) for idx, model in enumerate(self.models)]
-            # X.append(X_new)
-            # return X
-            # # Caching the result with n_points not None. If some new parameters
-            # # are provided to the ask, the cache_ is not used.
-            # if (n_points, strategy) in self.cache_:
-            #     return self.cache_[(n_points, strategy)]
-
-            # Copy of the optimizer is made in order to manage the
-            # deletion of points with "lie" objective (the copy of
-            # oiptimizer is simply discarded)
-            # opt = self.copy(random_state=self.rng.randint(0,
-            #                                               np.iinfo(np.int32).max))
-            pass
-            # for i in range(n_points):
-                # X_new = self.suggest()
-                # X.append(X_new)
-                # self._tell(X_new, y_lie)
+        #     # Need to decide how to handle batches
+        #     X_new = [self.model_acq_funcs_[idx].acquire(model, thresholds) for idx, model in enumerate(self.models)]
+        #     X.append(X_new)
+        #     return X
+        #     # Caching the result with n_points not None. If some new parameters
+        #     # are provided to the ask, the cache_ is not used.
+        #     if (n_points, strategy) in self.cache_:
+        #         return self.cache_[(n_points, strategy)]
+        #
+        #     # Copy of the optimizer is made in order to manage the
+        #     # deletion of points with "lie" objective (the copy of oiptimizer is simply discarded)
+        #     opt = self.copy(random_state=self.rng.randint(0,np.iinfo(np.int32).max))
+        #
+        #     for i in range(n_points):
+        #         X_new = self.suggest()
+        #         X.append(X_new)
+        #         self._tell(X_new, y_lie)
 
         # self.cache_ = {(n_points, strategy): X}  # cache_ the result
 
@@ -429,7 +392,7 @@ class Optimizer(_Estimator):
                 thresholds = [-np.inf] + self.details.thresholds + [np.inf]
                 next_x = self.acq_func.acquire(self.model, thresholds, self.details.plot_X)
                 self.next_xs_.append(next_x)
-                ## Placeholder until I do batch acq functions
+                # # Placeholder until I do batch acq functions
                 self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
 
         if isinstance(x, list):

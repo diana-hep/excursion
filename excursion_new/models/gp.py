@@ -36,7 +36,7 @@ def get_gp(X, y, likelihood, algorithmopts, testcase, device):
 
 
 class ExcursionGP(ExactGP):
-    def __init__(self, train_x, train_y, likelihood, grid = None):
+    def __init__(self, train_x, train_y, likelihood, grid=None):
         super(ExcursionGP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
         if grid is None:
@@ -52,7 +52,7 @@ class ExcursionGP(ExactGP):
                     grid_bounds[i][0], grid_bounds[i][1], int(grid_n[i]), dtype=torch.double
                 )
 
-            self.covar_module = Kernel(model_type='GridKernel', base_kernel='RBFKernel', grid = grid).get_kernel()
+            self.covar_module = Kernel(model_type='GridKernel', base_kernel='RBFKernel', grid=grid).get_kernel()
 
     def forward(self, x):
         mean_x = self.mean_module(x)

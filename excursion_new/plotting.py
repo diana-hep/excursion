@@ -21,9 +21,10 @@ def plot_confusion_matrix(confusion_matrix, pct_correct: int):
     plt.show()
 
 
-def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
+def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
+            invalid_region, func=None):
 
-    def values2mesh(values, plot_X, plot_rangedef, invalid, invalid_value = np.nan):
+    def values2mesh(values, plot_X, plot_rangedef, invalid, invalid_value=np.nan):
         allv = np.zeros(len(plot_X))
         inv = invalid(plot_X)
         allv[~inv] = values
@@ -39,7 +40,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     fig_ax1 = fig.add_subplot(gs[0, :1])
     fig_ax2 = fig.add_subplot(gs[0, 1:])
 
-    xv, yv= plot_G
+    xv, yv = plot_G
 
     line1 = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dashed", color='white', label='True Contour')
 
@@ -78,7 +79,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     fig_ax1.legend(
         [l1[0], l2[0], old_points, new_point],
         ["True excursion set (thresholds=0)", "Estimation", "Observed points", "Next point"],
-        #loc="bottom center",
+        # loc="bottom center",
         bbox_to_anchor=(1.10, -0.1),
         ncol=2,
         facecolor="grey",
@@ -90,7 +91,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         min_xv_ = np.min(acq)
         acq = values2mesh(acq, plot_X, rangedef, invalid_region)
         color_axis_ = fig_ax2.contourf(xv, yv, acq, np.linspace(min_xv_, max_xv_, 100))
-        #plot truth
+        # plot truth
         line_ = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dashed", color='white', label='True Contour')
         # plot
         # train points
@@ -122,7 +123,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         fig_ax2.legend(
             [l_[0], old_points_, new_point_],
             ["True excursion set (thresholds=0)", "Acquisition Value", "Observed points", "Next point"],
-            #loc="bottom center",
+            # loc="bottom center",
             bbox_to_anchor=(1.10, -0.1),
             ncol=2,
             facecolor="grey",
@@ -133,11 +134,12 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     plt.show()
 
 
-def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
-    fig = plt.figure(figsize=(15,15))
+def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
+            invalid_region, func=None):
+    fig = plt.figure(figsize=(15, 15))
     gs = fig.add_gridspec(2, 1, height_ratios=[10, 5])
-    fig_ax1 = fig.add_subplot(gs[0,:])
-    fig_ax2 = fig.add_subplot(gs[1,:])
+    fig_ax1 = fig.add_subplot(gs[0, :])
+    fig_ax2 = fig.add_subplot(gs[1, :])
     plot_X = plot_G[0]
 
     fig_ax1.plot(plot_X, true_y, linestyle="dashed", color='k', label='True Function')
@@ -146,7 +148,7 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     max_X = np.max(plot_X)
     fig_ax1.hlines(thresholds, min_X, max_X, colors="purple", label="threshold")
 
-    ##train points
+    # #train points
     fig_ax1.plot(
         train_X,
         train_y,
@@ -197,8 +199,10 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     plt.show()
 
 
-def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region, func=None):
+def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
+            invalid_region, func=None):
     return
+
 
 plot_n = {1: plot_1D,
           2: plot_2D,
@@ -209,8 +213,6 @@ def plot(result: ExcursionResult, show_confusion_matrix=False):
     if show_confusion_matrix:
         plot_confusion_matrix(result.confusion_matrix, result.pct_correct)
     return plot_n[result.ndim](acq=result.acq, train_y=result.train_y, train_X=result.train_X, plot_X=result.plot_X,
-                             plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean, pred_cov=result.cov,
-                             thresholds=result.thr, next_x=result.next_x, true_y=result.true_y,
-                             invalid_region=result.invalid_region)
-
-
+                               plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean,
+                               pred_cov=result.cov, thresholds=result.thr, next_x=result.next_x, true_y=result.true_y,
+                               invalid_region=result.invalid_region)

@@ -88,10 +88,10 @@ class Learner(_Learner):
         y = self.evaluate(x)
         return self.tell(x, y)
 
-    def run(self, n_iterations, plot_result=False):
+    def run(self, n_iterations, plot_result=False, show_confusion_matrix=False):
         for iter in range(n_iterations):
             result = self.evaluate_and_tell(self.suggest())
-            if plot_result: plot(result)
+            if plot_result: plot(result, show_confusion_matrix)
 
     def evaluate_metrics(self):
         raise NotImplementedError()

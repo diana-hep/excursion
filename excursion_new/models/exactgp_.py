@@ -35,8 +35,7 @@ class TorchGP(ExcursionModel, gpytorch.models.ExactGP):
         targets = y if x.shape[1] != 1 else y.flatten()
         if self.epsilon > 0.0:
             # Add noise if the likelihood had included epsilon>0 in algo options
-            targets = targets + self.epsilon * MultivariateNormal(torch.zeros(len(targets)),
-                                                      torch.eye(len(targets))) \
+            targets = targets + self.epsilon * MultivariateNormal(torch.zeros(len(targets)), torch.eye(len(targets)))\
                 .sample(torch.Size([])).to(device=self.device, dtype=self.dtype)
         if self.train_inputs is not None and self.train_targets is not None:
             inputs = torch.cat(

@@ -2,7 +2,7 @@ from excursion_new.utils import mgrid, mesh2points
 import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+
 
 class ExcursionProblem(object):
     def __init__(self, functions, thresholds=[0.5], ndim=1, bounding_box=None, plot_npoints=None, init_n_points=2):
@@ -27,7 +27,7 @@ class ExcursionProblem(object):
         return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
 
-### move this into the excursion result, unless we add scikit learn implementation
+# # move this into the excursion result, unless we add scikit learn implementation # #
 
 def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs):
     train_X = model.train_inputs[0].cpu().detach().numpy()
@@ -80,7 +80,7 @@ class ExcursionResult(object):
 
         def label(y):
             for j in range(len(thresholds) - 1):
-                if y < thresholds[j + 1] and y >= thresholds[j]:
+                if thresholds[j + 1] > y >= thresholds[j]:
                     return int(j)
 
         labels_pred = np.array([label(y) for y in self.mean])

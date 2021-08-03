@@ -29,11 +29,9 @@ class MES(AcquisitionFunction):
         entropy_grid = torch.zeros(num_points,).to(device=self.device, dtype=self.dtype)
 
         for j in range(len(thresholds) - 1):
-            p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) \
-                  - cdf(mean_tensor, std_tensor, thresholds[j])
+            p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])
 
-            entropy_grid[p_j > 0] -= torch.log(torch.exp(p_j[p_j > 0])) \
-                                      * torch.log(torch.exp(torch.log(p_j[p_j > 0])))
+            entropy_grid[p_j > 0] -= torch.log(torch.exp(p_j[p_j > 0])) * torch.log(torch.exp(torch.log(p_j[p_j > 0])))
 
         self.grid = entropy_grid
         self.log = torch.clone(entropy_grid)
@@ -66,5 +64,4 @@ class MES(AcquisitionFunction):
             return self._check_prev_acq(new_index, X_train, meshgrid)
 
     def pop(self, index):
-            self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])
-
+        self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])

@@ -1,4 +1,5 @@
-import torch, gpytorch
+import torch
+import gpytorch
 
 
 def fit_hyperparams(gp, optimizer: str = "Adam"):
@@ -7,8 +8,7 @@ def fit_hyperparams(gp, optimizer: str = "Adam"):
     likelihood.train()
     gp.train()
 
-
-    #### THIS HYPERPARAMETER MATTERS A LOT.
+    # # # # THIS HYPERPARAMETER MATTERS A LOT.
 
     training_iter = 150
     X_train = gp.train_inputs[0]
@@ -24,7 +24,6 @@ def fit_hyperparams(gp, optimizer: str = "Adam"):
 
         # "Loss" for GPs - the marginal log likelihood
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(gp.likelihood, gp)
-
 
         # See notes for idea on stopping criterion
 

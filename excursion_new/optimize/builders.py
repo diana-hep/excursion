@@ -6,6 +6,7 @@ from excursion_new.models import ExcursionGP, fit_hyperparams, ExcursionModel, T
 from excursion_new.acquisition import MES, AcquisitionFunction, PES
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 
+
 def build_sampler(generator: str or SampleGenerator, **kwargs):
     """Build a default random sample generator.
      For the special generator called "random" the return value is None.
@@ -55,10 +56,9 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
         allowed_acq_funcs = ["mes", "pes"]
         if acq_function not in allowed_acq_funcs:
             raise ValueError("Valid strings for the acq_function parameter "
-                             " are: %s, not %s." %  (",".join(allowed_acq_funcs) ,acq_function))
+                             " are: %s, not %s." % (",".join(allowed_acq_funcs), acq_function))
     elif not isinstance(acq_function, AcquisitionFunction):
-        raise TypeError("acq_function has to be an AcquisitionFunction."
-                         "Got %s" % (str(type(acq_function))))
+        raise TypeError("acq_function has to be an AcquisitionFunction. Got %s" % (str(type(acq_function))))
 
     if isinstance(acq_function, str):
         if acq_function == "mes":
@@ -86,23 +86,25 @@ def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **
         model = model.lower()
         allowed_models = ["exactgp", "gridgp"]
         if model not in allowed_models:
-            raise ValueError("Valid strings for the model parameter "
-                             " are: 'ExactGP', or 'GridGP' not %s." % model)
+            raise ValueError("Valid strings for the model parameter are: 'ExactGP', or 'GridGP' not %s." % model)
     elif not isinstance(model, ExcursionModel):
-        raise TypeError("model has to be an ExcursionModel."
-                         "Got %s" % (str(type(model))))
+        raise TypeError("model has to be an ExcursionModel. Got %s" % (str(type(model))))
 
     if isinstance(model, str):
         if model == "gridgp" or model == "exactgp":
-            likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'], device=kwargs['device'], dtype=kwargs['dtype'])
+            likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'],
+                                          device=kwargs['device'], dtype=kwargs['dtype'])
         if model == "gridgp":
-            model = TorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = TorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).\
+                to(device=kwargs['device'], dtype=kwargs['dtype'])
         elif model == "exactgp":
-            model = TorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = TorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\
+                to(device=kwargs['device'], dtype=kwargs['dtype'])
 
     model.set_params(**kwargs)
 
     return model
+
 
 def build_likelihood(likelihood: str, noise: float, **kwargs):
     """Build a gpytorch likelihood object for use in building a gpytorch model.
@@ -124,13 +126,13 @@ def build_likelihood(likelihood: str, noise: float, **kwargs):
                              " are: 'Gaussianlikelihood' not %s." % likelihood)
         likelihood = likelihood_check
     elif not isinstance(likelihood, _GaussianLikelihoodBase):
-        raise TypeError("model has to be an _GaussianLikelihoodBase."
-                         "Got %s" % (str(type(likelihood))))
+        raise TypeError("model has to be an _GaussianLikelihoodBase. Got %s" % (str(type(likelihood))))
 
     if isinstance(likelihood, str):
         if likelihood == "gaussianlikelihood":
             if not isinstance(noise, float):
-                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(noise)))
+                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s"
+                                % str(type(noise)))
             elif noise < 0.0:
                 raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(noise))
             if noise == 0.0:

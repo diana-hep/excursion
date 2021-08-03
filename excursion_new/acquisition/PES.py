@@ -95,5 +95,4 @@ class PES(AcquisitionFunction):
             return self._check_prev_acq(new_index, X_train, meshgrid)
 
     def pop(self, index):
-            self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])
-
+        self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])
