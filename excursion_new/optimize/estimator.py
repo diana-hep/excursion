@@ -268,17 +268,17 @@ class Optimizer(_Estimator):
 
         X = []
 
-        if 'batch_type' in batch_kwarg.keys():
-            supported_batch_types = ["kb", "naive"]
-            if not isinstance(batch_kwarg['batch_type'], str):
-                raise TypeError("Expected batch_type to be one of type str" +
-                                " got %s" % str(type(batch_kwarg['batch_type']))
-                                )
-            if batch_kwarg['batch_type'] not in supported_batch_types:
-                raise ValueError(
-                    "Expected batch_type to be one of " +
-                    str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
-                )
+        # if 'batch_type' in batch_kwarg.keys():
+        #     supported_batch_types = ["kb", "naive"]
+        #     if not isinstance(batch_kwarg['batch_type'], str):
+        #         raise TypeError("Expected batch_type to be one of type str" +
+        #                         " got %s" % str(type(batch_kwarg['batch_type']))
+        #                         )
+        #     if batch_kwarg['batch_type'] not in supported_batch_types:
+        #         raise ValueError(
+        #             "Expected batch_type to be one of " +
+        #             str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
+        #         )
         # else:
         #     # Need to decide how to handle batches
         #     X_new = [self.model_acq_funcs_[idx].acquire(model, thresholds) for idx, model in enumerate(self.models)]
