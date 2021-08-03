@@ -42,11 +42,11 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
 
     xv, yv = plot_G
 
-    line1 = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dashed", color='white', label='True Contour')
+    line1 = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dotted", color='white')
 
     min_xv = np.min(pred_mean)
     max_xv = np.max(pred_mean)
-    line2 = fig_ax1.contour(xv, yv, pred_mean, thresholds, colors="purple", label="threshold")
+    line2 = fig_ax1.contour(xv, yv, pred_mean, thresholds, colors="white", linestyle='solid')
     color_axis = fig_ax1.contourf(xv, yv, pred_mean, np.linspace(min_xv, max_xv, 100))
 
     # train points
@@ -71,7 +71,8 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     fig_ax1.set_ylabel("y")
     fig_ax1.set_xlim(*rangedef[0][:2])
     fig_ax1.set_ylim(*rangedef[1][:2])
-    fig.colorbar(color_axis, ax=fig_ax1)
+    ax1_colorbar = fig.colorbar(color_axis, ax=fig_ax1, shrink=0.7)
+    ax1_colorbar.ax.set_ylabel('mean GP', size=14, labelpad=20, rotation=270)
     fig_ax1.legend(loc=0)
     l1, _ = line1.legend_elements()
     l2, _ = line2.legend_elements()
@@ -80,7 +81,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         [l1[0], l2[0], old_points, new_point],
         ["True excursion set (thresholds=0)", "Estimation", "Observed points", "Next point"],
         # loc="bottom center",
-        bbox_to_anchor=(1.10, -0.1),
+        bbox_to_anchor=(0.7, -0.1),
         ncol=2,
         facecolor="grey",
         framealpha=0.20,
@@ -90,9 +91,10 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         max_xv_ = np.max(acq)
         min_xv_ = np.min(acq)
         acq = values2mesh(acq, plot_X, rangedef, invalid_region)
-        color_axis_ = fig_ax2.contourf(xv, yv, acq, np.linspace(min_xv_, max_xv_, 100))
+        # color_axis_ = fig_ax2.contourf(xv, yv, acq, np.linspace(min_xv_, max_xv_, 100))
+        color_axis_ = fig_ax2.contourf(xv, yv, acq, cmap="Purples")
         # plot truth
-        line_ = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dashed", color='white', label='True Contour')
+        line_ = fig_ax2.contour(xv, yv, true_y, thresholds, linestyle="dotted", color='red', label='True Contour')
         # plot
         # train points
         old_points_ = fig_ax2.scatter(
@@ -204,9 +206,15 @@ def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     return
 
 
+def plot_4D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
+            invalid_region, func=None):
+    return
+
 plot_n = {1: plot_1D,
           2: plot_2D,
-          3: plot_3D}
+          3: plot_3D,
+          4: plot_4D,
+          5: plot_4D}
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):

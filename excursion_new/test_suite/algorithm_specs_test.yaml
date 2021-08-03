@@ -28,12 +28,12 @@ likelihood:
   # Options: None
   likelihood_type: 'GaussianLikelihood'
   # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
-  epsilon: 0.5
+  epsilon: 0.0
 
 #model
 model:
   # Options: GridGP or ExactGP
-  type: 'GridGP'
+  type: 'ExactGP'
   # Options: 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
   # will use the default method of the given ExcursionModel. (e.g. TorchGP default is Adam)
   fit_optimizer: 'Adam'

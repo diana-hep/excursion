@@ -1,0 +1,35 @@
+#
+# GLOBAL INIT
+#
+example: 'parabola_nD'   # each given testcase has a name
+ninit: 7                   # number of initial points
+init_type: 'random'        # type of init training data
+jump_start: false
+device: 'cuda'
+
+
+#
+# LIKELIHOOD
+#
+likelihood:
+  likelihood_type: 'GaussianLikelihood'
+  epsilon: 0.2
+
+#
+# MODEL
+#
+model:
+  type: 'GridGP'
+  fit_optimizer: 'LBFGS'
+#  kernel: 'RBF'
+#  prior: 'Constant' # Constant, Linear or Circular
+
+
+#
+# ACQUISTION FUNCTION
+#
+acq:
+  acq_type: 'MES'
+#  batch: False
+#  batchtype: 'KB'
+#  batchsize: 2
