@@ -170,11 +170,8 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
         self._n_initial_points = self.n_initial_points_
 
-    def check_and_set_likelihood(self):
-        pass
-
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
-                 base_estimator: str or list or ExcursionModel = "TorchGP", n_initial_points=None,
+                 base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None, base_estimator_kwargs=None,
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
@@ -214,34 +211,23 @@ class Optimizer(_Estimator):
         details.acq_func = self.acq_func = acq_func
         self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
-
         # Some things were updated in details
         self.details = details
 
         # Initialize the likelihood object (specifically for gpytorch currently)
-        likelihood = None
-        self.epsilon = None
-        self.base_estimator_kwargs = base_estimator_kwargs
-        if self.base_estimator_kwargs is not None and self.device != 'skcpu':
-            epsilon = self.base_estimator_kwargs['epsilon']
-            if not isinstance(epsilon, float):
-                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(epsilon)))
-            elif epsilon > 0.0:
-                self.epsilon = epsilon
-            elif epsilon < 0.0:
-                raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(epsilon))
-            likelihood = build_likelihood(self.base_estimator_kwargs['type'], epsilon,
-                                          device=self.device, dtype=self.details.dtype)
+        if base_estimator_kwargs is None:
+            raise ValueError("base_estimator_kwargs cannot be type None")
 
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
-            self.model = build_model(self.base_model, grid=details.plot_rangedef, likelihood=likelihood, device=self.device, dtype=details.dtype)
+            base_estimator_kwargs['device'] = self.device
+            base_estimator_kwargs['dtype'] = self.details.dtype
+            self.model = build_model(self.base_model, grid=details.plot_rangedef, **base_estimator_kwargs)
 
         self.fit_optimizer = fit_optimizer
-
 
         # If I want to add all init points first
         if jump_start:
@@ -251,7 +237,6 @@ class Optimizer(_Estimator):
             # Need to get a next_x so call private tell
             # Have to make sure _tell can handle lists of objects for multiple init data
             self.tell(x, y)
-
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
@@ -418,13 +403,6 @@ class Optimizer(_Estimator):
         # record information about computation times here, have it be stored in the
         # x data and come from acquisition
 
-        if self.details.ndim == 1:
-            y = y.flatten()
-        if self.epsilon is not None:
-            noise = self.epsilon * MultivariateNormal(torch.zeros(len(y)),
-                                                      torch.eye(len(y))) \
-                .sample(torch.Size([])).to(device=self.device, dtype=self.details.dtype)
-            y = y + noise
         return self._tell(x, y, fit=fit)
 
     def _tell(self, x, y, fit=True) -> ExcursionResult:

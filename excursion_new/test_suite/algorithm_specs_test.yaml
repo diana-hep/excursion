@@ -26,9 +26,9 @@ device: 'cuda'
 #likelihood
 likelihood:
   # Options: None
-  type: 'GaussianLikelihood'
+  likelihood_type: 'GaussianLikelihood'
   # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
-  epsilon: 0.5
+  epsilon: 0.0
 
 #model
 model:

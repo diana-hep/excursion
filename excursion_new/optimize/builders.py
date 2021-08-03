@@ -93,16 +93,18 @@ def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **
                          "Got %s" % (str(type(model))))
 
     if isinstance(model, str):
+        if model == "gridgp" or model == "exactgp":
+            likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'], device=kwargs['device'], dtype=kwargs['dtype'])
         if model == "gridgp":
-            model = TorchGP(init_X, init_y, likelihood=kwargs['likelihood'], model_type='GridKernel', grid=grid).to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = TorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).to(device=kwargs['device'], dtype=kwargs['dtype'])
         elif model == "exactgp":
-            model = TorchGP(init_X, init_y, likelihood=kwargs['likelihood'], model_type='ScaleKernel').to(device=kwargs['device'], dtype=kwargs['dtype'])
+            model = TorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').to(device=kwargs['device'], dtype=kwargs['dtype'])
 
     model.set_params(**kwargs)
 
     return model
 
-def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
+def build_likelihood(likelihood: str, noise: float, **kwargs):
     """Build a gpytorch likelihood object for use in building a gpytorch model.
      For the default likelihood is give 0 noise a gpytorch FixGaussianLikelihood object.
      Parameters
@@ -127,6 +129,10 @@ def build_likelihood(likelihood: str, noise: float = 0.0, **kwargs):
 
     if isinstance(likelihood, str):
         if likelihood == "gaussianlikelihood":
+            if not isinstance(noise, float):
+                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s" % str(type(noise)))
+            elif noise < 0.0:
+                raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(noise))
             if noise == 0.0:
                 likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([noise]))\
                     .to(device=kwargs['device'], dtype=kwargs['dtype'])
