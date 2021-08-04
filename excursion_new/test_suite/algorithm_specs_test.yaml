@@ -15,6 +15,7 @@ init_type: 'random'
 
 #Decide to add all initial samples then fit the model,
 #or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
+# Cannot plot first few iterations of 3d when this is true
 #True : 1
 #False : 0
 jump_start: true
@@ -28,7 +29,7 @@ likelihood:
   # Options: None
   likelihood_type: 'GaussianLikelihood'
   # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
-  epsilon: 0.0
+  epsilon: 0.2
 
 #model
 model:

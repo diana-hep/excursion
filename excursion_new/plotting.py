@@ -1,13 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .excursion import ExcursionResult
+from skimage import measure
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def plot_confusion_matrix(confusion_matrix, pct_correct: int):
+    fig, ax = plt.subplots(1, figsize=(10,10))
     plt.title("Confusion Matrix, "+str(pct_correct)+"% Accuracy")
     # plt.xticks(tick_marks, c, rotation=45)
     # plt.yticks(tick_marks, c)
-    plt.imshow(confusion_matrix, cmap="binary")
+    ax.imshow(confusion_matrix, cmap="binary")
     for i1 in range(confusion_matrix.shape[0]):
         for i2 in range(confusion_matrix.shape[1]):
             plt.text(
@@ -201,10 +204,51 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     plt.show()
 
 
+def contour_3d(v, rangedef, level, alpha=None, facecolors=None, edgecolors=None):
+    verts, faces, normals, values = measure.marching_cubes(v, level=level, step_size=1)
+    true = (rangedef[:, 0] + (rangedef[:, 1] - rangedef[:, 0]) * np.divide(1.0, rangedef[:, 2] - 1) * verts)
+    mesh = Poly3DCollection(true[faces])
+    if alpha: mesh.set_alpha(alpha)
+    if facecolors: mesh.set_facecolors(facecolors)
+    if edgecolors: mesh.set_edgecolors(edgecolors)
+    return mesh
+
+
 def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
             invalid_region, func=None):
-    return
 
+    fig = plt.figure(figsize=(15, 15))
+    gs = fig.add_gridspec(1, 1)
+    ax = fig.add_subplot(gs[0, :], projection='3d')
+
+    ax.scatter(plot_X[:, 0], plot_X[:, 1], plot_X[:, 2], c=pred_mean, alpha=0.05)
+
+    for val, c in zip(thresholds, ["r", "g", "y"]):
+        vals = pred_mean.reshape(*map(int, rangedef[:, 2]))
+        mesh = contour_3d(
+            vals, rangedef, val, alpha=0.1, facecolors=c, edgecolors=c
+        )
+        ax.add_collection(mesh)
+
+    for val, c in zip(thresholds, ["k", "grey", "blue"]):
+        vals = true_y.reshape(*map(int, rangedef[:, 2]))
+        mesh = contour_3d(
+            vals, rangedef, val, alpha=0.1, facecolors=c, edgecolors=c
+        )
+        ax.add_collection(mesh)
+
+    scatplot = ax.scatter(train_X[:, 0], train_X[:, 1], train_X[:, 2], c="r", s=100, alpha=0.2)
+
+    # scatplot = ax.scatter(X[:,0],X[:,1],X[:,2], c = Y, alpha = 0.05, s = 200)
+    ax.set_xlim(rangedef[0][0], rangedef[0][1])
+    ax.set_ylim(rangedef[1][0], rangedef[1][1])
+    ax.set_zlim(rangedef[2][0], rangedef[2][1])
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    ax.view_init(*(70, -45))
+    return
 
 def plot_4D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
             invalid_region, func=None):
