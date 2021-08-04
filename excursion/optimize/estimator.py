@@ -142,6 +142,10 @@ class Optimizer(_Estimator):
             #     <= 0:
             # raise ValueError("n_funcs must be greater than 0")
 
+
+        # # make shape object and that this can be the grid # #
+
+
         # Create the device, currently only supports strings and initializes torch.device objects.
         self.device = device
         self.check_and_set_device()
@@ -356,8 +360,9 @@ class Optimizer(_Estimator):
             only be fitted after `n_initial_points` points have been told to
             the optimizer irrespective of the value of `fit`.
         """
-        # check_x_in_space(x, self.space)
-        # self._check_y_is_valid(x, y)
+        # ADD THIS IN FINALLY
+     #   # check_x_in_space(x, self.space)
+     #   # self._check_y_is_valid(x, y)
 
         # take the logarithm of the computation times
         # record information about computation times here, have it be stored in the
@@ -378,19 +383,20 @@ class Optimizer(_Estimator):
         if self.base_model is not None:
             self.model.update_model(x, y)
             if self._n_initial_points > 0: self._n_initial_points -= 1
-            if fit: self.model.fit_model(self.fit_optimizer)
-            # Build result of current state, _tell will update to state n+1
+            acq_log = self.acq_func.log
+            # # fix the result
+            if fit:
+                self.fit()
             result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device,
-                                  dtype=self.details.dtype)
+                                      dtype=self.details.dtype)
+
+            # acq happens in update_next()
+            self.update_next()
+            # Build result of current state, _tell will update to state n+1
+            # Changed the logic
+
             # after being "told" n_initial_points we switch from sampling
             # random points to using a surrogate model
-            if self._n_initial_points <= 0:
-                self.next_xs_ = []
-                thresholds = [-np.inf] + self.details.thresholds + [np.inf]
-                next_x = self.acq_func.acquire(self.model, thresholds, self.details.plot_X)
-                self.next_xs_.append(next_x)
-                # # Placeholder until I do batch acq functions
-                self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)
 
         if isinstance(x, list):
             zipped = zip(x, y)
@@ -402,6 +408,13 @@ class Optimizer(_Estimator):
         # result.specs = self.specs
         return result
 
+    def fit(self):
+        """
+
+        """
+        if self.base_model is not None:
+            self.model.fit_model(self.fit_optimizer)
+
     def update_next(self):
         """Updates the value returned by opt.ask(). Useful if a parameter
         was updated after ask was called."""
@@ -411,3 +424,11 @@ class Optimizer(_Estimator):
         # if hasattr(self, '_next_x'):
         #     opt = self.copy(random_state=self.rng)
         #     self._next_x = opt._next_x
+
+        if self._n_initial_points <= 0:
+            self.next_xs_ = []
+            thresholds = [-np.inf] + self.details.thresholds + [np.inf]
+            next_x = self.acq_func.acquire(self.model, thresholds, self.details.plot_X)
+            self.next_xs_.append(next_x)
+            # # Placeholder until I do batch acq functions
+            self._next_x = self.next_xs_[0].reshape(1, self.details.ndim)

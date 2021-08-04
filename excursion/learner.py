@@ -2,6 +2,7 @@ from .optimize import estimator as est
 from .excursion import ExcursionProblem
 from .plotting import plot
 
+# Remove the base class reduce line count
 
 class _Learner(object):
     def __init__(self, details: ExcursionProblem = None, algorithm_options: dict = None):
@@ -49,8 +50,7 @@ class Learner(_Learner):
         super(Learner, self).__init__(details=ExcursionProblem(testcase.true_functions, ndim=testcase.ndim,
                                                                thresholds=testcase.thresholds,
                                                                bounding_box=testcase.bounding_box,
-                                                               plot_npoints=testcase.plot_npoints),
-                                      algorithm_options=options)
+                                                               plot_npoints=testcase.plot_npoints), algorithm_options=options)
 
     def initialize(self, snapshot=False):
         if snapshot:

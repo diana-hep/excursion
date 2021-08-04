@@ -54,6 +54,9 @@ class ExcursionResult(object):
 
     def __init__(self, ndim, acquisition, train_X, train_y, plot_X, plot_G, rangedef,
                  pred_mean, pred_cov, thresholds, next_x, true_y, invalid_region):
+
+        # need to do acq vals and acq grids
+        # acq x and acq values
         self.acq = acquisition
         self.train_X = train_X
         self.train_y = train_y
@@ -67,8 +70,8 @@ class ExcursionResult(object):
         self.true_y = true_y
         self.invalid_region = invalid_region
         self.ndim = ndim
-        # self.confusion_matrix = self.get_confusion_matrix()
-        # self.pct_correct = self.get_percent_correct()
+        self.confusion_matrix = self.get_confusion_matrix()
+        self.pct_correct = self.get_percent_correct()
 
     def get_percent_correct(self):
         pct_correct = np.diag(self.confusion_matrix).sum() * 1.0 / len(self.plot_X)

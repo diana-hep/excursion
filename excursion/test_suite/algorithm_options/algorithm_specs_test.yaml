@@ -16,13 +16,11 @@ init_type: 'random'
 #Decide to add all initial samples then fit the model,
 #or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
 # Cannot plot first few iterations of 3d when this is true
-#True : 1
-#False : 0
 jump_start: true
 
 #Device type: 'cpu', 'cuda', 'auto'
 # 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'cuda'
+device: 'cpu'
 
 #likelihood
 likelihood:
@@ -45,7 +43,7 @@ model:
 #acquisition function
 acq:
   # Options: PES or MES
-  acq_type: MES
+  acq_type: pes
 #  batch: False
 #  batchtype: 'KB'
 #  batchsize: 12
