@@ -13,14 +13,14 @@ device: 'cuda'
 #
 likelihood:
   likelihood_type: 'GaussianLikelihood'
-  epsilon: 0.2
+  epsilon: 0.0
 
 #
 # MODEL
 #
 model:
-  type: 'GridGP'
-  fit_optimizer: 'LBFGS'
+  type: 'ExactGP'
+  fit_optimizer: 'Adam'
 #  kernel: 'RBF'
 #  prior: 'Constant' # Constant, Linear or Circular
 

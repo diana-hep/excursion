@@ -40,6 +40,14 @@ def function_4(X: torch.Tensor) -> torch.Tensor:
 # ndim = 1
 # plot_npoints = [100]
 #
+#
+# true_functions = [function_4]
+# thresholds = [0.0]
+# bounding_box = [[-1, 1]]
+# ndim = 1
+# plot_npoints = [100]
+#
+
 
 true_functions = [function_2]
 thresholds = [2.]

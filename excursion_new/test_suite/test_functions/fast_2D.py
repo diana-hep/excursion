@@ -26,6 +26,11 @@ def truth(x):
 
     return 3 * (torch.log(analysis(xv, yv)) - math.log(0.05))
 
+def test(x):
+    xv, yv = x[:, 0], x[:, 1]
+
+    return xv + yv
+
 
 true_functions = [truth]
 thresholds = [0.0]
