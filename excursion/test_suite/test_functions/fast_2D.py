@@ -36,4 +36,4 @@ true_functions = [truth]
 thresholds = [0.0]
 bounding_box = [[0.0, 1.5], [0.0, 1.5]]
 ndim = 2
-plot_npoints = [15]*ndim
+plot_npoints = [30]*ndim

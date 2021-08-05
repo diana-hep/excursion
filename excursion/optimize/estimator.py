@@ -120,10 +120,8 @@ class Optimizer(_Estimator):
 
     # Another helper
     def check_and_set_init_points(self):
-        if self.n_initial_points_ is None:
-            self.n_initial_points_ = self.details.init_n_points
         if isinstance(self.n_initial_points_, int):
-            if self.n_initial_points_ < 0:
+            if self.n_initial_points_ <= 0:
                 raise ValueError(
                     "Expected `n_initial_points` > 0, got %d" % self.n_initial_points_)
         else:
@@ -145,15 +143,14 @@ class Optimizer(_Estimator):
 
         # # make shape object and that this can be the grid # #
 
-
-        # Create the device, currently only supports strings and initializes torch.device objects.
         self.device = device
+        # Create the device, currently only supports strings and initializes torch.device objects.
         self.check_and_set_device()
         # Create the special ordered dict to track iterations
         self.data_ = self._Data()
 
         # Will check this param is set correctly and set a private n_init_points counter
-        self.n_initial_points_ = n_initial_points
+        self.n_initial_points_ = details.init_n_poitns if n_initial_points is None else n_initial_points
         self.check_and_set_init_points()
 
         # Configure private initial_point_generator
@@ -176,7 +173,7 @@ class Optimizer(_Estimator):
         # self.acq_func_kwargs = acq_func_kwargs
 
         # Store acquisition function (must be a str originally):
-        details.acq_func = self.acq_func = acq_func
+        self.acq_func = acq_func
         self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
         # Some things were updated in details
@@ -203,7 +200,8 @@ class Optimizer(_Estimator):
             y = self.details.functions[0](x)
             # Need to get a next_x so call private tell
             # Have to make sure _tell can handle lists of objects for multiple init data
-            self.tell(x, y)
+            self.model.update_model(x, y)
+            self.fit()
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
@@ -321,10 +319,12 @@ class Optimizer(_Estimator):
                     len(self._initial_samples) - self._n_initial_points].reshape(1, self.details.ndim)
 
         else:
-            if not self.model:
-                raise RuntimeError("Random evaluations exhausted and no "
-                                   "model has been fit.")
+            # if not self.acq_func:
+            #     raise ValueError("The acquisition function is None, ")
+            # Should only happen on the first call, after which _next_x should always be set.
+            if not hasattr(self, '_next_x'):
 
+                self.update_next()
             next_x = self._next_x
             # min_delta_x = min([self.space.distance(next_x, xi)
             #                    for xi in self.Xi])

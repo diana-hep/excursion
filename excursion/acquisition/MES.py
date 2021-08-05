@@ -27,6 +27,7 @@ class MES(AcquisitionFunction):
 
         num_points = X_grid.size()[0]
         entropy_grid = torch.zeros(num_points,).to(device=self.device, dtype=self.dtype)
+        thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
 
         for j in range(len(thresholds) - 1):
             p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])
