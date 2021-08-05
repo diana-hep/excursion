@@ -13,8 +13,8 @@ class ExcursionProblem(object):
         self.ndim = ndim
         plot_npoints = plot_npoints or [[101 if ndim < 3 else 31]] * ndim
         self.plot_rangedef = np.concatenate([self.bounding_box, np.asarray(plot_npoints).reshape(-1, 1)], axis=-1)
-        self.plot_G = mgrid(self.plot_rangedef)
-        self.plot_X = mesh2points(self.plot_G, self.plot_rangedef[:, 2])
+        self.X_meshgrid = mgrid(self.plot_rangedef)
+        self.X_pointsgrid = mesh2points(self.X_meshgrid, self.plot_rangedef[:, 2])
         self.init_X_points = None
         self.init_n_points = init_n_points
         self.acq_func = None
@@ -32,7 +32,7 @@ class ExcursionProblem(object):
 def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs):
     train_X = model.train_inputs[0].cpu().detach().numpy()
     train_y = model.train_targets.cpu().detach().numpy()
-    plot_X = torch.from_numpy(details.plot_X).to(device=kwargs['device'], dtype=kwargs['dtype'])
+    plot_X = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=details.dtype)
     likelihood = model.likelihood
     likelihood.eval()
     model.eval()
@@ -45,7 +45,7 @@ def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs
     if next_x is not None:
         next_x = next_x.cpu().detach().numpy()
     return ExcursionResult(ndim=details.ndim, acquisition=acquisition, train_X=train_X, train_y=train_y,
-                           plot_X=details.plot_X, plot_G=details.plot_G, rangedef=details.plot_rangedef,
+                           plot_X=details.X_pointsgrid, plot_G=details.X_meshgrid, rangedef=details.plot_rangedef,
                            pred_mean=mean, pred_cov=variance, thresholds=details.thresholds, next_x=next_x,
                            true_y=true_y, invalid_region=details.invalid_region)
 

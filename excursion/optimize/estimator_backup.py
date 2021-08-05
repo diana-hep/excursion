@@ -208,7 +208,7 @@ class Optimizer(_Estimator):
         self._initial_samples = None
         self._initial_point_generator = build_sampler(initial_point_generator)
         problem_details.init_X_points = self._initial_samples = self._initial_point_generator.generate(
-            self._n_initial_points, problem_details.plot_X)
+            self._n_initial_points, problem_details.X_pointsgrid)
         if self.device != "skcpu":
             self._initial_samples = torch.Tensor(problem_details.init_X_points).to(dtype=problem_details.dtype,
                                                                                    device=self.device)
@@ -356,7 +356,7 @@ class Optimizer(_Estimator):
             # our random state.
             if self._initial_samples is None:
                 # Not sure I can ever get to this piece of code
-                return self._initial_point_generator.generate(1, self.details.plot_X)
+                return self._initial_point_generator.generate(1, self.details.X_pointsgrid)
             else:
                 # The samples are evaluated starting form initial_samples[0]
                 self._next_x = self._initial_samples[
@@ -471,13 +471,13 @@ class Optimizer(_Estimator):
 
             if not self.jump_start:
                 self.jump_start = True  # So that this won't happen again. may be confusing behavior..
-                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
+                next_x = acq_test.acquire(self.model, thresholds, self.details.X_pointsgrid)
                 self.next_xs_.append(next_x)
 
             else:
                 self.model.update_model(x, y)
                 self.model.fit_model(fit_hyperparams)
-                next_x = acq_test.acquire(self.model, thresholds, self.details.plot_X)
+                next_x = acq_test.acquire(self.model, thresholds, self.details.X_pointsgrid)
                 self.next_xs_.append(next_x)
 
             ## Placeholder until I do batch acq functions

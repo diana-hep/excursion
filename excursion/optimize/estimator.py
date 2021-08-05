@@ -131,7 +131,7 @@ class Optimizer(_Estimator):
     def check_and_set_search_space(self, details):
         _dtype = details.dtype
         _thresholds = [-np.inf] + details.thresholds + [np.inf]
-        _X_pointsgrid = details.plot_X
+        _X_pointsgrid = details.X_pointsgrid
         if self.device != 'skcpu':
             _thresholds = torch.as_tensor(_thresholds, device=self.device, dtype=_dtype)
             _X_pointsgrid = torch.as_tensor(_X_pointsgrid, device=self.device, dtype=_dtype)
@@ -176,8 +176,7 @@ class Optimizer(_Estimator):
 
         # May want to move this and only give the problem details the init x when
         # the model gets them
-        details.init_X_points = self._initial_samples = \
-            self._initial_point_generator.generate(self._n_initial_points, details.plot_X)
+        self._initial_samples = self._initial_point_generator.generate(self._n_initial_points, details.X_pointsgrid)
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
@@ -197,36 +196,37 @@ class Optimizer(_Estimator):
         # Some things were updated in details
         self.details = details
 
+
+        self.fit_optimizer = fit_optimizer
         if base_estimator_kwargs is None:
             raise ValueError("base_estimator_kwargs cannot be type None")
 
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
+        # These will store the result, but if the base_model was None, then this will also be None
+        self.result = None
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
             base_estimator_kwargs['device'] = self.device
             base_estimator_kwargs['dtype'] = self._search_space['dtype']
             self.model = build_model(self.base_model, grid=details.plot_rangedef, **base_estimator_kwargs)
 
-        self.fit_optimizer = fit_optimizer
+            # If I want to add all init points first
+            if jump_start:
+                self._n_initial_points = 0
+                x = self._initial_samples
+                y = details.functions[0](x)
+                # Need to get a next_x so call private tell
+                # Have to make sure _tell can handle lists of objects for multiple init data
+                self.model.update_model(x, y)
+                self.fit()
 
-        # If I want to add all init points first
-        if jump_start:
-            self._n_initial_points = 0
-            x = self._initial_samples
-            y = details.functions[0](x)
-            # Need to get a next_x so call private tell
-            # Have to make sure _tell can handle lists of objects for multiple init data
-            self.model.update_model(x, y)
-            self.fit()
-        # result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device,
-        #                          dtype=self._search_space['dtype)
+            self.result = build_result(self.details, self.model, None, None, device=self.device)
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
         # self.cache_ = {}
-        # return result
 
     class _Data(OrderedDict):
         """ Store estimator x and y data of each model on each iteration. Tracks the order of
@@ -342,6 +342,8 @@ class Optimizer(_Estimator):
         else:
             # if not self.acq_func:
             #     raise ValueError("The acquisition function is None, ")
+
+
             # Should only happen on the first call, after which _next_x should always be set.
             if not hasattr(self, '_next_x'):
                 self.update_next()
@@ -411,8 +413,7 @@ class Optimizer(_Estimator):
                 # self.fit()
                 self.model.fit_model(self.fit_optimizer)
 
-            result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device,
-                                      dtype=self._search_space['dtype'])
+            result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device)
 
             # acq happens in update_next()
             self.update_next()
