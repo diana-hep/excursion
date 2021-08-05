@@ -323,8 +323,8 @@ class Optimizer(_Estimator):
             #     raise ValueError("The acquisition function is None, ")
             # Should only happen on the first call, after which _next_x should always be set.
             if not hasattr(self, '_next_x'):
-
                 self.update_next()
+
             next_x = self._next_x
             # min_delta_x = min([self.space.distance(next_x, xi)
             #                    for xi in self.Xi])

@@ -9,11 +9,11 @@ class _Learner(object):
         self.details = details
         self.options = algorithm_options
 
-    def initialize(self, snapshot=False):
-        if snapshot:
-            raise NotImplementedError("Must initialize estimator with stored data in details")
-        else:
-            raise NotImplementedError("Must initialize estimator with initial parameters in details")
+    # def initialize(self, snapshot=False):
+    #     if snapshot:
+    #         raise NotImplementedError("Must initialize estimator with stored data in details")
+    #     else:
+    #         raise NotImplementedError("Must initialize estimator with initial parameters in details")
 
     def suggest(self, npoints: int = None):
         """
@@ -50,19 +50,27 @@ class Learner(_Learner):
         super(Learner, self).__init__(details=ExcursionProblem(testcase.true_functions, ndim=testcase.ndim,
                                                                thresholds=testcase.thresholds,
                                                                bounding_box=testcase.bounding_box,
-                                                               plot_npoints=testcase.plot_npoints), algorithm_options=options)
+                                                               plot_npoints=testcase.plot_npoints)
+                                      , algorithm_options=options)
+        self.estimator = est.Optimizer(details=self.details, base_estimator=self.options['model']['type'],
+                                       acq_func=self.options['acq']['acq_type'],
+                                       jump_start=self.options['jump_start'], device=self.options['device'],
+                                       n_initial_points=self.options['ninit'],
+                                       initial_point_generator=self.options['init_type'],
+                                       fit_optimizer=self.options['model']['fit_optimizer'],
+                                       base_estimator_kwargs=self.options['likelihood'])
 
-    def initialize(self, snapshot=False):
-        if snapshot:
-            raise NotImplementedError("Must initialize estimator with stored data in details")
-        else:
-            self.estimator = est.Optimizer(details=self.details, base_estimator=self.options['model']['type'],
-                                           acq_func=self.options['acq']['acq_type'],
-                                           jump_start=self.options['jump_start'], device=self.options['device'],
-                                           n_initial_points=self.options['ninit'],
-                                           initial_point_generator=self.options['init_type'],
-                                           fit_optimizer=self.options['model']['fit_optimizer'],
-                                           base_estimator_kwargs=self.options['likelihood'])
+    # def initialize(self, snapshot=False):
+    #     if snapshot:
+    #         raise NotImplementedError("not done (idea, stored data in details)")
+    #     else:
+    #         self.estimator = est.Optimizer(details=self.details, base_estimator=self.options['model']['type'],
+    #                                        acq_func=self.options['acq']['acq_type'],
+    #                                        jump_start=self.options['jump_start'], device=self.options['device'],
+    #                                        n_initial_points=self.options['ninit'],
+    #                                        initial_point_generator=self.options['init_type'],
+    #                                        fit_optimizer=self.options['model']['fit_optimizer'],
+    #                                        base_estimator_kwargs=self.options['likelihood'])
 
     def suggest(self, npoints: int = None):
         """
