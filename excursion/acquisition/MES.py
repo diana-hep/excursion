@@ -12,8 +12,7 @@ class MES(AcquisitionFunction):
         self.grid = self.log = None
 
     def acquire(self, gp, thresholds, meshgrid):
-        X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
-
+        X_grid = meshgrid
     # compute predictive posterior of Y(x) | trin data
         likelihood = gp.likelihood
         gp.eval()
@@ -27,7 +26,6 @@ class MES(AcquisitionFunction):
 
         num_points = X_grid.size()[0]
         entropy_grid = torch.zeros(num_points,).to(device=self.device, dtype=self.dtype)
-        thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
 
         for j in range(len(thresholds) - 1):
             p_j = cdf(mean_tensor, std_tensor, thresholds[j + 1]) - cdf(mean_tensor, std_tensor, thresholds[j])

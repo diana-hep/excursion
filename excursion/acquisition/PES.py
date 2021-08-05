@@ -20,26 +20,33 @@ class PES(AcquisitionFunction):
         Notation: PES(x_candidate) = int dx H0 - E_Sj H1
 
         """
-        X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
 
         # compute predictive posterior of Y(x) | train data
         likelihood = gp.likelihood
         gp.eval()
         likelihood.eval()
         acquisition_values_grid = []
-        thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
+        # thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
+        # X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
 
-        for x_candidate in X_grid:
+        # for x_candidate in X_grid:
+        for x_candidate in meshgrid:
             x_candidate = x_candidate.view(1, -1).to(device=self.device, dtype=self.dtype)
+            # X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
+            # X_grid = torch.clone(meshgrid)
 
-            X_all = torch.cat((x_candidate, X_grid))  # .to(device, dtype)
+            # X_all = torch.cat((x_candidate, X_grid))  # .to(device, dtype)
+            # Creates a new output tensor, meshgrid here probs going to be acq grid in future
+            X_all = torch.cat((x_candidate, meshgrid))
+
             Y_pred_all = likelihood(gp(X_all))
             Y_pred_grid = torch.distributions.Normal(
-                loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:]) ** 0.5
-            )
+                loc=Y_pred_all.mean[1:], scale=(Y_pred_all.variance[1:]) ** 0.5)
 
             # vector of expected value H1 under S(x) for each x in X_grid
-            E_S_H1 = torch.zeros(len(X_grid)).to(device=self.device, dtype=self.dtype)
+            # E_S_H1 = torch.zeros(len(X_grid)).to(device=self.device, dtype=self.dtype)
+            E_S_H1 = torch.zeros(len(meshgrid)).to(device=self.device, dtype=self.dtype)
+
 
             for j in range(len(thresholds) - 1):
                 # vector of sigma(Y(x_candidate)|S(x)=j) truncated
@@ -71,7 +78,7 @@ class PES(AcquisitionFunction):
         self.grid = acquisition_values_grid
         self.log = torch.clone(acquisition_values_grid)
 
-        return X_grid[self.get_first_max_index(gp, X_grid)]
+        return meshgrid[self.get_first_max_index(gp, meshgrid)]
 
     def get_first_max_index(self, gp, meshgrid):
         X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype)
