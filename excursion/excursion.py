@@ -21,6 +21,24 @@ class ExcursionProblem(object):
         self.dtype = torch.float64
         self._invalid_region = None
         # # For check_x_valid # #
+        #
+        # self.true_y = true_y
+        # self.thr = thresholds
+        # self.plot_X = plot_X
+        # self.rangedef = rangedef
+        # self.plot_G = plot_G
+        # self.invalid_region = invalid_region
+        # self.ndim = ndim
+        #
+        # self.acq = acquisition
+        # self.train_X = train_X
+        # self.train_y = train_y
+        # self.mean = pred_mean
+        # self.cov = pred_cov
+        # self.next_x = next_x
+        # self.confusion_matrix = self.get_confusion_matrix()
+        # self.pct_correct = self.get_percent_correct()
+
 
     def invalid_region(self, X):
         allvalid = lambda X: np.zeros_like(X[:, 0], dtype='bool')
@@ -49,6 +67,28 @@ def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs
                            pred_mean=mean, pred_cov=variance, thresholds=details.thresholds, next_x=next_x,
                            true_y=true_y, invalid_region=details.invalid_region)
 
+
+
+# def build_result(details: ExcursionProblem, model, acquisition, next_x, **kwargs):
+#     train_X = model.train_inputs[0].cpu().detach().numpy()
+#     train_y = model.train_targets.cpu().detach().numpy()
+#     plot_X = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=details.dtype)
+#     likelihood = model.likelihood
+#     likelihood.eval()
+#     model.eval()
+#     prediction = likelihood(model(plot_X))
+#     variance = prediction.variance.cpu().detach().numpy()
+#     mean = prediction.mean.cpu().detach().numpy()
+#     true_y = details.functions[0](plot_X).cpu().detach().numpy()
+#     if acquisition is not None:
+#         acquisition = acquisition.cpu().detach().numpy()
+#     if next_x is not None:
+#         next_x = next_x.cpu().detach().numpy()
+#     return ExcursionResult(ndim=details.ndim, acquisition=acquisition, train_X=train_X, train_y=train_y,
+#                            plot_X=details.X_pointsgrid, plot_G=details.X_meshgrid, rangedef=details.plot_rangedef,
+#                            pred_mean=mean, pred_cov=variance, thresholds=details.thresholds, next_x=next_x,
+#                            true_y=true_y, invalid_region=details.invalid_region)
+#
 
 class ExcursionResult(object):
 

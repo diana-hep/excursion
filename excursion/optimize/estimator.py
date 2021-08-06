@@ -180,18 +180,6 @@ class Optimizer(_Estimator):
         if self.device != "skcpu":
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
-        # currently do not support any batches, or acq_func_kwargs. This is place holder
-        # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
-        # should return acq(X) and not argmax(acq(X))
-        # if acq_func_kwargs is None:
-        #     acq_func_kwargs = dict()
-        # # Number of points to get per call to ask()
-        # self.npoints = acq_func_kwargs.get('batch_size')
-        # self.acq_func_kwargs = acq_func_kwargs
-
-        # Store acquisition function (must be a str originally):
-        self.acq_func = acq_func
-        self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
         # Some things were updated in details
         self.details = details
@@ -212,6 +200,20 @@ class Optimizer(_Estimator):
             base_estimator_kwargs['dtype'] = self._search_space['dtype']
             self.model = build_model(self.base_model, grid=details.plot_rangedef, **base_estimator_kwargs)
 
+
+            # currently do not support any batches, or acq_func_kwargs. This is place holder
+            # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
+            # should return acq(X) and not argmax(acq(X))
+            # if acq_func_kwargs is None:
+            #     acq_func_kwargs = dict()
+            # # Number of points to get per call to ask()
+            # self.npoints = acq_func_kwargs.get('batch_size')
+            # self.acq_func_kwargs = acq_func_kwargs
+
+            # Store acquisition function (must be a str originally):
+            self.acq_func = acq_func
+            self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
+
             # If I want to add all init points first
             if jump_start:
                 self._n_initial_points = 0
@@ -221,8 +223,8 @@ class Optimizer(_Estimator):
                 # Have to make sure _tell can handle lists of objects for multiple init data
                 self.model.update_model(x, y)
                 self.fit()
-
-            self.result = build_result(self.details, self.model, None, None, device=self.device)
+                # Build the result if the want to plot the initial state.
+                self.result = build_result(self.details, self.model, None, None, device=self.device)
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.

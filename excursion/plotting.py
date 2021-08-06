@@ -39,9 +39,13 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     pred_mean = values2mesh(pred_mean, plot_X, rangedef, invalid_region)
 
     fig = plt.figure(figsize=(15, 5))
-    gs = fig.add_gridspec(1, 2)
-    fig_ax1 = fig.add_subplot(gs[0, :1])
-    fig_ax2 = fig.add_subplot(gs[0, 1:])
+    if acq is not None:
+        gs = fig.add_gridspec(1, 2)
+        fig_ax1 = fig.add_subplot(gs[0, :1])
+        fig_ax2 = fig.add_subplot(gs[0, 1:])
+    else:
+        gs = fig.add_gridspec(1, 1)
+        fig_ax1 = fig.add_subplot(gs[0, :])
 
     xv, yv = plot_G
 
@@ -60,7 +64,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         edgecolor="white",
         label="Observed Truth Values",
     )
-
+    new_point = None
     if next_x is not None:
         new_point = fig_ax1.scatter(
             next_x[:, 0],
@@ -142,10 +146,14 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
 def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
             invalid_region, func=None):
     fig = plt.figure(figsize=(15, 15))
-    gs = fig.add_gridspec(2, 1, height_ratios=[10, 5])
-    fig_ax1 = fig.add_subplot(gs[0, :])
-    fig_ax2 = fig.add_subplot(gs[1, :])
     plot_X = plot_G[0]
+    if acq is not None:
+        gs = fig.add_gridspec(2, 1, height_ratios=[10, 5])
+        fig_ax1 = fig.add_subplot(gs[0, :])
+        fig_ax2 = fig.add_subplot(gs[1, :])
+    else:
+        gs = fig.add_gridspec(1, 1)
+        fig_ax1 = fig.add_subplot(gs[0, :])
 
     fig_ax1.plot(plot_X, true_y, linestyle="dashed", color='k', label='True Function')
 
@@ -262,6 +270,8 @@ plot_n = {1: plot_1D,
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
+    if result is None:
+        raise RuntimeError("result is None! Cannot plot this yet. First try calling ask and then tell. Jump start must be false.")
     if show_confusion_matrix:
         plot_confusion_matrix(result.confusion_matrix, result.pct_correct)
     return plot_n[result.ndim](acq=result.acq, train_y=result.train_y, train_X=result.train_X, plot_X=result.plot_X,
