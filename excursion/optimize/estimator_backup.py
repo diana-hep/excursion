@@ -502,7 +502,7 @@ class Optimizer(_Estimator):
         result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
                               dtype=self.details.dtype)
 
-        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].log, self._next_x, device=self.device, dtype=self.details.dtype)
+        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].acq_vals, self._next_x, device=self.device, dtype=self.details.dtype)
 
         # result.specs = self.specs
         return result

@@ -270,11 +270,16 @@ plot_n = {1: plot_1D,
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
-    if result is None:
+    if not result.train_y:
         raise RuntimeError("result is None! Cannot plot this yet. First try calling ask and then tell. Jump start must be false.")
     if show_confusion_matrix:
-        plot_confusion_matrix(result.confusion_matrix, result.pct_correct)
-    return plot_n[result.ndim](acq=result.acq, train_y=result.train_y, train_X=result.train_X, plot_X=result.plot_X,
-                               plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean,
-                               pred_cov=result.cov, thresholds=result.thr, next_x=result.next_x, true_y=result.true_y,
-                               invalid_region=result.invalid_region)
+        plot_confusion_matrix(*result.get_diagnostic())
+    try:
+        return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1], plot_X=result.plot_X,
+                                   plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean[-1],
+                                   pred_cov=result.cov[-1], thresholds=result.thresholds, next_x=result.next_x[-1], true_y=result.true_y,
+                                   invalid_region=result.invalid_region)
+    except ValueError as error_message:
+        print(error_message)
+        print("Going to skip plotting and keep training\n")
+        return

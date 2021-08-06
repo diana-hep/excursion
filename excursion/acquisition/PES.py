@@ -10,9 +10,9 @@ class PES(AcquisitionFunction):
         self.device = device
         self.dtype = dtype
         self.batch = batch
-        self.grid = self.log = None
+        self.grid = self.acq_vals = None
 
-    def acquire(self, gp, thresholds, meshgrid):
+    def acquire(self, gp, thresholds, X_pointsgrid):
         """
         Calculates information gain of choosing x_candidate as next point to evaluate.
         Performs this calculation with the Predictive Entropy Search approximation. Roughly,
@@ -27,17 +27,17 @@ class PES(AcquisitionFunction):
         likelihood.eval()
         acquisition_values_grid = []
         # thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
-        # X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
+        # X_grid = torch.from_numpy(X_pointsgrid).to(device=self.device, dtype=self.dtype)
 
         # for x_candidate in X_grid:
-        for x_candidate in meshgrid:
+        for x_candidate in X_pointsgrid:
             x_candidate = x_candidate.view(1, -1).to(device=self.device, dtype=self.dtype)
-            # X_grid = torch.from_numpy(meshgrid).to(device=self.device, dtype=self.dtype)
-            # X_grid = torch.clone(meshgrid)
+            # X_grid = torch.from_numpy(X_pointsgrid).to(device=self.device, dtype=self.dtype)
+            # X_grid = torch.clone(X_pointsgrid)
 
             # X_all = torch.cat((x_candidate, X_grid))  # .to(device, dtype)
-            # Creates a new output tensor, meshgrid here probs going to be acq grid in future
-            X_all = torch.cat((x_candidate, meshgrid))
+            # Creates a new output tensor, X_pointsgrid here probs going to be acq grid in future
+            X_all = torch.cat((x_candidate, X_pointsgrid))
 
             Y_pred_all = likelihood(gp(X_all))
             Y_pred_grid = torch.distributions.Normal(
@@ -45,7 +45,7 @@ class PES(AcquisitionFunction):
 
             # vector of expected value H1 under S(x) for each x in X_grid
             # E_S_H1 = torch.zeros(len(X_grid)).to(device=self.device, dtype=self.dtype)
-            E_S_H1 = torch.zeros(len(meshgrid)).to(device=self.device, dtype=self.dtype)
+            E_S_H1 = torch.zeros(len(X_pointsgrid)).to(device=self.device, dtype=self.dtype)
 
 
             for j in range(len(thresholds) - 1):
@@ -76,9 +76,9 @@ class PES(AcquisitionFunction):
             acquisition_values_grid.append(cumulative_info_gain)
         acquisition_values_grid = torch.Tensor(acquisition_values_grid).to(device=self.device, dtype=self.dtype)
         self.grid = acquisition_values_grid
-        self.log = torch.clone(acquisition_values_grid)
+        self.acq_vals = torch.clone(acquisition_values_grid)
 
-        return meshgrid[self.get_first_max_index(gp, meshgrid)]
+        return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid)]
 
     def get_first_max_index(self, gp, meshgrid):
         X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype)

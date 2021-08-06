@@ -182,7 +182,18 @@ class Optimizer(_Estimator):
 
 
         # Some things were updated in details
-        self.details = details
+        # self.details = details
+
+        # Store acquisition function (must be a str originally, for now, if None, then base_estimator was None, else use _initial_point_generator):
+        self.acq_func = acq_func
+        # currently do not support any batches, or acq_func_kwargs. This is place holder
+        # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
+        # should return acq(X) and not argmax(acq(X))
+        # if acq_func_kwargs is None:
+        #     acq_func_kwargs = dict()
+        # # Number of points to get per call to ask()
+        # self.npoints = acq_func_kwargs.get('batch_size')
+        # self.acq_func_kwargs = acq_func_kwargs
 
 
         self.fit_optimizer = fit_optimizer
@@ -192,6 +203,7 @@ class Optimizer(_Estimator):
         # Store the model (might be a str)
         # If not it SHOULD be that self.base_model = self.model (builder should return same self.base_model instance)
         self.base_model = base_estimator
+
         # These will store the result, but if the base_model was None, then this will also be None
         self.result = None
         # If it was None, then tell will return a None result and behavior will be just asking for random points
@@ -199,19 +211,8 @@ class Optimizer(_Estimator):
             base_estimator_kwargs['device'] = self.device
             base_estimator_kwargs['dtype'] = self._search_space['dtype']
             self.model = build_model(self.base_model, grid=details.plot_rangedef, **base_estimator_kwargs)
-
-
-            # currently do not support any batches, or acq_func_kwargs. This is place holder
-            # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
-            # should return acq(X) and not argmax(acq(X))
-            # if acq_func_kwargs is None:
-            #     acq_func_kwargs = dict()
-            # # Number of points to get per call to ask()
-            # self.npoints = acq_func_kwargs.get('batch_size')
-            # self.acq_func_kwargs = acq_func_kwargs
-
-            # Store acquisition function (must be a str originally):
-            self.acq_func = acq_func
+            # for now self.acq_func is a string, so this will add a string to the name of the graph of plotted result
+            self.result = build_result(details, self.acq_func, device=self.device)
             self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
             # If I want to add all init points first
@@ -224,7 +225,7 @@ class Optimizer(_Estimator):
                 self.model.update_model(x, y)
                 self.fit()
                 # Build the result if the want to plot the initial state.
-                self.result = build_result(self.details, self.model, None, None, device=self.device)
+                self.result.update(self.model, None, None, self._search_space['X_pointsgrid'])
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
@@ -266,17 +267,7 @@ class Optimizer(_Estimator):
             Options for batch acquisition of multiple points (see also `n_points`
             description). This parameter is ignored if n_points = None.
             Supported options are `"kb"`, or `"naive"`.
-            - If set to `"batch"`, then constant liar strategy is used
-               with lie objective ????? value being minimum of observed objective ????
-                   # # values. `"cl_mean"` and `"cl_max"` means mean and max of values # #
-                   # # respectively. For details on this strategy see: # #
-                   # # https://hal.archives-ouvertes.fr/hal-00732512/document # #
-                   # # With this strategy a copy of optimizer is created, which is # #
-                   # # then asked for a point, and the point is told to the copy of # #
-                   # # optimizer with some fake objective (lie), the next point is # #
-                   # # asked from copy, it is also told to the copy with fake # #
-                   # # objective and so on. The type of lie defines different # #
-                   # # flavours of `cl_x` strategies. # #
+            - If set to `"batch"`, then will use solve batched acquisition in ask
         """
         if n_points is None:
             return self._suggest()
@@ -403,22 +394,22 @@ class Optimizer(_Estimator):
 
         # # optimizer learned something new - discard cache
         # self.cache_ = {}
-        result = None
+        # result = None
 
         if self.base_model is not None:
             self.model.update_model(x, y)
             if self._n_initial_points > 0: self._n_initial_points -= 1
-            acq_log = self.acq_func.log
+            acq_log = self.acq_func.acq_vals
             # # fix the result
 
             if fit:
                 # self.fit()
                 self.model.fit_model(self.fit_optimizer)
+                self.update_next()
 
-            result = build_result(self.details, self.model, self.acq_func.log, x, device=self.device)
+                # acq happens in update_next()
+            self.result.update(self.model, x, acq_log, self._search_space['X_pointsgrid'])
 
-            # acq happens in update_next()
-            self.update_next()
             # Build result of current state, _tell will update to state n+1
             # Changed the logic
 
@@ -433,7 +424,7 @@ class Optimizer(_Estimator):
             self.data_[y] = x
 
         # result.specs = self.specs
-        return result
+        return self.result
 
     def fit(self):
         """
@@ -454,3 +445,13 @@ class Optimizer(_Estimator):
             self.next_xs_.append(next_x)
             # # Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self._search_space['dimension'])
+
+
+    def get_result(self):
+        """
+        Returns the most recent result as a new object. self.result stores the log if log = true.
+        """
+        return ExcursionResult(acq=self.result.acq_vals[-1], train_y=self.result.train_y[-1], train_X=self.result.train_X[-1], plot_X=self.result.plot_X,
+                               plot_G=self.result.plot_G, rangedef=self.result.rangedef, pred_mean=self.result.mean[-1],
+                               pred_cov=self.result.cov[-1], thresholds=self.result.thresholds, next_x=self.result.next_x[-1], true_y=self.result.true_y[-1],
+                               invalid_region=self.result.invalid_region)
