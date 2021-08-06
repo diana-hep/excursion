@@ -10,7 +10,7 @@ class PES(AcquisitionFunction):
         self.device = device
         self.dtype = dtype
         self.batch = batch
-        self.grid = self.acq_vals = None
+        self.acq_vals = None
 
     def acquire(self, gp, thresholds, X_pointsgrid):
         """
@@ -25,7 +25,7 @@ class PES(AcquisitionFunction):
         likelihood = gp.likelihood
         gp.eval()
         likelihood.eval()
-        acquisition_values_grid = []
+        acquisition_values = []
         # thresholds = torch.Tensor(thresholds).to(device=self.device, dtype=self.dtype)
         # X_grid = torch.from_numpy(X_pointsgrid).to(device=self.device, dtype=self.dtype)
 
@@ -73,33 +73,30 @@ class PES(AcquisitionFunction):
 
             # cumulative info gain over grid
             cumulative_info_gain = info_gain.sum()
-            acquisition_values_grid.append(cumulative_info_gain)
-        acquisition_values_grid = torch.Tensor(acquisition_values_grid).to(device=self.device, dtype=self.dtype)
-        self.grid = acquisition_values_grid
-        self.acq_vals = torch.clone(acquisition_values_grid)
+            acquisition_values.append(cumulative_info_gain)
+        acquisition_values = torch.Tensor(acquisition_values).to(device=self.device, dtype=self.dtype)
+        acq_cand_vals = acquisition_values
+        self.acq_vals = torch.clone(acquisition_values)
 
-        return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid)]
+        return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid, acq_cand_vals)]
 
-    def get_first_max_index(self, gp, meshgrid):
+    def get_first_max_index(self, gp, X_pointsgrid, acq_cand_vals):
         X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype)
         X_train = X_train.tolist()
-        new_index = torch.argmax(self.grid)
+        new_index = torch.argmax(acq_cand_vals)
 
         # if the index is not already picked nor in the training set
         # accept it ans remove from future picks
-        return self._check_prev_acq(new_index, X_train, meshgrid)
+        return self._check_prev_acq(new_index, X_train, X_pointsgrid, acq_cand_vals)
 
-    def _check_prev_acq(self, new_index, X_train, meshgrid):
-        new_X = meshgrid[new_index]
+    # recursion helper function
+    def _check_prev_acq(self, new_index, X_train, X_pointsgrid, acq_cand_vals):
+        new_X = X_pointsgrid[new_index]
         if (new_index not in self._prev_acq_point_index) and (
                 new_X.tolist() not in X_train):
-            self.pop(new_index)
             self._prev_acq_point_index.append(new_index.item())
             return new_index.item()
         else:
-            self.pop(new_index)
-            new_index = torch.argmax(self.grid)
-            return self._check_prev_acq(new_index, X_train, meshgrid)
-
-    def pop(self, index):
-        self.grid[index] = torch.Tensor([(-1.0) * float("Inf")])
+            acq_cand_vals[new_index] = torch.Tensor([(-1.0) * float("Inf")])
+            new_index = torch.argmax(acq_cand_vals)
+            return self._check_prev_acq(new_index, X_train, X_pointsgrid, acq_cand_vals)
