@@ -7,6 +7,8 @@ from ._estimator import _Estimator
 from collections import OrderedDict
 
 
+## Call all of it optimizer for the problem solver
+
 class Optimizer(_Estimator):
     """Run bayesian optimisation loop.
 
@@ -140,6 +142,9 @@ class Optimizer(_Estimator):
         self._search_space['dtype'] = _dtype
         self._search_space['dimension'] = details.ndim
 
+
+    # call the details *problem instead
+
     def __init__(self, details: ExcursionProblem, device: str, n_funcs: int = None,
                  base_estimator: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None,
@@ -181,9 +186,6 @@ class Optimizer(_Estimator):
             self._initial_samples = torch.tensor(self._initial_samples, dtype=details.dtype, device=self.device)
 
 
-        # Some things were updated in details
-        # self.details = details
-
         # Store acquisition function (must be a str originally, for now, if None, then base_estimator was None, else use _initial_point_generator):
         self.acq_func = acq_func
         # currently do not support any batches, or acq_func_kwargs. This is place holder
@@ -212,7 +214,11 @@ class Optimizer(_Estimator):
             base_estimator_kwargs['dtype'] = self._search_space['dtype']
             self.model = build_model(self.base_model, grid=details.plot_rangedef, **base_estimator_kwargs)
             # for now self.acq_func is a string, so this will add a string to the name of the graph of plotted result
+
+
             self.result = build_result(details, self.acq_func, device=self.device)
+
+
             self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
 
             # If I want to add all init points first
@@ -225,7 +231,9 @@ class Optimizer(_Estimator):
                 self.model.update_model(x, y)
                 self.fit()
                 # Build the result if the want to plot the initial state.
+
                 self.result.update(self.model, None, None, self._search_space['X_pointsgrid'])
+
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
@@ -399,16 +407,13 @@ class Optimizer(_Estimator):
         if self.base_model is not None:
             self.model.update_model(x, y)
             if self._n_initial_points > 0: self._n_initial_points -= 1
-            acq_log = self.acq_func.acq_vals
-            # # fix the result
 
             if fit:
-                # self.fit()
-                self.model.fit_model(self.fit_optimizer)
+                self.fit()
                 self.update_next()
 
                 # acq happens in update_next()
-            self.result.update(self.model, x, acq_log, self._search_space['X_pointsgrid'])
+            self.result.update(self.model, x, self.acq_func.acq_vals, self._search_space['X_pointsgrid'])
 
             # Build result of current state, _tell will update to state n+1
             # Changed the logic

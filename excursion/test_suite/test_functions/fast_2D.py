@@ -4,6 +4,12 @@ import torch
 import math
 
 
+
+# GET RID OF THIS, so leave the function as the module,
+
+
+
+
 def truth(x):
     xv, yv = x[:, 0], x[:, 1]
     """more wiggles in physics case"""
@@ -32,8 +38,13 @@ def test(x):
     return xv + yv
 
 
+
+
+# Put this into the intializer for the excursion problem
+
 true_functions = [truth]
 thresholds = [0.0]
 bounding_box = [[0.0, 1.5], [0.0, 1.5]]
 ndim = 2
-plot_npoints = [10]*ndim
+plot_npoints = [41]*ndim
+acq_grid_npoints = plot_npoints

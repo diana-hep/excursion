@@ -15,29 +15,10 @@ class ExcursionProblem(object):
         self.plot_rangedef = np.concatenate([self.bounding_box, np.asarray(plot_npoints).reshape(-1, 1)], axis=-1)
         self.X_meshgrid = mgrid(self.plot_rangedef)
         self.X_pointsgrid = mesh2points(self.X_meshgrid, self.plot_rangedef[:, 2])
-        self.init_X_points = None
         self.init_n_points = init_n_points
         self.acq_func = None
         self.dtype = torch.float64
         self._invalid_region = None
-        # # For check_x_valid # #
-        #
-        # self.true_y = true_y
-        # self.thresholds = thresholds
-        # self.plot_X = plot_X
-        # self.rangedef = rangedef
-        # self.plot_G = plot_G
-        # self.invalid_region = invalid_region
-        # self.ndim = ndim
-        #
-        # self.acq = acquisition
-        # self.train_X = train_X
-        # self.train_y = train_y
-        # self.mean = pred_mean
-        # self.cov = pred_cov
-        # self.next_x = next_x
-        # self.confusion_matrix = self.get_confusion_matrix()
-        # self.pct_correct = self.get_percent_correct()
 
 
     def invalid_region(self, X):
@@ -64,6 +45,7 @@ class ExcursionResult(object):
         # acq x and acq values
         self.true_y = true_y
         self.invalid_region = invalid_region
+        # plot meshgrid and plot_x_points
         self.plot_X = plot_X
         self.plot_G = plot_G
         self.thresholds = thresholds
