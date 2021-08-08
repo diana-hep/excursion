@@ -173,7 +173,7 @@ class Optimizer(_Estimator):
         self.data_ = self._Data()
 
         # Will check this param is set correctly and set a private n_init_points counter
-        self.n_initial_points_ = details.init_n_poitns if n_initial_points is None else n_initial_points
+        self.n_initial_points_ = n_initial_points
         self.check_and_set_init_points()
 
         # Configure private initial_point_generator
@@ -216,7 +216,7 @@ class Optimizer(_Estimator):
             # for now self.acq_func is a string, so this will add a string to the name of the graph of plotted result
 
 
-            self.result = build_result(details, self.acq_func, device=self.device)
+            # self.result = build_result(details, self.acq_func, device=self.device)
 
 
             self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=details.dtype)
@@ -232,7 +232,7 @@ class Optimizer(_Estimator):
                 self.fit()
                 # Build the result if the want to plot the initial state.
 
-                self.result.update(self.model, None, None, self._search_space['X_pointsgrid'])
+                # self.result.update(self.model, None, None, self._search_space['X_pointsgrid'])
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
@@ -413,7 +413,7 @@ class Optimizer(_Estimator):
                 self.update_next()
 
                 # acq happens in update_next()
-            self.result.update(self.model, x, self.acq_func.acq_vals, self._search_space['X_pointsgrid'])
+            # self.result.update(self.model, x, self.acq_func.acq_vals, self._search_space['X_pointsgrid'])
 
             # Build result of current state, _tell will update to state n+1
             # Changed the logic
