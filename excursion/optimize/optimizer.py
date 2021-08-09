@@ -142,9 +142,9 @@ class Optimizer(_Optimizer):
         self._search_space['dimension'] = details.ndim
 
     def __init__(self, problem_details: ExcursionProblem, device: str, n_funcs: int = None,
-                 base_model: str or list or ExcursionModel = "ExactGP", n_initial_points=None,
-                 initial_point_generator="random", acq_func: str = "MES", fit_optimizer=None,
-                 base_model_kwargs=None, fit_optimizer_kwargs=None, acq_func_kwargs=None, jump_start: bool = True, log: bool = True):
+                 base_model: str or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator="random",
+                 acq_func: str = "MES", fit_optimizer=None, jump_start: bool = True, log: bool = True,
+                 fit_optimizer_kwargs=None, acq_func_kwargs=None, base_model_kwargs=None):
 
         # Currently only supports 1 func
         self.n_funcs = n_funcs if n_funcs else len(problem_details.functions)

@@ -1,6 +1,0 @@
-[submodule "DileptonReinterpretationProj"]
-	path = DileptonReinterpretationProj
-	url = https://gitlab.cern.ch/prieck/DileptonReinterpretationProj.git
-[submodule "excursion"]
-	path = excursion
-	url = https://github.com/diana-hep/excursion.git
