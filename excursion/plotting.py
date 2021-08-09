@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def plot_confusion_matrix(confusion_matrix, pct_correct: int):
-    fig, ax = plt.subplots(1, figsize=(10,10))
+    fig, ax = plt.subplots(1, figsize=(5, 5))
     plt.title("Confusion Matrix, "+str(pct_correct)+"% Accuracy")
     # plt.xticks(tick_marks, c, rotation=45)
     # plt.yticks(tick_marks, c)
@@ -38,7 +38,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     true_y = values2mesh(true_y, plot_X, rangedef, invalid_region)
     pred_mean = values2mesh(pred_mean, plot_X, rangedef, invalid_region)
 
-    fig = plt.figure(figsize=(15, 5))
+    fig = plt.figure(figsize=(15, 10))
     if acq is not None:
         gs = fig.add_gridspec(1, 2)
         fig_ax1 = fig.add_subplot(gs[0, :1])
@@ -258,9 +258,11 @@ def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     ax.view_init(*(70, -45))
     return
 
+
 def plot_4D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
             invalid_region, func=None):
     return
+
 
 plot_n = {1: plot_1D,
           2: plot_2D,
@@ -270,15 +272,16 @@ plot_n = {1: plot_1D,
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
-    if not result.train_y:
-        raise RuntimeError("result is None! Cannot plot this yet. First try calling ask and then tell. Jump start must be false.")
+    if result is None or not result.train_y:
+        raise ValueError("Result is not yet defined! Cannot plot this yet. First try calling ask and then tell. "
+                         "Jump start must be false.")
     if show_confusion_matrix:
         plot_confusion_matrix(*result.get_diagnostic())
     try:
-        return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1], plot_X=result.plot_X,
-                                   plot_G=result.plot_G, rangedef=result.rangedef, pred_mean=result.mean[-1],
-                                   pred_cov=result.cov[-1], thresholds=result.thresholds, next_x=result.next_x[-1], true_y=result.true_y,
-                                   invalid_region=result.invalid_region)
+        return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1],
+                                   plot_X=result.X_pointsgrid, plot_G=result.X_meshgrid, rangedef=result.rangedef,
+                                   pred_mean=result.mean[-1], pred_cov=result.cov[-1], thresholds=result.thresholds,
+                                   next_x=result.next_x[-1], true_y=result.true_y, invalid_region=result.invalid_region)
     except ValueError as error_message:
         print(error_message)
         print("Going to skip plotting and keep training\n")

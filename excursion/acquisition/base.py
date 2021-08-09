@@ -2,6 +2,8 @@ from collections import defaultdict
 
 
 class AcquisitionFunction(object):
+    """All acquisition functions used by the library should implement this interface
+    to be used by the optimizer object."""
     def acquire(self, gp, thresholds, meshgrid):
         raise NotImplemented
 

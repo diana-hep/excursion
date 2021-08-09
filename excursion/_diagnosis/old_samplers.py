@@ -7,7 +7,7 @@ from .. import utils
 def regular_grid_generator(
     scandetails, central_range=[5, 20], nsamples_per_grid=15, min_points_per_dim=2
 ):
-    ndim = len(scandetails.plot_rangedef[:, 2])
+    ndim = len(scandetails.rangedef[:, 2])
     grids = set(
         x
         for y in range(*central_range)
@@ -31,8 +31,8 @@ def regular_grid_generator(
             X = utils.mesh2points(mesh, mesh.shape[1:])
             for i in range(ndim):
                 vmin, vmax = (
-                    scandetails.plot_rangedef[i][0],
-                    scandetails.plot_rangedef[i][1],
+                    scandetails.rangedef[i][0],
+                    scandetails.rangedef[i][1],
                 )
                 X[:, i] = X[:, i] * (vmax - vmin) + vmin
             X = X[~scandetails.invalid_region(X)]
@@ -42,7 +42,7 @@ def regular_grid_generator(
 def latin_hypercube_generator(
     scandetails, nsamples_per_npoints=50, point_range=[4, 100]
 ):
-    ndim = len(scandetails.plot_rangedef[:, 2])
+    ndim = len(scandetails.rangedef[:, 2])
     import pyDOE
 
     for npoints in range(*point_range):
@@ -54,8 +54,8 @@ def latin_hypercube_generator(
 
                 for i in range(ndim):
                     vmin, vmax = (
-                        scandetails.plot_rangedef[i][0],
-                        scandetails.plot_rangedef[i][1],
+                        scandetails.rangedef[i][0],
+                        scandetails.rangedef[i][1],
                     )
                     X[:, i] = X[:, i] * (vmax - vmin) + vmin
                 len_before = len(X)

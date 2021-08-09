@@ -1,4 +1,4 @@
 from .base import ExcursionModel
-from .exactgp_ import TorchGP
+from .gp import GPyTorchGP
 from .fit import fit_hyperparams
-__all__ = ["ExcursionModel", "TorchGP", "fit_hyperparams"]
+__all__ = ["ExcursionModel", "GPyTorchGP", "fit_hyperparams"]

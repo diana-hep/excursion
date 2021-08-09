@@ -10,7 +10,7 @@ def latin_sample_n(scandetails,npoints,ndim):
         X = pyDOE.lhs(ndim, samples=sample_n)
 
         for i in range(ndim):
-            vmin, vmax = scandetails.plot_rangedef[i][0], scandetails.plot_rangedef[i][1]
+            vmin, vmax = scandetails.rangedef[i][0], scandetails.rangedef[i][1]
             X[:,i] = X[:,i]*(vmax-vmin) + vmin
         len_before = len(X)
         X = X[~scandetails.invalid_region(X)]
@@ -23,7 +23,7 @@ def latin_sample_n(scandetails,npoints,ndim):
 
 
 def latin_hypercube_generator(scandetails, nsamples_per_npoints = 50, point_range = [4, 100]):
-    ndim = len(scandetails.plot_rangedef[:,2])
+    ndim = len(scandetails.rangedef[:, 2])
     import pyDOE
     for npoints in range(*point_range):
         for s in range(nsamples_per_npoints):

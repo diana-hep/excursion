@@ -32,8 +32,8 @@ def truth(x):
     def xsec(xv, yv, zv):
         return (
             12 * torch.exp(-xv / 2)
-            + ((0.1 * torch.cos(10 * yv)))
-            + ((0.2 * torch.cos(15 * xv)))
+            + (0.1 * torch.cos(10 * yv))
+            + (0.2 * torch.cos(15 * xv))
         ) * torch.exp(-0.3 * zv)
 
     def eff(xv, yv, zv):
@@ -46,6 +46,7 @@ def truth(x):
         return stats(xsec(xv, yv, zv) * eff(xv, yv, zv))
 
     return 3 * (torch.log(analysis(xv, yv, zv)) - math.log(0.05))
+
 
 def test(x):
     xv, yv, zv = x[:, 0], x[:, 1], x[:, 2]
@@ -60,7 +61,7 @@ def test(x):
 # # Define grid for acquisition function
 # ndim = 3
 # bounding_box = [[-1.0, 1.0]]*ndim
-# plot_npoints = [10]*ndim
+# grid_step_size = [10]*ndim
 #
 
 
@@ -71,5 +72,4 @@ thresholds = [0.0]
 bounding_box = [[0.0, 1.5], [0.0, 1.5], [0, 1.5]]
 # Define grid for acquisition function
 ndim = 3
-plot_npoints = [41]*ndim
-
+grid_step_size = [41]*ndim

@@ -43,14 +43,14 @@ def function_5(X):
 # thresholds = [0.7]
 # bounding_box = [[-1, 1]]
 # ndim = 1
-# plot_npoints = [100]
+# grid_step_size = [100]
 #
 #
 # true_functions = [function_4]
 # thresholds = [0.0]
 # bounding_box = [[-1, 1]]
 # ndim = 1
-# plot_npoints = [100]
+# grid_step_size = [100]
 #
 
 
@@ -58,12 +58,12 @@ def function_5(X):
 # thresholds = [2.]
 # bounding_box = [[0, 5]]
 # ndim = 1
-# plot_npoints = [100]
+# grid_step_size = [100]
 
 
 true_functions = [function_5]
 thresholds = [0.7]
 bounding_box = [[0, 1]]
 ndim = 1
-plot_npoints = [100]
+grid_step_size = [100]
 

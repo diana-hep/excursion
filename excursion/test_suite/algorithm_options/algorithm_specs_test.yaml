@@ -34,7 +34,7 @@ model:
   # Options: GridGP or ExactGP
   type: 'ExactGP'
   # Options: 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
-  # will use the default method of the given ExcursionModel. (e.g. TorchGP default is Adam)
+  # will use the default method of the given ExcursionModel. (e.g. GPyTorchGP default is Adam)
   fit_optimizer: 'Adam'
 #  kernel: 'RBF'
 #  prior: 'Constant'

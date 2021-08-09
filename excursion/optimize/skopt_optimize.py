@@ -53,7 +53,7 @@ class Optimizer(object):
         Should inherit from :obj:`sklearn.base.RegressorMixin`.
         In addition the `predict` method, should have an optional `return_std`
         argument, which returns `std(Y | x)` along with `E[Y | x]`.
-        If base_estimator is one of ["GP", "RF", "ET", "GBRT"], a default
+        If base_model is one of ["GP", "RF", "ET", "GBRT"], a default
         surrogate model of the corresponding type is used corresponding to what
         is used in the minimize functions.
     n_random_starts : int, default: 10
@@ -61,7 +61,7 @@ class Optimizer(object):
             use `n_initial_points` instead.
     n_initial_points : int, default: 10
         Number of evaluations of `func` with initialization points
-        before approximating it with `base_estimator`. Initial point
+        before approximating it with `base_model`. Initial point
         generator can be changed by setting `initial_point_generator`.
     initial_point_generator : str, InitialPointGenerator instance, \
             default: `"random"`
@@ -99,7 +99,7 @@ class Optimizer(object):
         is updated with the optimal value obtained by optimizing `acq_func`
         with `acq_optimizer`.
         - If set to `"auto"`, then `acq_optimizer` is configured on the
-          basis of the base_estimator and the space searched over.
+          basis of the base_model and the space searched over.
           If the space is Categorical or if the estimator provided based on
           tree-models then this is set to be `"sampling"`.
         - If set to `"sampling"`, then `acq_func` is optimized by computing
@@ -113,9 +113,9 @@ class Optimizer(object):
         Set random state to something other than None for reproducible
         results.
     n_jobs : int, default: 1
-        The number of jobs to run in parallel in the base_estimator,
-        if the base_estimator supports n_jobs as parameter and
-        base_estimator was given as string.
+        The number of jobs to run in parallel in the base_model,
+        if the base_model supports n_jobs as parameter and
+        base_model was given as string.
         If -1, then the number of jobs is set to the number of cores.
     acq_func_kwargs : dict
         Additional arguments to be passed to the acquisition function.
@@ -190,7 +190,7 @@ class Optimizer(object):
 
         # Configure estimator
 
-        # build base_estimator if doesn't exist
+        # build base_model if doesn't exist
         if isinstance(base_estimator, str):
             base_estimator = cook_estimator(
                 base_estimator, space=dimensions,
@@ -323,7 +323,7 @@ class Optimizer(object):
             - If set to `"cl_min"`, then constant liar strategy is used
                with lie objective value being minimum of observed objective
                values. `"cl_mean"` and `"cl_max"` means mean and max of values
-               respectively. For details on this strategy see:
+               respectively. For problem_details on this strategy see:
                https://hal.archives-ouvertes.fr/hal-00732512/document
                With this strategy a copy of optimizer is created, which is
                then asked for a point, and the point is told to the copy of
@@ -391,7 +391,7 @@ class Optimizer(object):
     def _ask(self):
         """Suggest next point at which to evaluate the objective.
         Return a random point while not at least `n_initial_points`
-        observations have been `tell`ed, after that `base_estimator` is used
+        observations have been `tell`ed, after that `base_model` is used
         to determine the next point.
         """
         if self._n_initial_points > 0 or self.base_estimator_ is None:
@@ -423,7 +423,7 @@ class Optimizer(object):
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
         `ask()` or other points. By default a new model will be fit to all
-        observations. The new model is used to suggest the next point at
+        observations. The new model is used to ask the next point at
         which to evaluate the objective. This point can be retrieved by calling
         `ask()`.
         To add observations without fitting a new model set `fit` to False.

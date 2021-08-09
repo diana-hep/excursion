@@ -2,6 +2,8 @@ from collections import defaultdict
 
 
 class ExcursionModel(object):
+    """All excursion models used by the library should implement this interface
+    to be used by the optimizer object."""
     def fit_model(self, fit_optimizer):
         raise NotImplementedError()
 

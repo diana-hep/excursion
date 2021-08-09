@@ -4,11 +4,11 @@ import torch
 from excursion.excursion import ExcursionProblem, ExcursionResult, build_result
 from excursion.models import ExcursionModel
 from excursion.models.fit import fit_hyperparams
-from ._estimator import _Estimator
+from ._optimizer import _Optimizer
 from collections import OrderedDict
 
 
-class Optimizer(_Estimator):
+class Optimizer(_Optimizer):
     """Run bayesian optimisation loop.
 
        An `Estimator` represents the steps of a excursion set optimisation loop. To
@@ -37,8 +37,8 @@ class Optimizer(_Estimator):
            ##  `Categorical`).                                             ##
            ##                                                              ##
 
-       base_estimator : str, `"GridGP"`, `"TorchGP"`, or excursion custom model, \
-               default: `"TorchGP"`
+       base_estimator : str, `"GridGP"`, `"GPyTorchGP"`, or excursion custom model, \
+               default: `"GPyTorchGP"`
                ## (future, list of str or ExcursionGP - better multioutput gpytorch model) ##
            Should inherit from :obj:`excursion.models.ExcursionGP`.
            Which should be initialized before hand
@@ -163,7 +163,7 @@ class Optimizer(_Estimator):
             raise TypeError("Expected type int or None, got %s" % type(self.n_initial_points_))
 
     def __init__(self, problem_details: ExcursionProblem, device_type: str, n_funcs: int = None,
-                 base_estimator: str or list or ExcursionModel = "TorchGP", n_initial_points=None,
+                 base_estimator: str or list or ExcursionModel = "GPyTorchGP", n_initial_points=None,
                  initial_point_generator="random", acq_func: str = "MES", acq_optimizer=None, acq_func_kwargs={},
                  acq_optimzer_kwargs={}, jump_start: bool = True):
 
@@ -186,7 +186,7 @@ class Optimizer(_Estimator):
 
         # Configure acquisition function set:
 
-        # Check that acq func details are valid. redundant code
+        # Check that acq func problem_details are valid. redundant code
         # checked in build_acq, need a proxy in future
         # allowed_acq_funcs = ["PES", "MES"]
         # if self.acq_func not in allowed_acq_funcs:
@@ -237,7 +237,7 @@ class Optimizer(_Estimator):
                 self.model = build_model(self.base_model, init_X=x, init_y=y,
                                          n_init_points=self.n_initial_points_, device=self.device,
                                          dtype=self.details.dtype).fit_model(fit_hyperparams)
-                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
+                # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.problem_details.dtype))
                 init_y.append(y)
                 init_X.append(x)
             self._n_initial_points -= len((self._initial_samples))
@@ -274,7 +274,7 @@ class Optimizer(_Estimator):
                 oldest = next(iter(self))
                 del self[oldest]
 
-    def suggest(self, n_points=None, batch_kwarg={}):
+    def ask(self, n_points=None, batch_kwarg={}):
         """Query point or multiple points at which objective should be evaluated.
         n_points : int or None, default: None
             Number of points returned by the ask method.
@@ -290,7 +290,7 @@ class Optimizer(_Estimator):
             - If set to `"batch"`, then constant liar strategy is used
                with lie objective ????? value being minimum of observed objective ????
                    # # values. `"cl_mean"` and `"cl_max"` means mean and max of values # #
-                   # # respectively. For details on this strategy see: # #
+                   # # respectively. For problem_details on this strategy see: # #
                    # # https://hal.archives-ouvertes.fr/hal-00732512/document # #
                    # # With this strategy a copy of optimizer is created, which is # #
                    # # then asked for a point, and the point is told to the copy of # #
@@ -300,7 +300,7 @@ class Optimizer(_Estimator):
                    # # flavours of `cl_x` strategies. # #
         """
         if n_points is None:
-            return self._suggest()
+            return self._ask()
 
         if not (isinstance(n_points, int) and n_points > 0):
             raise ValueError(
@@ -337,7 +337,7 @@ class Optimizer(_Estimator):
             #                                               np.iinfo(np.int32).max))
 
             for i in range(n_points):
-                X_new = self.suggest()
+                X_new = self.ask()
                 X.append(X_new)
                 # self._tell(X_new, y_lie)
 
@@ -345,7 +345,7 @@ class Optimizer(_Estimator):
 
         return X
 
-    def _suggest(self):
+    def _ask(self):
         """Suggest next point at which to evaluate the objective.
         Return a random point while not at least `n_initial_points`
         observations have been `tell`ed, after that `base_model` is used
@@ -386,7 +386,7 @@ class Optimizer(_Estimator):
         """Record an observation (or several) of the objective function.
         Provide values of the objective function at points suggested by
         `ask()` or other points. By default a new model will be fit to all
-        observations. The new model is used to suggest the next point at
+        observations. The new model is used to ask the next point at
         which to evaluate the objective. This point can be retrieved by calling
         `ask()`.
         To add observations without fitting a new model set `fit` to False.
@@ -451,7 +451,7 @@ class Optimizer(_Estimator):
             if not self.model:
                 self.model = build_model(self.base_model, init_X=x, init_y=y, n_init_points=1,
                                          device=self.device, dtype=self.details.dtype).fit_model(fit_hyperparams)
-                    # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.details.dtype))
+                    # self.model_acq_funcs_.append(build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.problem_details.dtype))
 
             else:
                 self.model.update_model(x, y)
@@ -502,7 +502,7 @@ class Optimizer(_Estimator):
         result = build_result(self.details, self.model, acq_test.log, self._next_x, device=self.device,
                               dtype=self.details.dtype)
 
-        # result = build_result(self.details, self.models[0], self.model_acq_funcs_[0].acq_vals, self._next_x, device=self.device, dtype=self.details.dtype)
+        # result = build_result(self.problem_details, self.models[0], self.model_acq_funcs_[0].acq_vals, self._next_x, device=self.device, dtype=self.problem_details.dtype)
 
         # result.specs = self.specs
         return result

@@ -1,7 +1,7 @@
 from excursion.sampler import *
 import torch
 import gpytorch
-from excursion.models import ExcursionModel, TorchGP
+from excursion.models import ExcursionModel, GPyTorchGP
 from excursion.acquisition import MES, AcquisitionFunction, PES
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 
@@ -74,7 +74,7 @@ def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **
      For the special acq_function called "random" the return value is None.
      Parameters
      ----------
-     model : "TorchGP", "GridGP", or ExcursionModel instance"
+     model : "GPyTorchGP", "GridGP", or ExcursionModel instance"
          Should inherit from `excursion.models.ExcursionModel`.
      kwargs : dict
          Extra parameters provided to the acq_function at init time.
@@ -94,10 +94,10 @@ def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **
             likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'],
                                           device=kwargs['device'], dtype=kwargs['dtype'])
         if model == "gridgp":
-            model = TorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).\
+            model = GPyTorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).\
                 to(device=kwargs['device'], dtype=kwargs['dtype'])
         elif model == "exactgp":
-            model = TorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\
+            model = GPyTorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\
                 to(device=kwargs['device'], dtype=kwargs['dtype'])
 
     model.set_params(**kwargs)
@@ -130,10 +130,10 @@ def build_likelihood(likelihood: str, noise: float, **kwargs):
     if isinstance(likelihood, str):
         if likelihood == "gaussianlikelihood":
             if not isinstance(noise, float):
-                raise TypeError("Expected base_estimator_kwargs['epsilon'] to be type float, got type %s"
+                raise TypeError("Expected base_model_kwargs['epsilon'] to be type float, got type %s"
                                 % str(type(noise)))
             elif noise < 0.0:
-                raise ValueError("Expected base_estimator_kwargs['epsilon'] to be float >= 0, got %s" % str(noise))
+                raise ValueError("Expected base_model_kwargs['epsilon'] to be float >= 0, got %s" % str(noise))
             if noise == 0.0:
                 likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([noise]))\
                     .to(device=kwargs['device'], dtype=kwargs['dtype'])
