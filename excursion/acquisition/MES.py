@@ -4,7 +4,7 @@ from .base import AcquisitionFunction
 
 
 class MES(AcquisitionFunction):
-    def __init__(self, device, dtype, batch=False, ):
+    def __init__(self, device=None, dtype=None, batch=False, ):
         self._prev_acq_point_index = []
         self.device = device
         self.dtype = dtype

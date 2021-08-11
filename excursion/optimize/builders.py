@@ -61,7 +61,7 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
 
     if isinstance(acq_function, str):
         if acq_function == "mes":
-            acq_function = MES(device=kwargs['device'], dtype=kwargs['dtype'])
+            acq_function = MES()
         if acq_function == "pes":
             acq_function = PES()
     acq_function.set_params(**kwargs)
