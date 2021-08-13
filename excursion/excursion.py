@@ -38,8 +38,7 @@ def build_result(details: ExcursionProblem, acquisition, **kwargs):
 
 class ExcursionResult(object):
 
-    def __init__(self, ndim, thresholds, true_y, invalid_region, X_pointsgrid, X_meshgrid, rangedef, acq_vals=[], train_X=[],
-                 train_y=[], pred_mean=[], pred_cov=[], next_x=[]):
+    def __init__(self, ndim, thresholds, true_y, invalid_region, X_pointsgrid, X_meshgrid, rangedef):
 
         # need to do acq vals and acq grids
         # acq x and acq values
@@ -53,12 +52,12 @@ class ExcursionResult(object):
         self.ndim = ndim
 
         # To be updated if log is true
-        self.acq_vals = acq_vals
-        self.mean = pred_mean
-        self.cov = pred_cov
-        self.next_x = next_x
-        self.train_X = train_X
-        self.train_y = train_y
+        self.acq_vals = []
+        self.mean = []
+        self.cov = []
+        self.next_x = []
+        self.train_X = []
+        self.train_y = []
         self.confusion_matrix = []
         self.pct_correct = []
 

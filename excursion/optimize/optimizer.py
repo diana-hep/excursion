@@ -107,7 +107,7 @@ class Optimizer(_Optimizer):
     #
     # Some helpers for the initializer. Handles error checking
     #
-    def check_and_set_device_dtype(self):
+    def _check_and_set_device_dtype(self):
         if isinstance(self.device, str):
             allowed_devices = ['auto', 'cpu', 'cuda']
             self.device = self.device.lower()
@@ -131,7 +131,7 @@ class Optimizer(_Optimizer):
         self.dtype = torch.float64
 
     # Another helper
-    def check_and_set_init_points(self):
+    def _check_and_set_init_points(self):
         if isinstance(self.n_initial_points_, int):
             if self.n_initial_points_ <= 0:
                 raise ValueError(
@@ -140,7 +140,7 @@ class Optimizer(_Optimizer):
             raise TypeError("Expected type int, got %s" % type(self.n_initial_points_))
         self._n_initial_points = self.n_initial_points_
 
-    def check_and_set_search_space(self, details):
+    def _check_and_set_search_space(self, details):
         _thresholds = [-np.inf] + details.thresholds + [np.inf]
         _X_pointsgrid = details.X_pointsgrid
         if self.device != 'skcpu':
@@ -148,7 +148,7 @@ class Optimizer(_Optimizer):
             _X_pointsgrid = torch.as_tensor(_X_pointsgrid).to(device=self.device, dtype=self.dtype)
         self._search_space['thresholds'] = _thresholds
         self._search_space['X_pointsgrid'] = _X_pointsgrid
-        self._search_space['dimension'] = details.ndim
+        self._search_space['ndim'] = details.ndim
 
     def __init__(self, problem_details: ExcursionProblem, device: str, dtype, n_funcs: int = None,
                  base_model: str or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator="random",
@@ -166,21 +166,21 @@ class Optimizer(_Optimizer):
         self.dtype = dtype
         # Create the device and dtype, currently only supports strings and initializes torch.device and torch.dtype
         # objects. It also will set the enviroment default behavior to create only the default datatype.
-        self.check_and_set_device_dtype()
+        self._check_and_set_device_dtype()
 
 
         # This will create a dictionary object that stores the dimension of search space (int), thresholds
         # (problem_details dtype) and the search space X_grid (as problem_details dtype). It will also assign
         # them to the right device.
         self._search_space = {}
-        self.check_and_set_search_space(problem_details)
+        self._check_and_set_search_space(problem_details)
 
         # Create the special ordered dict to track iterations
         self.data_ = self._Data()
 
         # Will check this param is set correctly and set a private n_init_points counter
         self.n_initial_points_ = n_initial_points
-        self.check_and_set_init_points()
+        self._check_and_set_init_points()
 
         # Configure private initial_point_generator
         self._initial_point_generator = build_sampler(initial_point_generator)
@@ -339,15 +339,14 @@ class Optimizer(_Optimizer):
             # our random state.
             if self._initial_samples is None:
                 # Not sure I can ever get to this piece of code
-                # UNTESTED, X_POINTSGRID IS MAYBE NOT THE RIGHT OBJECT
                 return self._initial_point_generator.generate(1, self._search_space['X_pointsgrid'])
             else:
                 # The samples are evaluated starting form initial_samples[0]
                 return self._initial_samples[
-                    len(self._initial_samples) - self._n_initial_points].reshape(1, self._search_space['dimension'])
+                    len(self._initial_samples) - self._n_initial_points].reshape(1, self._search_space['ndim'])
 
         else:
-            # if not self.acq_func:
+            # if not self._acq_func:
             #     raise ValueError("The acquisition function is None, ")
 
             if not hasattr(self, '_next_x'):
@@ -450,7 +449,7 @@ class Optimizer(_Optimizer):
                                            self._search_space['X_pointsgrid'])
             self.next_xs_.append(next_x)
             # # Placeholder until I do batch acq functions
-            self._next_x = self.next_xs_[0].reshape(1, self._search_space['dimension'])
+            self._next_x = self.next_xs_[0].reshape(1, self._search_space['ndim'])
 
     def get_result(self):
         """Returns the most recent result as a new object. self.result stores the log if log = true.

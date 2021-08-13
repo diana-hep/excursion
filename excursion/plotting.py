@@ -247,7 +247,7 @@ def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
 
     scatplot = ax.scatter(train_X[:, 0], train_X[:, 1], train_X[:, 2], c="r", s=100, alpha=0.2)
 
-    # scatplot = ax.scatter(X[:,0],X[:,1],X[:,2], c = Y, alpha = 0.05, s = 200)
+    # scatplot = ax.scatter(train_X[:,0],train_X[:,1],train_X[:,2], c = Y, alpha = 0.05, s = 200)
     ax.set_xlim(rangedef[0][0], rangedef[0][1])
     ax.set_ylim(rangedef[1][0], rangedef[1][1])
     ax.set_zlim(rangedef[2][0], rangedef[2][1])
@@ -273,12 +273,11 @@ plot_n = {1: plot_1D,
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
     if result is None or result.train_y is None:
-        raise ValueError("Result is not yet defined! Cannot plot this yet. First try calling ask and then tell. "
+        raise ValueError("Result is not yet defined! Cannot plot this yet. First try calling ask-and-tell. "
                          "Jump start must be false.")
     if show_confusion_matrix:
         plot_confusion_matrix(*result.get_diagnostic())
     try:
-        print("I am trying plotting")
         return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1],
                                    plot_X=result.X_pointsgrid, plot_G=result.X_meshgrid, rangedef=result.rangedef,
                                    pred_mean=result.mean[-1], pred_cov=result.cov[-1], thresholds=result.thresholds,
