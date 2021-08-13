@@ -1,6 +1,7 @@
 from .optimize import optimizer as opt
 from .excursion import ExcursionProblem
 from .plotting import plot
+import torch
 
 # Remove the base class reduce line count
 
@@ -49,8 +50,7 @@ class Learner(_Learner):
                                        n_initial_points=self.options['ninit'],
                                        initial_point_generator=self.options['init_type'],
                                        fit_optimizer=self.options['model']['fit_optimizer'],
-                                       base_model_kwargs=self.options['likelihood'])
-
+                                       base_model_kwargs=self.options['likelihood'], dtype=self.options['dtype'])
     def ask(self, npoints: int = None):
         """
         Suggest a new point to evaluate.

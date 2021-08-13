@@ -5,6 +5,7 @@ from ._optimizer import _Optimizer
 from collections import OrderedDict
 import numpy as np
 import torch
+import importlib
 
 ## Call all of it optimizer for the problem solver
 
@@ -106,7 +107,7 @@ class Optimizer(_Optimizer):
     #
     # Some helpers for the initializer. Handles error checking
     #
-    def check_and_set_device(self):
+    def check_and_set_device_dtype(self):
         if isinstance(self.device, str):
             allowed_devices = ['auto', 'cpu', 'cuda']
             self.device = self.device.lower()
@@ -118,6 +119,16 @@ class Optimizer(_Optimizer):
         else:
             raise TypeError("Expected type str, got %s" % type(self.device))
         self.device = torch.device(self.device)
+        if isinstance(self.dtype, str):
+            allowed_dtypes = ['torch.float64']
+            self.dtype = self.dtype.lower()
+            if self.dtype not in allowed_dtypes:
+                raise ValueError("expected dtype to be in %s, got %s" %
+                                 (",".join(allowed_devices), self.device))
+        else:
+            raise TypeError("Expected type str, got %s" % type(self.device))
+        self.device = torch.device(self.device)
+        self.dtype = torch.float64
 
     # Another helper
     def check_and_set_init_points(self):
@@ -130,18 +141,16 @@ class Optimizer(_Optimizer):
         self._n_initial_points = self.n_initial_points_
 
     def check_and_set_search_space(self, details):
-        _dtype = details.dtype
         _thresholds = [-np.inf] + details.thresholds + [np.inf]
         _X_pointsgrid = details.X_pointsgrid
         if self.device != 'skcpu':
-            _thresholds = torch.as_tensor(_thresholds, device=self.device, dtype=_dtype)
-            _X_pointsgrid = torch.as_tensor(_X_pointsgrid, device=self.device, dtype=_dtype)
+            _thresholds = torch.as_tensor(_thresholds).to(device=self.device, dtype=self.dtype)
+            _X_pointsgrid = torch.as_tensor(_X_pointsgrid).to(device=self.device, dtype=self.dtype)
         self._search_space['thresholds'] = _thresholds
         self._search_space['X_pointsgrid'] = _X_pointsgrid
-        self._search_space['dtype'] = _dtype
         self._search_space['dimension'] = details.ndim
 
-    def __init__(self, problem_details: ExcursionProblem, device: str, n_funcs: int = None,
+    def __init__(self, problem_details: ExcursionProblem, device: str, dtype, n_funcs: int = None,
                  base_model: str or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator="random",
                  acq_func: str = "MES", fit_optimizer=None, jump_start: bool = True, log: bool = True,
                  fit_optimizer_kwargs=None, acq_func_kwargs=None, base_model_kwargs=None):
@@ -154,8 +163,11 @@ class Optimizer(_Optimizer):
             # raise ValueError("n_funcs must be greater than 0")
 
         self.device = device
-        # Create the device, currently only supports strings and initializes torch.device objects.
-        self.check_and_set_device()
+        self.dtype = dtype
+        # Create the device and dtype, currently only supports strings and initializes torch.device and torch.dtype
+        # objects. It also will set the enviroment default behavior to create only the default datatype.
+        self.check_and_set_device_dtype()
+
 
         # This will create a dictionary object that stores the dimension of search space (int), thresholds
         # (problem_details dtype) and the search space X_grid (as problem_details dtype). It will also assign
@@ -175,9 +187,10 @@ class Optimizer(_Optimizer):
 
         # May want to move this and only give the problem problem_details the init x when
         # the model gets them
-        self._initial_samples = self._initial_point_generator.generate(self._n_initial_points, problem_details.X_pointsgrid)
-        if self.device != "skcpu":
-            self._initial_samples = torch.tensor(self._initial_samples, dtype=problem_details.dtype, device=self.device)
+        self._initial_samples = self._initial_point_generator.generate(self._n_initial_points, self._search_space['X_pointsgrid'])
+
+        # if self.device != "skcpu":
+        #     self._initial_samples = torch.tensor(self._initial_samples, dtype=self.dtype, device=self.device)
 
         # These will store the result, but if the base_model was None, then this will also be None
         self.result = None
@@ -205,14 +218,13 @@ class Optimizer(_Optimizer):
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
             base_model_kwargs['device'] = self.device
-            base_model_kwargs['dtype'] = self._search_space['dtype']
+            base_model_kwargs['dtype'] = self.dtype
             self._model = build_model(self.base_model, grid=problem_details.rangedef, **base_model_kwargs)
 
             # for now self.acq_func is a string, so this COULD add a string to the name of the graph of plotted result
-            self.result = build_result(problem_details, self.acq_func, device=self.device)
-
-            self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device,
-                                                   dtype=self._search_space['dtype'])
+            self.result = build_result(problem_details, self.acq_func, device=self.device, dtype=self.dtype)
+            print(str(self.result))
+            self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.dtype)
 
             # If I want to add all init points in a batch
             if jump_start:
@@ -374,10 +386,11 @@ class Optimizer(_Optimizer):
             only be fitted after `n_initial_points` points have been told to
             the optimizer irrespective of the value of `fit`.
         """
-        if not isinstance(x, torch.Tensor) and self.device != "skcpu":
-            x = torch.Tensor(x).to(device=self.device, dtype=self._search_space['dtype'])
-        if not isinstance(y, torch.Tensor) and self.device != "skcpu":
-            y = torch.Tensor(y).to(device=self.device, dtype=self._search_space['dtype'])
+
+        # if not isinstance(x, torch.Tensor) and self.device != "skcpu":
+        #     x = torch.Tensor(x).to(device=self.device, dtype=self.dtype)
+        # if not isinstance(y, torch.Tensor) and self.device != "skcpu":
+        #     y = torch.Tensor(y).to(device=self.device, dtype=self.dtype)
 
         # ADD THIS IN EVENTUALLY FOR SPACES WITH INVALID REGIONS
         # check_x_in_space(x, self.space)
@@ -442,7 +455,7 @@ class Optimizer(_Optimizer):
     def get_result(self):
         """Returns the most recent result as a new object. self.result stores the log if log = true.
         """
-        return ExcursionResult(acq=self.result.acq_vals[-1], train_y=self.result.train_y[-1],
+        return ExcursionResult(acq_vals=self.result.acq_vals[-1], train_y=self.result.train_y[-1],
                                train_X=self.result.train_X[-1], plot_X=self.result.X_pointsgrid,
                                plot_G=self.result.X_meshgrid, rangedef=self.result.rangedef,
                                pred_mean=self.result.mean[-1], pred_cov=self.result.cov[-1],

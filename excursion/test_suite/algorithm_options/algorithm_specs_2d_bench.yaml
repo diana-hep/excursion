@@ -13,15 +13,6 @@ ninit: 2
 ##Define the init training data type
 init_type: 'random'
 
-#Decide to add all initial samples then fit the model,
-#or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
-# Cannot plot first few iterations of 3d when this is true
-jump_start: true
-
-#Device type: 'cpu', 'cuda', 'auto'
-# 'auto' will only select the gpytorch b/w gpytorch implementations
-device: 'cuda'
-
 #likelihood
 likelihood:
   # Options: None
@@ -47,3 +38,19 @@ acq:
 #  batch: False
 #  batchtype: 'KB'
 #  batchsize: 12
+
+
+# # #                                                       # # #
+# # #  DO NOT CHANGE THE BELOW SETTING UNLESS ADVANCED USER # # #
+# # #                                                       # # #
+
+#Decide to add all initial samples then fit the model,
+#or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
+# Cannot plot first few iterations of 3d when this is true
+jump_start: true
+
+#Device type: 'cpu', 'cuda', 'auto'
+# 'auto' will only select the gpytorch b/w gpytorch implementations
+device: 'auto'
+
+dtype: torch.float64

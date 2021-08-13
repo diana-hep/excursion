@@ -272,12 +272,13 @@ plot_n = {1: plot_1D,
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
-    if result is None or not result.train_y:
+    if result is None or result.train_y is None:
         raise ValueError("Result is not yet defined! Cannot plot this yet. First try calling ask and then tell. "
                          "Jump start must be false.")
     if show_confusion_matrix:
         plot_confusion_matrix(*result.get_diagnostic())
     try:
+        print("I am trying plotting")
         return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1],
                                    plot_X=result.X_pointsgrid, plot_G=result.X_meshgrid, rangedef=result.rangedef,
                                    pred_mean=result.mean[-1], pred_cov=result.cov[-1], thresholds=result.thresholds,

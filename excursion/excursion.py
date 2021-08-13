@@ -17,7 +17,6 @@ class ExcursionProblem(object):
         self.X_pointsgrid = mesh2points(self.X_meshgrid, self.rangedef[:, 2])
         self.acq_pointsgrid = self.X_pointsgrid
         self.init_n_points = init_n_points # future place to store init points that were a snapshot of past training
-        self.dtype = torch.float64
         self._invalid_region = None
 
 
@@ -29,7 +28,7 @@ class ExcursionProblem(object):
 # # move this into the excursion result, unless we add scikit learn implementation # #
 
 def build_result(details: ExcursionProblem, acquisition, **kwargs):
-    X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=details.dtype)
+    X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=kwargs['dtype'])
     true_y = details.functions[0](X_pointsgrid).cpu().detach().numpy()
     acquisition = acquisition # What if they passed in their own acq, then there is no string here.
     return ExcursionResult(ndim=details.ndim, thresholds=details.thresholds, true_y=true_y,
@@ -64,7 +63,9 @@ class ExcursionResult(object):
         self.pct_correct = []
 
     def update(self, model, next_x, acq_vals, X_pointsgrid, log=True):
+        #print("I am updating "+str(X_pointsgrid.dim))
         train_X = model.train_inputs[0].cpu().detach().numpy()
+        #print(train_X)
         train_y = model.train_targets.cpu().detach().numpy()
         likelihood = model.likelihood
         likelihood.eval()
