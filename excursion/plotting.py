@@ -272,7 +272,7 @@ plot_n = {1: plot_1D,
 
 
 def plot(result: ExcursionResult, show_confusion_matrix=False):
-    if result is None or result.train_y is None:
+    if result is None or not result.train_y:
         raise ValueError("Result is not yet defined! Cannot plot this yet. First try calling ask-and-tell. "
                          "Jump start must be false.")
     if show_confusion_matrix:

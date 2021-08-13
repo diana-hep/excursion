@@ -92,12 +92,6 @@ class Optimizer(_Optimizer):
            is a numpy.meshgrid or torch.meshgrid (or ndarray) of the true function
            domain that we wish to search. The thresholds is a ndarray list or Tensor.
 
-       _data : OrderedDict
-            An LRU list to keep track of data added to the model at each call to tell.
-       # Xi : list
-       #     Points at which objective has been evaluated.
-       # yi : scalar
-       #     Values of objective at corresponding points in `Xi`.
        model : ExcursionModel (list or multioutput gp in future)
            Gaussian Process used to predict observations and compute acquisition
            function.
@@ -108,36 +102,28 @@ class Optimizer(_Optimizer):
     # Some helpers for the initializer. Handles error checking
     #
     def _check_and_set_device_dtype(self):
-        if isinstance(self.device, str):
-            allowed_devices = ['auto', 'cpu', 'cuda']
-            self.device = self.device.lower()
-            if self.device not in allowed_devices:
-                raise ValueError("expected device_type to be in %s, got %s" %
-                                 (",".join(allowed_devices), self.device))
-            if self.device == 'auto':
-                self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        else:
-            raise TypeError("Expected type str, got %s" % type(self.device))
+        allowed_devices = ['auto', 'cpu', 'cuda']
+        if not isinstance(self.device, str):
+            raise TypeError("Expected device is type str, got %s" % type(self.device))
+        elif self.device.lower() not in allowed_devices:
+            raise ValueError("expected device_type to be in %s, got %s" % (",".join(allowed_devices), self.device))
+        self.device = 'cuda' if self.device == 'auto' and torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device)
-        if isinstance(self.dtype, str):
-            allowed_dtypes = ['torch.float64']
-            self.dtype = self.dtype.lower()
-            if self.dtype not in allowed_dtypes:
-                raise ValueError("expected dtype to be in %s, got %s" %
-                                 (",".join(allowed_devices), self.device))
-        else:
-            raise TypeError("Expected type str, got %s" % type(self.device))
+
+        allowed_dtypes = ['torch.float64']
+        if not isinstance(self.dtype, str):
+            raise TypeError("Expected dtype is type str, got %s" % type(self.device))
+        elif self.dtype.lower() not in allowed_dtypes:
+            raise ValueError("expected dtype to be in %s, got %s" % (",".join(allowed_devices), self.device))
         self.device = torch.device(self.device)
         self.dtype = torch.float64
 
     # Another helper
     def _check_and_set_init_points(self):
-        if isinstance(self.n_initial_points_, int):
-            if self.n_initial_points_ <= 0:
-                raise ValueError(
-                    "Expected `n_initial_points` > 0, got %d" % self.n_initial_points_)
-        else:
+        if not isinstance(self.n_initial_points_, int):
             raise TypeError("Expected type int, got %s" % type(self.n_initial_points_))
+        elif self.n_initial_points_ <= 0:
+            raise ValueError("Expected `n_initial_points` > 0, got %d" % self.n_initial_points_)
         self._n_initial_points = self.n_initial_points_
 
     def _check_and_set_search_space(self, details):
@@ -169,25 +155,22 @@ class Optimizer(_Optimizer):
         self._check_and_set_device_dtype()
 
 
-        # This will create a dictionary object that stores the dimension of search space (int), thresholds
+        # This creates a dictionary that stores the dimension of search space (int), thresholds
         # (problem_details dtype) and the search space X_grid (as problem_details dtype). It will also assign
         # them to the right device.
         self._search_space = {}
         self._check_and_set_search_space(problem_details)
-
-        # Create the special ordered dict to track iterations
-        self.data_ = self._Data()
 
         # Will check this param is set correctly and set a private n_init_points counter
         self.n_initial_points_ = n_initial_points
         self._check_and_set_init_points()
 
         # Configure private initial_point_generator
-        self._initial_point_generator = build_sampler(initial_point_generator)
+        self._point_sampler = build_sampler(initial_point_generator)
+        self._initial_samples = None
 
         # May want to move this and only give the problem problem_details the init x when
         # the model gets them
-        self._initial_samples = self._initial_point_generator.generate(self._n_initial_points, self._search_space['X_pointsgrid'])
 
         # if self.device != "skcpu":
         #     self._initial_samples = torch.tensor(self._initial_samples, dtype=self.dtype, device=self.device)
@@ -197,7 +180,7 @@ class Optimizer(_Optimizer):
         self.log = log
 
         # Store acquisition function (must be a str originally, for now, if None,
-        # then base_model was None, else use _initial_point_generator):
+        # then base_model was None, else use _point_sampler):
         self.acq_func = acq_func
         # currently do not support any batches, or acq_func_kwargs. This is place holder
         # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
@@ -223,47 +206,27 @@ class Optimizer(_Optimizer):
 
             # for now self.acq_func is a string, so this COULD add a string to the name of the graph of plotted result
             self.result = build_result(problem_details, self.acq_func, device=self.device, dtype=self.dtype)
-            print(str(self.result))
             self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.dtype)
 
             # If I want to add all init points in a batch
             if jump_start:
                 self._n_initial_points = 0
-                x = self._initial_samples
+                x = self._point_sampler.generate(self.n_initial_points_, self._search_space['X_pointsgrid'])
                 y = problem_details.functions[0](x)
                 self._model.update_model(x, y)
                 self.fit()
 
                 # Build the result if we want to plot the initial state.
                 self.result.update(self._model, None, None, self._search_space['X_pointsgrid'], log=self.log)
+            else:
+                self._initial_samples = self._point_sampler.generate(self.n_initial_points_,
+                                                                     self._search_space['X_pointsgrid'])
 
         # Initialize cache for `ask` method responses
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
         # self.cache_ = {}
 
-    class _Data(OrderedDict):
-        """ Store estimator x and y data of each model on each iteration. Tracks the order of
-        insertion to be able to back step through algorithm training process. Provide speed
-        advantages over list of lists (assumed, but should be O(1) access time for hashmap)
-        """
-
-        def __init__(self, maxsize=1000, /, *args, **kwds):
-            self.maxsize = maxsize
-            super().__init__(*args, **kwds)
-
-        def __getitem__(self, key):
-            value = super().__getitem__(key)
-            self.move_to_end(key)
-            return value
-
-        def __setitem__(self, key, value):
-            if key in self:
-                self.move_to_end(key)
-            super().__setitem__(key, value)
-            if len(self) > self.maxsize:
-                oldest = next(iter(self))
-                del self[oldest]
 
     def ask(self, n_points=None, batch_kwarg={}):
         """Query point or multiple points at which objective should be evaluated.
@@ -335,19 +298,15 @@ class Optimizer(_Optimizer):
         # after being "told" n_initial_points we switch from sampling
         # random points to using a surrogate model in update_next()
         if self._n_initial_points > 0 or self.base_model is None:
-            # this will not make a copy of `self.rng` and hence keep advancing
-            # our random state.
             if self._initial_samples is None:
                 # Not sure I can ever get to this piece of code
-                return self._initial_point_generator.generate(1, self._search_space['X_pointsgrid'])
+                return self._point_sampler.generate(1, self._search_space['X_pointsgrid'])
             else:
                 # The samples are evaluated starting form initial_samples[0]
                 return self._initial_samples[
                     len(self._initial_samples) - self._n_initial_points].reshape(1, self._search_space['ndim'])
 
         else:
-            # if not self._acq_func:
-            #     raise ValueError("The acquisition function is None, ")
 
             if not hasattr(self, '_next_x'):
                 self.update_next()  # Should only happen on the first call, after which _next_x should always be set.
@@ -386,22 +345,9 @@ class Optimizer(_Optimizer):
             the optimizer irrespective of the value of `fit`.
         """
 
-        # if not isinstance(x, torch.Tensor) and self.device != "skcpu":
-        #     x = torch.Tensor(x).to(device=self.device, dtype=self.dtype)
-        # if not isinstance(y, torch.Tensor) and self.device != "skcpu":
-        #     y = torch.Tensor(y).to(device=self.device, dtype=self.dtype)
-
         # ADD THIS IN EVENTUALLY FOR SPACES WITH INVALID REGIONS
         # check_x_in_space(x, self.space)
         # self._check_y_is_valid(x, y)
-
-        return self._tell(x, y, fit=fit)
-
-    def _tell(self, x, y, fit=True) -> ExcursionResult:
-        """Perform the actual work of incorporating one or more new points.
-        See `tell()` for the full description.
-        This method exists to give access to the internals of adding points
-        by side stepping all input validation and transformation."""
 
         # # optimizer learned something new - discard cache - NO CACHE SUPPORT YET. PLACEHOLDER
         # self.cache_ = {}
@@ -421,14 +367,6 @@ class Optimizer(_Optimizer):
             # Build result of current state, _tell will update to state n+1
             self.result.update(self._model, x, acq_vals, self._search_space['X_pointsgrid'], log=self.log)
 
-        if isinstance(x, list):
-            zipped = zip(x, y)
-            for xi, yi in zipped:
-                self.data_[yi] = xi
-        else:
-            self.data_[y] = x
-
-        # result.specs = self.specs
         return self.result
 
     def fit(self):
