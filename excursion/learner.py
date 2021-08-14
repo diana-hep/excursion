@@ -1,7 +1,6 @@
-from .optimize import optimizer as opt
+from .optimizer import Optimizer
 from .excursion import ExcursionProblem
 from .plotting import plot
-import torch
 
 # Remove the base class reduce line count
 
@@ -44,7 +43,7 @@ class _Learner(object):
 class Learner(_Learner):
     def __init__(self, problem_details, options):
         super(Learner, self).__init__(problem_details=problem_details, algorithm_options=options)
-        self.optimizer = opt.Optimizer(problem_details=self.problem_details, base_model=self.options['model']['type'],
+        self.optimizer = Optimizer(problem_details=self.problem_details, base_model=self.options['model']['type'],
                                        acq_func=self.options['acq']['acq_type'],
                                        jump_start=self.options['jump_start'], device=self.options['device'],
                                        n_initial_points=self.options['ninit'],

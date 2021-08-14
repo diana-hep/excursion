@@ -1,6 +1,5 @@
 from .utils import mgrid, mesh2points
 import numpy as np
-import torch
 from sklearn.metrics import confusion_matrix
 
 
@@ -25,20 +24,10 @@ class ExcursionProblem(object):
         return self._invalid_region(X) if self._invalid_region else allvalid(X)
 
 
-# # move this into the excursion result, unless we add scikit learn implementation # #
-
-def build_result(details: ExcursionProblem, acquisition, **kwargs):
-    X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=kwargs['dtype'])
-    true_y = details.functions[0](X_pointsgrid).cpu().detach().numpy()
-    acquisition = acquisition # What if they passed in their own acq, then there is no string here.
-    return ExcursionResult(ndim=details.ndim, thresholds=details.thresholds, true_y=true_y,
-                           invalid_region=details.invalid_region, X_pointsgrid=details.X_pointsgrid,
-                           X_meshgrid=details.X_meshgrid, rangedef=details.rangedef)
-
-
 class ExcursionResult(object):
 
-    def __init__(self, ndim, thresholds, true_y, invalid_region, X_pointsgrid, X_meshgrid, rangedef):
+    def __init__(self, ndim, thresholds, true_y, invalid_region, X_pointsgrid, X_meshgrid, rangedef,
+                 acq_vals=None, mean=None, cov=None, next_x=None, train_X=None, train_y=None):
 
         # need to do acq vals and acq grids
         # acq x and acq values
@@ -52,19 +41,17 @@ class ExcursionResult(object):
         self.ndim = ndim
 
         # To be updated if log is true
-        self.acq_vals = []
-        self.mean = []
-        self.cov = []
-        self.next_x = []
-        self.train_X = []
-        self.train_y = []
+        self.acq_vals = [] if acq_vals is None else [acq_vals]
+        self.mean = [] if mean is None else [mean]
+        self.cov = [] if cov is None else [cov]
+        self.next_x = [] if next_x is None else [next_x]
+        self.train_X = [] if train_X is None else [train_X]
+        self.train_y = [] if train_y is None else [train_y]
         self.confusion_matrix = []
         self.pct_correct = []
 
     def update(self, model, next_x, acq_vals, X_pointsgrid, log=True):
-        #print("I am updating "+str(X_pointsgrid.dim))
         train_X = model.train_inputs[0].cpu().detach().numpy()
-        #print(train_X)
         train_y = model.train_targets.cpu().detach().numpy()
         likelihood = model.likelihood
         likelihood.eval()
@@ -100,7 +87,7 @@ class ExcursionResult(object):
 
     def get_percent_correct(self):
         pct_correct = np.diag(self.confusion_matrix[-1]).sum() * 1.0 / len(self.X_pointsgrid)
-        print("Accuracy %", pct_correct)
+        # print("Accuracy %", pct_correct)
         self.pct_correct.append(pct_correct)
         return self.pct_correct[-1]
 
@@ -117,3 +104,16 @@ class ExcursionResult(object):
         labels_true = np.array([label(y) for y in self.true_y])
         self.confusion_matrix.append(confusion_matrix(labels_true, labels_pred))
         return self.confusion_matrix[-1]
+
+    def get_last_result(self):
+        if not self.train_y:
+            return ExcursionResult(ndim=self.ndim, thresholds=self.thresholds, true_y=self.true_y,
+                           invalid_region=self.invalid_region, X_pointsgrid=self.X_pointsgrid,
+                           X_meshgrid=self.X_meshgrid, rangedef=self.rangedef)
+        else:
+            return ExcursionResult(acq_vals=self.result.acq_vals[-1], train_y=self.result.train_y[-1],
+                               train_X=self.result.train_X[-1], plot_X=self.result.X_pointsgrid,
+                               plot_G=self.result.X_meshgrid, rangedef=self.result.rangedef,
+                               pred_mean=self.result.mean[-1], pred_cov=self.result.cov[-1],
+                               thresholds=self.result.thresholds, next_x=self.result.next_x[-1],
+                               true_y=self.result.true_y[-1], invalid_region=self.result.invalid_region)

@@ -1,6 +1,7 @@
 import numpy as np
 from .base import SampleGenerator
 
+
 class RandomChoice(SampleGenerator):
     """Creates a set of n-dimensional points randomly chosen from the X_pointsgrid.
     The X_pointsgrid object represents a set of points in an n-dimensional space.

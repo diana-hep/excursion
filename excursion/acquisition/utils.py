@@ -23,7 +23,9 @@ def truncated_std_conditional(Y_pred_all, a, b):
     std_grid = Y_pred_all.variance[1:] ** 0.5
     mu_candidate = Y_pred_all.mean[0]
     std_candidate = Y_pred_all.variance[0] ** 0.5
-    rho = Y_pred_all.covariance_matrix[0, 1:] / (std_candidate * std_grid)
+    # The line below is the most memory hungry code in the entire package
+    denom = (std_candidate * std_grid)
+    rho = Y_pred_all.covariance_matrix[0, 1:] / denom
 
     # norm needs to be a normal distribution but in python
     normal = torch.distributions.Normal(loc=0, scale=1)

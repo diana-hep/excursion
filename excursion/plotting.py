@@ -24,6 +24,75 @@ def plot_confusion_matrix(confusion_matrix, pct_correct: int):
     plt.show()
 
 
+def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
+            invalid_region, func=None):
+    fig = plt.figure(figsize=(15, 15))
+    plot_X = plot_G[0]
+    if acq is not None:
+        gs = fig.add_gridspec(2, 1, height_ratios=[10, 5])
+        fig_ax1 = fig.add_subplot(gs[0, :])
+        fig_ax2 = fig.add_subplot(gs[1, :])
+    else:
+        gs = fig.add_gridspec(1, 1)
+        fig_ax1 = fig.add_subplot(gs[0, :])
+
+    fig_ax1.plot(plot_X, true_y, linestyle="dashed", color='k', label='True Function')
+
+    min_X = np.min(plot_X)
+    max_X = np.max(plot_X)
+    fig_ax1.hlines(thresholds, min_X, max_X, colors="purple", label="threshold")
+
+    # plot train points
+    fig_ax1.plot(
+        train_X,
+        train_y,
+        "k*",
+        label="samples",
+        markersize=10,
+    )
+    for x in train_X:
+        fig_ax1.axvline(x, alpha=0.2, color="grey")
+
+    if next_x:
+        fig_ax1.axvline(next_x, c="red", label="new evaluation")
+    fig_ax1.plot(plot_X, pred_mean, color="blue", label="mean")
+
+    # variance
+    for i in range(1, 6):
+        fig_ax1.fill_between(
+            plot_X,
+            pred_mean + 1*i * pred_cov ** 0.5,
+            pred_mean - 1*i * pred_cov ** 0.5,
+            color="darkslateblue",
+            alpha=0.6 / i,
+            label=str(i) + "sigma",
+        )
+
+    fig_ax1.set_xlabel("x")
+    fig_ax1.set_ylabel("f(x)")
+    fig_ax1.set_xlim(*rangedef[0][:2])
+    # fig_ax1.set_ylim(*rangedef[1][:2])
+    # ax0.legend(loc="upper right")
+
+    if acq is not None:
+        # fig_ax2.set_xticks([])
+        # eliminate -inf
+        mask = np.isfinite(acq)
+        acq = acq[mask]
+        X_plot = plot_X[mask]
+        # plot
+        fig_ax2.plot(X_plot, acq, color="orange", label="Acquisition")
+        # + str(acq_type))
+        fig_ax2.set_xlabel("x")
+        fig_ax2.set_ylabel("acq(x)")
+        # fig_ax2.set_yscale("log")
+        fig_ax2.axvline(next_x, c="red")
+        fig_ax2.legend(loc="lower right")
+        fig_ax2.set_xlim(*rangedef[0][:2])
+
+    plt.show()
+
+
 def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
             invalid_region, func=None):
 
@@ -38,7 +107,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     true_y = values2mesh(true_y, plot_X, rangedef, invalid_region)
     pred_mean = values2mesh(pred_mean, plot_X, rangedef, invalid_region)
 
-    fig = plt.figure(figsize=(15, 10))
+    fig = plt.figure(figsize=(28, 8))
     if acq is not None:
         gs = fig.add_gridspec(1, 2)
         fig_ax1 = fig.add_subplot(gs[0, :1])
@@ -49,11 +118,11 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
 
     xv, yv = plot_G
 
-    line1 = fig_ax1.contour(xv, yv, true_y, thresholds, linestyle="dotted", color='white')
+    line1 = fig_ax1.contour(xv, yv, true_y, thresholds, linestyles="dotted", colors='white')
 
     min_xv = np.min(pred_mean)
     max_xv = np.max(pred_mean)
-    line2 = fig_ax1.contour(xv, yv, pred_mean, thresholds, colors="white", linestyle='solid')
+    line2 = fig_ax1.contour(xv, yv, pred_mean, thresholds, colors="white", linestyles='solid')
     color_axis = fig_ax1.contourf(xv, yv, pred_mean, np.linspace(min_xv, max_xv, 100))
 
     # train points
@@ -79,7 +148,7 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     fig_ax1.set_xlim(*rangedef[0][:2])
     fig_ax1.set_ylim(*rangedef[1][:2])
     ax1_colorbar = fig.colorbar(color_axis, ax=fig_ax1, shrink=0.7)
-    ax1_colorbar.ax.set_ylabel('mean GP', size=14, labelpad=20, rotation=270)
+    ax1_colorbar.ax.set_ylabel('mean GP', size=14, labelpad=10, rotation=270)
     fig_ax1.legend(loc=0)
     l1, _ = line1.legend_elements()
     l2, _ = line2.legend_elements()
@@ -95,15 +164,14 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     )
 
     if acq is not None:
-        max_xv_ = np.max(acq)
-        min_xv_ = np.min(acq)
+        # max_xv_ = np.max(acq)
+        # min_xv_ = np.min(acq)
         acq = values2mesh(acq, plot_X, rangedef, invalid_region)
         # color_axis_ = fig_ax2.contourf(xv, yv, acq, np.linspace(min_xv_, max_xv_, 100))
         color_axis_ = fig_ax2.contourf(xv, yv, acq, cmap="Purples")
         # plot truth
-        line_ = fig_ax2.contour(xv, yv, true_y, thresholds, linestyle="dotted", color='red', label='True Contour')
-        # plot
-        # train points
+        line_ = fig_ax2.contour(xv, yv, true_y, thresholds, linestyles="dotted", colors='r')
+        # plot train points
         old_points_ = fig_ax2.scatter(
             train_X[:, 0],
             train_X[:, 1],
@@ -121,6 +189,8 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
                 label="New Observed Value",
             )
 
+        ax2_colorbar = fig.colorbar(color_axis_, ax=fig_ax2, shrink=0.7)
+        ax2_colorbar.ax.set_ylabel('Acquisition Function', size=14, labelpad=10, rotation=270)
         fig_ax2.set_xlabel("x")
         fig_ax2.set_ylabel("y")
         fig_ax2.set_xlim(*rangedef[0][:2])
@@ -138,75 +208,6 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
             facecolor="grey",
             framealpha=0.20,
         )
-        fig_ax2.legend(loc="lower right")
-
-    plt.show()
-
-
-def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
-            invalid_region, func=None):
-    fig = plt.figure(figsize=(15, 15))
-    plot_X = plot_G[0]
-    if acq is not None:
-        gs = fig.add_gridspec(2, 1, height_ratios=[10, 5])
-        fig_ax1 = fig.add_subplot(gs[0, :])
-        fig_ax2 = fig.add_subplot(gs[1, :])
-    else:
-        gs = fig.add_gridspec(1, 1)
-        fig_ax1 = fig.add_subplot(gs[0, :])
-
-    fig_ax1.plot(plot_X, true_y, linestyle="dashed", color='k', label='True Function')
-
-    min_X = np.min(plot_X)
-    max_X = np.max(plot_X)
-    fig_ax1.hlines(thresholds, min_X, max_X, colors="purple", label="threshold")
-
-    # #train points
-    fig_ax1.plot(
-        train_X,
-        train_y,
-        "k*",
-        color="black",
-        label="samples",
-        markersize=10,
-    )
-    for x in train_X:
-        fig_ax1.axvline(x, alpha=0.2, color="grey")
-
-    if next_x:
-        fig_ax1.axvline(next_x, c="red", label="new evaluation")
-    fig_ax1.plot(plot_X, pred_mean, color="blue", label="mean")
-
-    # variance
-    for i in range(1, 6):
-        fig_ax1.fill_between(
-            plot_X,
-            pred_mean + 1*i * pred_cov ** 0.5,
-            pred_mean - 1*i * pred_cov ** 0.5,
-            color="darkslateblue",
-            alpha=0.6 / i,
-            label=str(i) + "sigma",
-        )
-
-    fig_ax1.set_xlabel("x")
-    fig_ax1.set_ylabel("f(x)")
-    fig_ax1.set_ylim(-6, 20)
-    # ax0.legend(loc="upper right")
-
-    if acq is not None:
-        fig_ax2.set_xticks([])
-        # eliminate -inf
-        mask = np.isfinite(acq)
-        acq = acq[mask]
-        X_plot = plot_X[mask]
-        # plot
-        fig_ax2.plot(X_plot, acq, color="orange", label="MES")
-        # + str(acq_type))
-        fig_ax2.set_xlabel("x")
-        fig_ax2.set_ylabel("acq(x)")
-        # if acq_type == "MES":
-        fig_ax2.set_yscale("log")
-        fig_ax2.axvline(next_x, c="red")
         fig_ax2.legend(loc="lower right")
 
     plt.show()
@@ -256,7 +257,7 @@ def plot_3D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     ax.set_ylabel("y")
     ax.set_zlabel("z")
     ax.view_init(*(70, -45))
-    return
+    plt.show()
 
 
 def plot_4D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov, thresholds, next_x, true_y,
@@ -278,6 +279,7 @@ def plot(result: ExcursionResult, show_confusion_matrix=False):
     if show_confusion_matrix:
         plot_confusion_matrix(*result.get_diagnostic())
     try:
+        plt.clf()
         return plot_n[result.ndim](acq=result.acq_vals[-1], train_y=result.train_y[-1], train_X=result.train_X[-1],
                                    plot_X=result.X_pointsgrid, plot_G=result.X_meshgrid, rangedef=result.rangedef,
                                    pred_mean=result.mean[-1], pred_cov=result.cov[-1], thresholds=result.thresholds,
