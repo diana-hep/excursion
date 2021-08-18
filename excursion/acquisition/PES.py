@@ -19,6 +19,9 @@ class PES(AcquisitionFunction):
         likelihood = gp.likelihood
         gp.eval()
         likelihood.eval()
+
+
+        # # these X_pointsgrid should be the same for both
         X_all = torch.cat((x_candidate, X_pointsgrid))
         Y_pred_all = likelihood(gp(X_all))
         Y_pred_grid = torch.distributions.Normal(

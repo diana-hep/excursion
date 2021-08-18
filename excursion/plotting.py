@@ -195,7 +195,6 @@ def plot_2D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
         fig_ax2.set_ylabel("y")
         fig_ax2.set_xlim(*rangedef[0][:2])
         fig_ax2.set_ylim(*rangedef[1][:2])
-        fig.colorbar(color_axis_, ax=fig_ax2)
         fig_ax2.legend(loc=0)
         l_, _ = line_.legend_elements()
 

@@ -25,7 +25,6 @@ def test_full_simple_dimensions():
     likelihood_options = [0.0, 0.2]
     acq_opt = ['pes', 'mes']
 
-
     device_str = device_opt[0]
     device = torch.device(device_str)
     jump_start = jump_start_opt[0]
@@ -38,7 +37,6 @@ def test_full_simple_dimensions():
     base_model_kwargs['dtype'] = dtype
     base_model_kwargs['likelihood_type'] = 'GaussianLikelihood'
     base_model_kwargs['epsilon'] = likelihood_options[0]
-
 
     if jump_start:
        plus_iterations = 0
@@ -59,7 +57,7 @@ def test_full_simple_dimensions():
 
         for x in range(n_iterations+plus_iterations):
             x = optimizer.ask()
-            y = testcase_3D.true_functions[0](x)
+            y = problem_details.functions[0](x)
             result = optimizer.tell(x, y)
         # ensure that the number of y values recorded for every problem type is equal to the number of times optimizer
         # should have updated the model during training
