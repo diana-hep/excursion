@@ -1,4 +1,4 @@
-from .kernel import Kernel
+from .utils import get_kernel
 from .base import ExcursionModel
 from .fit import fit_hyperparams
 import torch
@@ -10,10 +10,10 @@ class GPyTorchGP(ExcursionModel, gpytorch.models.ExactGP):
     """This is a guassian process version of the excursion model. Most if not all excursion models will be a
     gaussian process.
     """
-    def __init__(self, train_x, train_y, likelihood, model_type, grid=None):
+    def __init__(self, train_x, train_y, likelihood, model_type, rangedef=None):
         super(GPyTorchGP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = Kernel(model_type=model_type, base_kernel='RBFKernel', grid=grid).get_kernel()
+        self.covar_module = get_kernel(model_type=model_type, base_kernel='RBFKernel', input_rangedef=rangedef)
 
     def forward(self, x):
         mean_x = self.mean_module(x)

@@ -80,7 +80,7 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
     return acq_function
 
 
-def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **kwargs):
+def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None, **kwargs):
     """Build an acquisition function.
      For the special acq_function called "random" the return value is None.
      Parameters
@@ -105,7 +105,7 @@ def build_model(model: str or ExcursionModel, grid, init_X=None, init_y=None, **
             likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'],
                                           device=kwargs['device'], dtype=kwargs['dtype'])
         if model == "gridgp":
-            model = GPyTorchGP(init_X, init_y, likelihood, model_type='GridKernel', grid=grid).\
+            model = GPyTorchGP(init_X, init_y, likelihood, model_type='GridKernel', rangedef=rangedef).\
                 to(device=kwargs['device'], dtype=kwargs['dtype'])
         elif model == "exactgp":
             model = GPyTorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\

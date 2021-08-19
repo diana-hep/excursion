@@ -24,13 +24,13 @@ class _Learner(object):
         """
         raise NotImplementedError()
 
-    def tell(self, x, y):
+    def tell(self, x, y, fit=True):
         raise NotImplementedError()
 
     def evaluate(self, x):
         raise NotImplementedError()
 
-    def evaluate_and_tell(self, x):
+    def evaluate_and_tell(self, x, fit=True):
         raise NotImplementedError()
 
     def run(self, n_iterations, plot_result=False):
@@ -64,15 +64,15 @@ class Learner(_Learner):
         """
         return self.optimizer.ask()
 
-    def tell(self, x, y):
-        return self.optimizer.tell(x, y)
+    def tell(self, x, y, fit=True):
+        return self.optimizer.tell(x, y, fit=fit)
 
     def evaluate(self, x):
         return self.problem_details.functions[0](x)
 
-    def evaluate_and_tell(self, x):
+    def evaluate_and_tell(self, x, fit=True):
         y = self.evaluate(x)
-        return self.tell(x, y)
+        return self.tell(x, y, fit=fit)
 
     def run(self, n_iterations, plot_result=False, show_confusion_matrix=False):
         for iter in range(n_iterations):

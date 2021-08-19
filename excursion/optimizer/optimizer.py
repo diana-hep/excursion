@@ -197,7 +197,7 @@ class Optimizer(_Optimizer):
         if self.base_model is not None:
             base_model_kwargs['device'] = self.device
             base_model_kwargs['dtype'] = self.dtype
-            self._model = build_model(self.base_model, grid=problem_details.rangedef, **base_model_kwargs)
+            self._model = build_model(self.base_model, rangedef=problem_details.rangedef, **base_model_kwargs)
 
             # for now self.acq_func is a string, so this COULD add a string to the name of the graph of plotted result
             self.result = build_result(problem_details, self.acq_func, device=self.device, dtype=self.dtype)
@@ -360,6 +360,7 @@ class Optimizer(_Optimizer):
                 self.fit()
                 self.update_next()  # acq happens in update_next(), it updates _next_x
             # Build result of current state, _tell will update to state n+1
+
             self.result.update(self._model, x, acq_vals, self._search_space['X_pointsgrid'], log=self.log)
 
         return self.result
