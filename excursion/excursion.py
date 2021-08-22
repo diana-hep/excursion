@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
+# # make it so that grid_step_size is just an int and the initializer does [grid_Step_size]*ndim
 class ExcursionProblem(object):
     def __init__(self, functions, thresholds=[0.5], ndim=1, bounding_box=None, grid_step_size=None, init_n_points=None):
         self.functions = functions
@@ -17,7 +18,6 @@ class ExcursionProblem(object):
         self.acq_pointsgrid = self.X_pointsgrid
         self.init_n_points = init_n_points # future place to store init points that were a snapshot of past training
         self._invalid_region = None
-
 
     def invalid_region(self, X):
         allvalid = lambda X: np.zeros_like(X[:, 0], dtype='bool')

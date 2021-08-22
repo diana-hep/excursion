@@ -1,5 +1,5 @@
 import torch
-
+import numpy as np
 # Define true functions
 
 
@@ -34,6 +34,9 @@ def function_5(X):
     f = 30
     return 11-10*(torch.tanh((X-0.3)*3) + 0.15*torch.sin(X*f))
 
+def numpy_func(X):
+    f = 30
+    return 11-10*(np.tanh((X-0.3)*3) + 0.15*np.sin(X*f))
 
 #
 # true_functions = [function_1]
