@@ -34,8 +34,7 @@ class PES(AcquisitionFunction):
         for j in range(len(thresholds) - 1):
             # vector of sigma(Y(x_candidate)|S(x)=j) truncated
             trunc_std_j = truncated_std_conditional(
-                Y_pred_all, thresholds[j], thresholds[j + 1]
-            )
+                Y_pred_all, thresholds[j], thresholds[j + 1])
             H1_j = h_normal(trunc_std_j)
 
             # vector of p(S(x)=j)
