@@ -33,9 +33,9 @@ class PES(AcquisitionFunction):
 
         for j in range(len(thresholds) - 1):
             # vector of sigma(Y(x_candidate)|S(x)=j) truncated
-            trunc_std_j = truncated_std_conditional(
-                Y_pred_all, thresholds[j], thresholds[j + 1])
-            H1_j = h_normal(trunc_std_j)
+            H1_j = h_normal(
+                truncated_std_conditional(Y_pred_all, thresholds[j], thresholds[j + 1])
+            )
 
             # vector of p(S(x)=j)
             p_j = Y_pred_grid.cdf(thresholds[j + 1]) - Y_pred_grid.cdf(thresholds[j])
@@ -87,6 +87,7 @@ class PES(AcquisitionFunction):
         X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype)
         X_train = X_train.tolist()
         new_index = torch.argmax(acq_cand_vals)
+        print(acq_cand_vals, new_index)
 
         # if the index is not already picked nor in the training set
         # accept it ans remove from future picks

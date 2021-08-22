@@ -4,6 +4,8 @@ import numpy as np
 from scipy.linalg import cho_solve
 from scipy.stats import norm
 
+# TWICE_EULER = 2*np.e
+# TWICE_EULER_PI = TWICE_EULER*np.pi
 
 def cdf(mu, sigma, t): # This is cdf for GPyTorchGP MES acq function
     # use torch.erfc for numerical stability
@@ -13,7 +15,11 @@ def cdf(mu, sigma, t): # This is cdf for GPyTorchGP MES acq function
 
 
 def h_normal(var):
-    return torch.log(var * ((2 * np.e * np.pi) ** 0.5))
+    return torch.log(var * (2 * np.e * np.pi) ** 0.5)
+
+
+def np_h_normal(var):
+    return torch.log(var * (2 * np.e * np.pi) ** 0.5)
 
 
 def normal_pdf(x):
@@ -84,11 +90,12 @@ def approx_mi_vec(mu, cov, thresholds):
         std_sx.append(std_sx_j)
 
     # Entropy
-    h = h_normal(std1)
+    CONSTANT = (2 * np.e * np.pi) ** 0.5
+    h = np.log(std1 * CONSTANT)
 
     for j in range(len(thresholds) - 1):
         p_j = norm(mu2, std2).cdf(thresholds[j+1]) - norm(mu2, std2).cdf(thresholds[j])
-        dec = p_j * h_normal(std_sx[j])
+        dec = p_j * np.log(std_sx[j] * CONSTANT)
         h[p_j > 0.0] -= dec[p_j > 0.0]
 
     return h
@@ -114,10 +121,11 @@ def info_gain(x_candidate, gps, thresholds, meanX):
         covs[:, 0, 1] = c[0, 1:]
         covs[:, 1, 0] = c[0, 1:]
 
-        K_trans_all_repack = np.zeros((n_samples, 2, len(gp.X_train_)))
+        x_train_len = len(gp.X_train_)
+        K_trans_all_repack = np.zeros((n_samples, 2, x_train_len))
         K_trans_all_repack[:, 0, :] = K_trans_all[0, :]
         K_trans_all_repack[:, 1, :] = K_trans_all[1:]
-        v_all_repack = np.zeros((n_samples, len(gp.X_train_), 2))
+        v_all_repack = np.zeros((n_samples, x_train_len, 2))
         v_all_repack[:, :, 0] = v_all[:, 0]
         v_all_repack[:, :, 1] = v_all[:, 1:].T
         covs -= np.einsum('...ij,...jk->...ik', K_trans_all_repack, v_all_repack)

@@ -1,7 +1,7 @@
 from .base import AcquisitionFunction
 import numpy as np
 import os
-from utils import info_gain
+from . import utils
 
 
 class SKPES(AcquisitionFunction):
@@ -15,12 +15,13 @@ class SKPES(AcquisitionFunction):
     def _acquire(self, gp, thresholds, X_pointsgrid, x_candidate):
         try:
             from joblib import Parallel, delayed
+            print("Parallel Acq")
             nparallel = int(os.environ.get('EXCURSION_NPARALLEL', os.cpu_count()))
             result = Parallel(nparallel)(
-                delayed(info_gain)(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid)
+                delayed(utils.info_gain)(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid)
             return np.asarray(result)
         except ImportError:
-            return np.array([info_gain(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid])
+            return np.array([utils.info_gain(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid])
 
     def acquire(self, gp, thresholds, X_pointsgrid):
         """
@@ -31,21 +32,16 @@ class SKPES(AcquisitionFunction):
 
         """
 
-        # compute predictive posterior of Y(x) | train data
-        # likelihood = gp.likelihood
-        # gp.eval()
-        # likelihood.eval()
-        thresholds = [-np.inf] + thresholds + [np.inf]
         acquisition_values = self._acquire(gp, thresholds, X_pointsgrid, None)
-
-        self.acq_vals = np.clone(acquisition_values)
+        self.acq_vals = np.copy(acquisition_values)
 
         return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid, acquisition_values)]
 
 
     def get_first_max_index(self, gp, X_pointsgrid, acq_cand_vals):
-        X_train = gp.X_train
+        X_train = gp.X_train_.tolist()
         new_index = np.argmax(acq_cand_vals)
+        print(acq_cand_vals, new_index)
 
         # if the index is not already picked nor in the training set
         # accept it ans remove from future picks
@@ -60,5 +56,5 @@ class SKPES(AcquisitionFunction):
             return new_index.item()
         else:
             acq_cand_vals[new_index] = np.array([(-1.0) * float("Inf")])
-            new_index = np.argmax(acq_cand_vals)
-            return self._check_prev_acq(new_index, X_train, X_pointsgrid, acq_cand_vals)
+            # new_index = np.argmax(acq_cand_vals)
+            return self._check_prev_acq(np.argmax(acq_cand_vals), X_train, X_pointsgrid, acq_cand_vals)
