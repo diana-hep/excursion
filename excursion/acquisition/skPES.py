@@ -1,3 +1,5 @@
+import gc
+
 from .base import AcquisitionFunction
 import numpy as np
 import os
@@ -19,6 +21,7 @@ class SKPES(AcquisitionFunction):
             nparallel = int(os.environ.get('EXCURSION_NPARALLEL', os.cpu_count()))
             result = Parallel(nparallel)(
                 delayed(utils.info_gain)(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid)
+            gc.collect()
             return np.asarray(result)
         except ImportError:
             return np.array([utils.info_gain(x_candidate, [gp], thresholds, X_pointsgrid) for x_candidate in X_pointsgrid])
@@ -34,6 +37,13 @@ class SKPES(AcquisitionFunction):
 
         acquisition_values = self._acquire(gp, thresholds, X_pointsgrid, None)
         self.acq_vals = np.copy(acquisition_values)
+
+        X_train = gp.X_train_.tolist()
+
+        for i, cacq in enumerate(X_pointsgrid[np.argsort(acquisition_values)]):
+            if cacq.tolist() not in X_train:
+                newx = cacq
+                return newx
 
         return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid, acquisition_values)]
 

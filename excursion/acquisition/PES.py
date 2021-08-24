@@ -80,12 +80,21 @@ class PES(AcquisitionFunction):
         acq_cand_vals = torch.Tensor(acquisition_values).to(device=self.device, dtype=self.dtype)
         self.acq_vals = torch.clone(acq_cand_vals)
 
+        #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
+        # This might be faster than the other return statement. Needs testing.
+        X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype).tolist()
+
+        for i, cacq in enumerate(X_pointsgrid[torch.argsort(-acq_cand_vals)]):
+            if cacq.tolist() not in X_train:
+                newx = cacq
+                return newx
+        #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
         return X_pointsgrid[self.get_first_max_index(gp, X_pointsgrid, acq_cand_vals)]
 
 
     def get_first_max_index(self, gp, X_pointsgrid, acq_cand_vals):
-        X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype)
-        X_train = X_train.tolist()
+        X_train = gp.train_inputs[0].to(device=self.device, dtype=self.dtype).tolist()
+        # X_train = X_train.tolist()
         new_index = torch.argmax(acq_cand_vals)
         print(acq_cand_vals, new_index)
 
