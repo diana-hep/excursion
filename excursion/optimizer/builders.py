@@ -1,16 +1,21 @@
 from excursion.sampler import *
 import torch
 import gpytorch
-from excursion.models import ExcursionModel, GPyTorchGP
-from excursion.acquisition import MES, AcquisitionFunction, PES
+from excursion.models import ExcursionModel, GPyTorchGP, SKLearnGP
+from excursion.acquisition import MES, AcquisitionFunction, PES, SKPES
 from gpytorch.likelihoods import _GaussianLikelihoodBase
 from excursion.excursion import ExcursionProblem, ExcursionResult
 
 # # move this into the excursion result, unless we add scikit learn implementation # #
 
 def build_result(details: ExcursionProblem, acquisition, **kwargs):
-    X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=kwargs['dtype'])
-    true_y = details.functions[0](X_pointsgrid).cpu().detach().numpy()
+    if kwargs['device'] == 'skcpu':
+        X_pointsgrid = details.X_pointsgrid
+        true_y = details.functions[0](X_pointsgrid)
+    else:
+        X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=kwargs['dtype'])
+        true_y = details.functions[0](X_pointsgrid).cpu().detach().numpy()
+
     acquisition = acquisition # What if they passed in their own acq, then there is no string here.
     return ExcursionResult(ndim=details.ndim, thresholds=details.thresholds, true_y=true_y,
                            invalid_region=details.invalid_region, X_pointsgrid=details.X_pointsgrid,
@@ -72,9 +77,12 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
 
     if isinstance(acq_function, str):
         if acq_function == "mes":
-            acq_function = MES()
+            if kwargs['device'] != 'skcpu':
+                acq_function = MES()
+            else:
+                raise NotImplementedError("The sklearn backend does not support MES acquisition.")
         if acq_function == "pes":
-            acq_function = PES()
+            acq_function = PES() if kwargs['device'] != 'skcpu' else SKPES()
     acq_function.set_params(**kwargs)
 
     return acq_function
@@ -94,7 +102,7 @@ def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None
         model = "exactgp"
     elif isinstance(model, str):
         model = model.lower()
-        allowed_models = ["exactgp", "gridgp"]
+        allowed_models = ["exactgp", "gridgp", "sklearngp"]
         if model not in allowed_models:
             raise ValueError("Valid strings for the model parameter are: 'ExactGP', or 'GridGP' not %s." % model)
     elif not isinstance(model, ExcursionModel):
@@ -110,6 +118,8 @@ def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None
         elif model == "exactgp":
             model = GPyTorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\
                 to(device=kwargs['device'], dtype=kwargs['dtype'])
+        elif model == "sklearngp":
+            model = SKLearnGP(ndim=len(rangedef))
 
     model.set_params(**kwargs)
 

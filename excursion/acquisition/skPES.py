@@ -13,7 +13,7 @@ class SKPES(AcquisitionFunction):
         self.batch = batch
         self.acq_vals = None
 
-    def _acquire(self, gp, thresholds, X_pointsgrid, acq_pointsgrid):
+    def _acquire(self, gp, thresholds, X_pointsgrid):
         try:
             from joblib import Parallel, delayed
             print("Parallel Acq")
@@ -23,9 +23,9 @@ class SKPES(AcquisitionFunction):
             gc.collect()
             return np.asarray(result)
         except ImportError:
-            return np.array([info_gain(x_candidate, gp, thresholds, X_pointsgrid) for x_candidate in acq_pointsgrid])
+            return np.array([info_gain(x_candidate, gp, thresholds, X_pointsgrid) for x_candidate in X_pointsgrid])
 
-    def acquire(self, gp, thresholds, X_pointsgrid, acq_pointsgrid):
+    def acquire(self, gp, thresholds, X_pointsgrid):
         """
         Calculates information gain of choosing x_candidate as next point to evaluate.
         Performs this calculation with the Predictive Entropy Search approximation. Roughly,
@@ -34,7 +34,7 @@ class SKPES(AcquisitionFunction):
 
         """
 
-        acquisition_values = self._acquire(gp, thresholds, X_pointsgrid, None)
+        acquisition_values = self._acquire(gp, thresholds, X_pointsgrid)
         self.acq_vals = np.copy(acquisition_values)
 
         X_train = gp.X_train_.tolist()

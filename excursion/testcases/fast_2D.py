@@ -51,10 +51,16 @@ def test(x):
 
     return xv + yv
 
+def true_function(X):
+    print(X)
+    if isinstance(X, torch.Tensor):
+        return truth(X)
+    else:
+        return numpy_func(X)
 
 # Put this into the intializer for the excursion problem
 #
-true_functions = [truth]
+true_functions = [true_function]
 # thresholds = [0.0]
 # bounding_box = [[0.0, 1.5], [0.0, 1.5]]
 # ndim = 2

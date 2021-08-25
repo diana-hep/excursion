@@ -32,8 +32,10 @@ def function_4(X: torch.Tensor) -> torch.Tensor:
 
 def function_5(X):
     f = 30
-    return 11-10*(torch.tanh((X-0.3)*3) + 0.15*torch.sin(X*f))
-
+    if isinstance(X, torch.Tensor):
+        return 11-10*(torch.tanh((X-0.3)*3) + 0.15*torch.sin(X*f))
+    else:
+        return 11-10*(np.tanh((X-0.3)*3) + 0.15*np.sin(X*f))
 def numpy_func(X):
     f = 30
     return 11-10*(np.tanh((X-0.3)*3) + 0.15*np.sin(X*f))

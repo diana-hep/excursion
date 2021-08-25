@@ -96,22 +96,21 @@ class Optimizer(_Optimizer):
     # Some helpers for the initializer. Handles error checking
     #
     def _check_and_set_device_dtype(self):
-        allowed_devices = ['auto', 'cpu', 'cuda']
+        allowed_devices = ['auto', 'cpu', 'cuda', 'skcpu']
         if not isinstance(self.device, str):
             raise TypeError("Expected device is type str, got %s" % type(self.device))
         elif self.device.lower() not in allowed_devices:
             raise ValueError("expected device_type to be in %s, got %s" % (",".join(allowed_devices), self.device))
         if self.device == 'auto':
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.device = torch.device(self.device)
 
-        allowed_dtypes = ['torch.float64']
+        allowed_dtypes = ['torch.float64', 'np.float64']
         if not isinstance(self.dtype, str):
             raise TypeError("Expected dtype is type str, got %s" % type(self.device))
         elif self.dtype.lower() not in allowed_dtypes:
             raise ValueError("expected dtype to be in %s, got %s" % (",".join(allowed_devices), self.device))
-        self.device = torch.device(self.device)
-        self.dtype = torch.float64
+        self.device = torch.device(self.device) if self.device != 'skcpu' else self.device
+        self.dtype = torch.float64 if self.device != 'skcpu' else np.float64
 
     # Another helper
     def _check_and_set_init_points(self):
@@ -221,8 +220,8 @@ class Optimizer(_Optimizer):
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
         # self.cache_ = {}
-        self.rangedef = problem_details.rangedef
-        self.invalid = problem_details.invalid_region
+        # self.rangedef = problem_details.rangedef
+        # self.invalid = problem_details.invalid_region
 
 
     def ask(self, n_points=None, batch_kwarg={}):
@@ -382,13 +381,13 @@ class Optimizer(_Optimizer):
 
         if self._n_initial_points <= 0:
             self.next_xs_ = []
-            # next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
-            #                                self._search_space['X_pointsgrid'])
             next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
-                                           torch.as_tensor(
-                                           latin_sample_n(self.rangedef, self.invalid, 2000, self._search_space['ndim'])).to(
-                                               device=self.device, dtype=self.dtype
-                                           ))
+                                           self._search_space['X_pointsgrid'])
+            # next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
+            #                                torch.as_tensor(
+            #                                latin_sample_n(self.rangedef, self.invalid, 2000, self._search_space['ndim'])).to(
+            #                                    device=self.device, dtype=self.dtype
+            #                                ))
             self.next_xs_.append(next_x)
             # # Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self._search_space['ndim'])
