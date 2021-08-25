@@ -221,6 +221,8 @@ class Optimizer(_Optimizer):
         # This ensures that multiple calls to `ask` with n_points set
         # return same sets of points. Reset to {} at every call to `tell`.
         # self.cache_ = {}
+        self.rangedef = problem_details.rangedef
+        self.invalid = problem_details.invalid_region
 
 
     def ask(self, n_points=None, batch_kwarg={}):
@@ -372,6 +374,7 @@ class Optimizer(_Optimizer):
             self._model.fit_model(self.fit_optimizer)
 
     def update_next(self):
+        from excursion.sampler.latin import latin_sample_n
         """Updates the value returned by opt.ask(). Does so by calling the acquisition func. Useful if a parameter
         was updated after ask was called."""
         # self.cache_ = {}
@@ -379,8 +382,13 @@ class Optimizer(_Optimizer):
 
         if self._n_initial_points <= 0:
             self.next_xs_ = []
+            # next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
+            #                                self._search_space['X_pointsgrid'])
             next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
-                                           self._search_space['X_pointsgrid'])
+                                           torch.as_tensor(
+                                           latin_sample_n(self.rangedef, self.invalid, 2000, self._search_space['ndim'])).to(
+                                               device=self.device, dtype=self.dtype
+                                           ))
             self.next_xs_.append(next_x)
             # # Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self._search_space['ndim'])

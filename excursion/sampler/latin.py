@@ -2,7 +2,7 @@ import pyDOE
 # # # To be implemented
 
 
-def latin_sample_n(rangedef, invalid_region ,npoints,ndim):
+def latin_sample_n(rangedef, invalid_region, npoints, ndim):
     sample_n = npoints
     while True:
         X = pyDOE.lhs(ndim, samples=sample_n)

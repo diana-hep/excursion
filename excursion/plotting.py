@@ -77,9 +77,10 @@ def plot_1D(acq, train_y, train_X, plot_X, plot_G, rangedef, pred_mean, pred_cov
     if acq is not None:
         # fig_ax2.set_xticks([])
         # eliminate -inf
-        mask = np.isfinite(acq)
-        acq = acq[mask]
-        X_plot = plot_X[mask]
+        # mask = np.isfinite(acq)
+        # acq = acq[mask]
+        # X_plot = plot_X[mask]
+        X_plot = plot_X
         # plot
         fig_ax2.plot(X_plot, acq, color="orange", label="Acquisition")
         # + str(acq_type))

@@ -52,8 +52,7 @@ class MES(AcquisitionFunction):
     # recursion helper function
     def _check_prev_acq(self, new_index, X_train, X_pointsgrid, acq_cand_vals):
         new_X = X_pointsgrid[new_index]
-        if (new_index not in self._prev_acq_point_index) and (
-                new_X.tolist() not in X_train):
+        if (new_index not in self._prev_acq_point_index) and (new_X.tolist() not in X_train):
             self._prev_acq_point_index.append(new_index.item())
             return new_index.item()
         else:

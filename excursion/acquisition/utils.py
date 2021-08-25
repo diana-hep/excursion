@@ -101,37 +101,34 @@ def approx_mi_vec(mu, cov, thresholds):
     return h
 
 
-def info_gain(x_candidate, gps, thresholds, meanX):
+def info_gain(x_candidate, gp, thresholds, meanX):
     n_samples = len(meanX)
     X_all = np.concatenate([np.array([x_candidate]), meanX]).reshape(1 + n_samples, -1)
-    tocat = []
-    for gp in gps:
-        K_trans_all = gp.kernel_(X_all, gp.X_train_)
-        y_mean_all = K_trans_all.dot(gp.alpha_) + gp._y_train_mean
-        v_all = cho_solve((gp.L_, True), K_trans_all.T)
+    K_trans_all = gp.kernel_(X_all, gp.X_train_)
+    y_mean_all = K_trans_all.dot(gp.alpha_) + gp._y_train_mean
+    v_all = cho_solve((gp.L_, True), K_trans_all.T)
 
-        mus = np.zeros((n_samples, 2))
-        mus[:, 0] = y_mean_all[0]
-        mus[:, 1] = y_mean_all[1:]
+    mus = np.zeros((n_samples, 2))
+    mus[:, 0] = y_mean_all[0]
+    mus[:, 1] = y_mean_all[1:]
 
-        covs = np.zeros((n_samples, 2, 2))
-        c = gp.kernel_(X_all[:1], X_all)
-        covs[:, 0, 0] = c[0, 0]
-        covs[:, 1, 1] = c[0, 0]
-        covs[:, 0, 1] = c[0, 1:]
-        covs[:, 1, 0] = c[0, 1:]
+    covs = np.zeros((n_samples, 2, 2))
+    c = gp.kernel_(X_all[:1], X_all)
+    covs[:, 0, 0] = c[0, 0]
+    covs[:, 1, 1] = c[0, 0]
+    covs[:, 0, 1] = c[0, 1:]
+    covs[:, 1, 0] = c[0, 1:]
 
-        x_train_len = len(gp.X_train_)
-        K_trans_all_repack = np.zeros((n_samples, 2, x_train_len))
-        K_trans_all_repack[:, 0, :] = K_trans_all[0, :]
-        K_trans_all_repack[:, 1, :] = K_trans_all[1:]
-        v_all_repack = np.zeros((n_samples, x_train_len, 2))
-        v_all_repack[:, :, 0] = v_all[:, 0]
-        v_all_repack[:, :, 1] = v_all[:, 1:].T
-        covs -= np.einsum('...ij,...jk->...ik', K_trans_all_repack, v_all_repack)
+    x_train_len = len(gp.X_train_)
+    K_trans_all_repack = np.zeros((n_samples, 2, x_train_len))
+    K_trans_all_repack[:, 0, :] = K_trans_all[0, :]
+    K_trans_all_repack[:, 1, :] = K_trans_all[1:]
+    v_all_repack = np.zeros((n_samples, x_train_len, 2))
+    v_all_repack[:, :, 0] = v_all[:, 0]
+    v_all_repack[:, :, 1] = v_all[:, 1:].T
+    covs -= np.einsum('...ij,...jk->...ik', K_trans_all_repack, v_all_repack)
 
-        mi = approx_mi_vec(mus, covs, thresholds)
-        mi[~np.isfinite(mi)] = 0.0
-        tocat.append(mi)
+    mi = approx_mi_vec(mus, covs, thresholds)
+    mi[~np.isfinite(mi)] = 0.0
 
-    return -np.mean(np.concatenate(tocat))
+    return -np.mean(mi)

@@ -11,7 +11,7 @@ class ExcursionProblem(object):
         self.bounding_box = np.asarray(bounding_box or [[0, 1]] * ndim)
         assert len(self.bounding_box) == ndim
         self.ndim = ndim
-        grid_step_size = grid_step_size or [[101 if ndim < 3 else 31]] * ndim
+        grid_step_size = grid_step_size or [[41 if ndim < 3 else 31]] * ndim
         self.rangedef = np.concatenate([self.bounding_box, np.asarray(grid_step_size).reshape(-1, 1)], axis=-1)
         self.X_meshgrid = mgrid(self.rangedef)
         self.X_pointsgrid = mesh2points(self.X_meshgrid, self.rangedef[:, 2])
