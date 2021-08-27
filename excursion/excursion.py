@@ -55,7 +55,6 @@ class ExcursionResult(object):
             train_X = model.X_train_
             train_y = model.y_train_
             mean, variance = model.predict(X_pointsgrid, return_std=True)
-
         else:
             train_X = model.train_inputs[0].cpu().detach().numpy()
             train_y = model.train_targets.cpu().detach().numpy()
