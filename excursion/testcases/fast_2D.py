@@ -49,7 +49,7 @@ def numpy_func(x):
 def test(x):
     xv, yv = x[:, 0], x[:, 1]
 
-    return xv + yv
+    return xv**2 + yv**2
 
 def true_function(X):
     if isinstance(X, torch.Tensor):
@@ -60,6 +60,8 @@ def true_function(X):
 # Put this into the intializer for the excursion problem
 #
 true_functions = [true_function]
+test_functions = [test]
+
 # thresholds = [0.0]
 # bounding_box = [[0.0, 1.5], [0.0, 1.5]]
 # ndim = 2

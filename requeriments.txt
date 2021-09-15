@@ -1,5 +1,6 @@
-gpytorch
 pytest
 numpy
 scikit-learn
 matplotlib
+pre-commit
+scikit-image

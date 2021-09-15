@@ -25,8 +25,7 @@ def build_sampler(generator: str or SampleGenerator, **kwargs):
 
      Parameters
      ----------
-     generator : "random", "latin_sample", "latin_hypercube" \
-             or SampleGenerator instance"
+     generator : "random", "latin_sample", "latin_hypercube" or SampleGenerator instance"
          Should inherit from `skopt.sampler.SampleGenerator`.
      kwargs : dict
          Extra parameters provided to the generator at init time.

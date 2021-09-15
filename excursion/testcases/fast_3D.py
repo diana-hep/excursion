@@ -52,7 +52,7 @@ def test(x):
     xv, yv, zv = x[:, 0], x[:, 1], x[:, 2]
     """more wiggles in physics case"""
 
-    return xv + yv + zv
+    return xv**2 + yv**2 + zv**2
 
 # true_functions = [test]
 #
@@ -71,6 +71,8 @@ def true_function(X):
         return truth_numpy(X)
 
 true_functions = [true_function]
+test_functions = [test]
+
 #
 # # Define threshold list
 # thresholds = [0.0]
