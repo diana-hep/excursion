@@ -1,1 +1,5 @@
 gpytorch
+pytest
+numpy
+scikit-learn
+matplotlib

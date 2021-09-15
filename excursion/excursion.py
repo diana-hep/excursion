@@ -50,24 +50,13 @@ class ExcursionResult(object):
         self.confusion_matrix = []
         self.pct_correct = []
 
-    def update(self, model, next_x, acq_vals, X_pointsgrid, log=True):
+    def update_result(self, model, next_x, acq_vals, X_pointsgrid, log=True):
         if model.device == 'skcpu':
             train_X = model.X_train_
             train_y = model.y_train_
             mean, variance = model.predict(X_pointsgrid, return_std=True)
         else:
-            train_X = model.train_inputs[0].cpu().detach().numpy()
-            train_y = model.train_targets.cpu().detach().numpy()
-            likelihood = model.likelihood
-            likelihood.eval()
-            model.eval()
-            prediction = likelihood(model(X_pointsgrid))
-            variance = prediction.variance.cpu().detach().numpy()
-            mean = prediction.mean.cpu().detach().numpy()
-            if acq_vals is not None:
-                acq_vals = acq_vals.cpu().detach().numpy()
-            if next_x is not None:
-                next_x = next_x.cpu().detach().numpy()
+            raise NotImplementedError("Only supports device type 'skcpu'")
         if log:
             self.acq_vals.append(acq_vals)
             self.mean.append(mean)

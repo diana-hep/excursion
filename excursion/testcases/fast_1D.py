@@ -40,28 +40,6 @@ def numpy_func(X):
     f = 30
     return 11-10*(np.tanh((X-0.3)*3) + 0.15*np.sin(X*f))
 
-#
-# true_functions = [function_1]
-# thresholds = [0.7]
-# bounding_box = [[-1, 1]]
-# ndim = 1
-# grid_step_size = [100]
-#
-#
-# true_functions = [function_4]
-# thresholds = [0.0]
-# bounding_box = [[-1, 1]]
-# ndim = 1
-# grid_step_size = [100]
-#
-
-
-# true_functions = [function_2]
-# thresholds = [2.]
-# bounding_box = [[0, 5]]
-# ndim = 1
-# grid_step_size = [100]
-
 
 true_functions = [function_5]
 # thresholds = [0.7]

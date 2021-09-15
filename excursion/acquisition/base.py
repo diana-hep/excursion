@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import numpy as np
 
 class AcquisitionFunction(object):
     """All acquisition functions used by the library should implement this interface

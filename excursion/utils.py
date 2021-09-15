@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from scipy.stats import norm
 
 
@@ -21,10 +20,7 @@ def values2mesh(values, rangedef, invalid, invalid_value=np.nan):
     allv = np.zeros(len(allX))
     inv = invalid(allX)
 
-    if torch.cuda.is_available() and type(values) == torch.Tensor:
-        allv[~inv] = values.cpu()
-    else:
-        allv[~inv] = values
+    allv[~inv] = values
 
     if np.any(inv):
         allv[inv] = invalid_value

@@ -52,7 +52,6 @@ def test(x):
     return xv + yv
 
 def true_function(X):
-    print(X)
     if isinstance(X, torch.Tensor):
         return truth(X)
     else:

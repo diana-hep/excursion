@@ -1,20 +1,17 @@
 from excursion.sampler import *
-import torch
-import gpytorch
-from excursion.models import ExcursionModel, GPyTorchGP, SKLearnGP
-from excursion.acquisition import MES, AcquisitionFunction, PES, SKPES
-from gpytorch.likelihoods import _GaussianLikelihoodBase
+from excursion.models import ExcursionModel, SKLearnGP
+from excursion.acquisition import *
 from excursion.excursion import ExcursionProblem, ExcursionResult
 
 # # move this into the excursion result, unless we add scikit learn implementation # #
+
 
 def build_result(details: ExcursionProblem, acquisition, **kwargs):
     if kwargs['device'] == 'skcpu':
         X_pointsgrid = details.X_pointsgrid
         true_y = details.functions[0](X_pointsgrid)
     else:
-        X_pointsgrid = torch.from_numpy(details.X_pointsgrid).to(device=kwargs['device'], dtype=kwargs['dtype'])
-        true_y = details.functions[0](X_pointsgrid).cpu().detach().numpy()
+        raise NotImplementedError("Only supports device 'SKCPU'")
 
     acquisition = acquisition # What if they passed in their own acq, then there is no string here.
     return ExcursionResult(ndim=details.ndim, thresholds=details.thresholds, true_y=true_y,
@@ -65,10 +62,10 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
          Extra parameters provided to the acq_function at init time.
      """
     if acq_function is None:
-        acq_function = "MES"
+        acq_function = "PES"
     elif isinstance(acq_function, str):
         acq_function = acq_function.lower()
-        allowed_acq_funcs = ["mes", "pes"]
+        allowed_acq_funcs = ["pes"]
         if acq_function not in allowed_acq_funcs:
             raise ValueError("Valid strings for the acq_function parameter "
                              " are: %s, not %s." % (",".join(allowed_acq_funcs), acq_function))
@@ -76,13 +73,8 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
         raise TypeError("acq_function has to be an AcquisitionFunction. Got %s" % (str(type(acq_function))))
 
     if isinstance(acq_function, str):
-        if acq_function == "mes":
-            if kwargs['device'] != 'skcpu':
-                acq_function = MES()
-            else:
-                raise NotImplementedError("The sklearn backend does not support MES acquisition.")
         if acq_function == "pes":
-            acq_function = PES() if kwargs['device'] != 'skcpu' else SKPES()
+            acq_function = SKPES()
     acq_function.set_params(**kwargs)
 
     return acq_function
@@ -109,57 +101,10 @@ def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None
         raise TypeError("model has to be an ExcursionModel. Got %s" % (str(type(model))))
 
     if isinstance(model, str):
-        if model == "gridgp" or model == "exactgp":
-            likelihood = build_likelihood(kwargs['likelihood_type'], kwargs['epsilon'],
-                                          device=kwargs['device'], dtype=kwargs['dtype'])
-        if model == "gridgp":
-            model = GPyTorchGP(init_X, init_y, likelihood, model_type='GridKernel', rangedef=rangedef).\
-                to(device=kwargs['device'], dtype=kwargs['dtype'])
-        elif model == "exactgp":
-            model = GPyTorchGP(init_X, init_y, likelihood, model_type='ScaleKernel').\
-                to(device=kwargs['device'], dtype=kwargs['dtype'])
-        elif model == "sklearngp":
+        if model == "sklearngp":
             model = SKLearnGP(ndim=len(rangedef))
 
     model.set_params(**kwargs)
 
     return model
 
-
-def build_likelihood(likelihood: str, noise: float, **kwargs):
-    """Build a gpytorch likelihood object for use in building a gpytorch model.
-     For the default likelihood is give 0 noise a gpytorch FixGaussianLikelihood object.
-     Parameters
-     ----------
-     type : str, default: '"Gaussianlikelihood"'
-         Should inherit from `gpytorch.likelihoods._GaussianLikelihoodBase`.
-     kwargs : dict
-         Extra parameters provided to the acq_function at init time.
-     """
-    if likelihood is None:
-        likelihood = "gaussianlikelihood"
-    elif isinstance(likelihood, str):
-        likelihood_check = likelihood.lower()
-        allowed_likelihoods = ["gaussianlikelihood"]
-        if likelihood_check not in allowed_likelihoods:
-            raise ValueError("Valid strings for the model parameter "
-                             " are: 'Gaussianlikelihood' not %s." % likelihood)
-        likelihood = likelihood_check
-    elif not isinstance(likelihood, _GaussianLikelihoodBase):
-        raise TypeError("model has to be an _GaussianLikelihoodBase. Got %s" % (str(type(likelihood))))
-
-    if isinstance(likelihood, str):
-        if likelihood == "gaussianlikelihood":
-            if not isinstance(noise, float):
-                raise TypeError("Expected base_model_kwargs['epsilon'] to be type float, got type %s"
-                                % str(type(noise)))
-            elif noise < 0.0:
-                raise ValueError("Expected base_model_kwargs['epsilon'] to be float >= 0, got %s" % str(noise))
-            if noise == 0.0:
-                likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=torch.tensor([noise]))\
-                    .to(device=kwargs['device'], dtype=kwargs['dtype'])
-            else:
-                likelihood = gpytorch.likelihoods.GaussianLikelihood(noise=torch.tensor([noise]))\
-                    .to(device=kwargs['device'], dtype=kwargs['dtype'])
-
-    return likelihood

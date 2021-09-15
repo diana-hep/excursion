@@ -64,8 +64,13 @@ def test(x):
 # grid_step_size = [10]*ndim
 #
 
+def true_function(X):
+    if isinstance(X, torch.Tensor):
+        return truth(X)
+    else:
+        return truth_numpy(X)
 
-true_functions = [truth]
+true_functions = [true_function]
 #
 # # Define threshold list
 # thresholds = [0.0]

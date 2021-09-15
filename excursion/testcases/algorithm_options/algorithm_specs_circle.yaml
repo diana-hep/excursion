@@ -26,7 +26,7 @@ model:
 # ACQUISTION FUNCTION
 #
 acq:
-  acq_type: 'MES'
+  acq_type: MES
 #  batch: False
 #  batchtype: 'KB'
 #  batchsize: 2
@@ -45,4 +45,5 @@ jump_start: true
 # 'auto' will only select the gpytorch b/w gpytorch implementations
 device: 'auto'
 
-dtype: torch.float64
+# dtype auto selects np or torch float64
+dtype: float64

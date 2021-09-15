@@ -16,7 +16,6 @@ class SKPES(AcquisitionFunction):
     def _acquire(self, gp, thresholds, X_pointsgrid):
         try:
             from joblib import Parallel, delayed
-            print("Parallel Acq")
             nparallel = int(os.environ.get('EXCURSION_NPARALLEL', os.cpu_count()))
             result = Parallel(nparallel)(
                 delayed(info_gain)(x_candidate, gp, thresholds, X_pointsgrid) for x_candidate in X_pointsgrid)

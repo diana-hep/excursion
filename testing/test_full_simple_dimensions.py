@@ -3,7 +3,7 @@ import excursion.testcases.fast_1D as testcase_1D
 import excursion.testcases.fast_3D as testcase_3D
 from excursion import *
 from excursion.optimizer.builders import *
-
+import torch
 
 def test_full_simple_dimensions():
     ndim = 3

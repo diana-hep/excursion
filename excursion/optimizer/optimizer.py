@@ -1,7 +1,6 @@
 from ._optimizer import _Optimizer
 from .builders import *
 import numpy as np
-import torch
 
 class Optimizer(_Optimizer):
     """Run bayesian optimisation loop.
@@ -96,21 +95,24 @@ class Optimizer(_Optimizer):
     # Some helpers for the initializer. Handles error checking
     #
     def _check_and_set_device_dtype(self):
-        allowed_devices = ['auto', 'cpu', 'cuda', 'skcpu']
+        # allowed_devices = ['auto', 'cpu', 'cuda', 'skcpu']
+        allowed_devices = ['skcpu']
         if not isinstance(self.device, str):
             raise TypeError("Expected device is type str, got %s" % type(self.device))
         elif self.device.lower() not in allowed_devices:
             raise ValueError("expected device_type to be in %s, got %s" % (",".join(allowed_devices), self.device))
-        if self.device == 'auto':
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # if self.device == 'auto':
+        #     self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        allowed_dtypes = ['torch.float64', 'np.float64']
+        allowed_dtypes = ['float64']
         if not isinstance(self.dtype, str):
             raise TypeError("Expected dtype is type str, got %s" % type(self.device))
         elif self.dtype.lower() not in allowed_dtypes:
             raise ValueError("expected dtype to be in %s, got %s" % (",".join(allowed_devices), self.device))
-        self.device = torch.device(self.device) if self.device != 'skcpu' else self.device
-        self.dtype = torch.float64 if self.device != 'skcpu' else np.float64
+        # self.device = torch.device(self.device) if self.device != 'skcpu' else self.device
+        # self.dtype = torch.float64 if self.device != 'skcpu' else np.float64
+        self.device = self.device
+        self.dtype = np.float64
 
     # Another helper
     def _check_and_set_init_points(self):
@@ -124,13 +126,14 @@ class Optimizer(_Optimizer):
         _thresholds = [-np.inf] + details.thresholds + [np.inf]
         _X_pointsgrid = details.X_pointsgrid
         if self.device != 'skcpu':
-            _thresholds = torch.as_tensor(_thresholds).to(device=self.device, dtype=self.dtype)
-            _X_pointsgrid = torch.as_tensor(_X_pointsgrid).to(device=self.device, dtype=self.dtype)
+            raise NotImplementedError("Only device type 'skcpu' is supported")
+            # _thresholds = torch.as_tensor(_thresholds).to(device=self.device, dtype=self.dtype)
+            # _X_pointsgrid = torch.as_tensor(_X_pointsgrid).to(device=self.device, dtype=self.dtype)
         self._search_space['thresholds'] = _thresholds
         self._search_space['X_pointsgrid'] = _X_pointsgrid
         self._search_space['ndim'] = details.ndim
 
-    def __init__(self, problem_details: ExcursionProblem, device: str, dtype, n_funcs: int = None,
+    def __init__(self, problem_details: ExcursionProblem, device: str, dtype: str, n_funcs: int = None,
                  base_model: str or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator="random",
                  acq_func: str = "MES", fit_optimizer=None, jump_start: bool = True, log: bool = True,
                  fit_optimizer_kwargs=None, acq_func_kwargs=None, base_model_kwargs=None):
@@ -211,7 +214,7 @@ class Optimizer(_Optimizer):
                 self.fit()
 
                 # Build the result if we want to plot the initial state.
-                self.result.update(self._model, None, None, self._search_space['X_pointsgrid'], log=self.log)
+                self.result.update_result(self._model, None, None, self._search_space['X_pointsgrid'], log=self.log)
             else:
                 self._initial_samples = self._point_sampler.generate(self.n_initial_points_,
                                                                      self._search_space['X_pointsgrid'])
@@ -362,7 +365,7 @@ class Optimizer(_Optimizer):
                 self.update_next()  # acq happens in update_next(), it updates _next_x
             # Build result of current state, _tell will update to state n+1
 
-            self.result.update(self._model, x, acq_vals, self._search_space['X_pointsgrid'], log=self.log)
+            self.result.update_result(self._model, x, acq_vals, self._search_space['X_pointsgrid'], log=self.log)
 
         return self.result
 
@@ -373,7 +376,6 @@ class Optimizer(_Optimizer):
             self._model.fit_model(self.fit_optimizer)
 
     def update_next(self):
-        from excursion.sampler.latin import latin_sample_n
         """Updates the value returned by opt.ask(). Does so by calling the acquisition func. Useful if a parameter
         was updated after ask was called."""
         # self.cache_ = {}
@@ -383,11 +385,6 @@ class Optimizer(_Optimizer):
             self.next_xs_ = []
             next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
                                            self._search_space['X_pointsgrid'])
-            # next_x = self.acq_func.acquire(self._model, self._search_space['thresholds'],
-            #                                torch.as_tensor(
-            #                                latin_sample_n(self.rangedef, self.invalid, 2000, self._search_space['ndim'])).to(
-            #                                    device=self.device, dtype=self.dtype
-            #                                ))
             self.next_xs_.append(next_x)
             # # Placeholder until I do batch acq functions
             self._next_x = self.next_xs_[0].reshape(1, self._search_space['ndim'])
