@@ -2,8 +2,10 @@ from collections import defaultdict
 import numpy as np
 
 class AcquisitionFunction(object):
-    """All acquisition functions used by the library should implement this interface
-    to be used by the optimizer object."""
+    """
+    All acquisition functions used by this library should implement this abstract interface in order to be compatible
+    with the Optimizer class.
+    """
     def acquire(self, gp, thresholds, meshgrid):
         raise NotImplemented
 

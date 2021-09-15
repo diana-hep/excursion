@@ -22,6 +22,7 @@ def build_result(details: ExcursionProblem, acquisition, **kwargs):
 def build_sampler(generator: str or SampleGenerator, **kwargs):
     """Build a default random sample generator.
      For the special generator called "random" the return value is None.
+
      Parameters
      ----------
      generator : "random", "latin_sample", "latin_hypercube" \
@@ -80,9 +81,11 @@ def build_acquisition_func(acq_function: str or AcquisitionFunction, **kwargs):
     return acq_function
 
 
-def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None, **kwargs):
-    """Build an acquisition function.
-     For the special acq_function called "random" the return value is None.
+def build_model(model: str or ExcursionModel, rangedef, **kwargs):
+    """
+    Build an acquisition function.
+    For the special acq_function called "random" the return value is None.
+
      Parameters
      ----------
      model : "GPyTorchGP", "GridGP", or ExcursionModel instance"
@@ -91,14 +94,14 @@ def build_model(model: str or ExcursionModel, rangedef, init_X=None, init_y=None
          Extra parameters provided to the acq_function at init time.
      """
     if model is None:
-        model = "exactgp"
+        model = "sklearngp"
     elif isinstance(model, str):
         model = model.lower()
-        allowed_models = ["exactgp", "gridgp", "sklearngp"]
+        allowed_models = ["sklearngp"]
         if model not in allowed_models:
-            raise ValueError("Valid strings for the model parameter are: 'ExactGP', or 'GridGP' not %s." % model)
+            raise ValueError("Valid strings for the model parameter are: 'SKLearnGP' not %s." % model)
     elif not isinstance(model, ExcursionModel):
-        raise TypeError("model has to be an ExcursionModel. Got %s" % (str(type(model))))
+        raise TypeError("model has to be an ExcursionModel or str. Got %s" % (str(type(model))))
 
     if isinstance(model, str):
         if model == "sklearngp":
