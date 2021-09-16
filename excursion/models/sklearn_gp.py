@@ -1,5 +1,4 @@
 import sklearn
-from sklearn.gaussian_process import GaussianProcessRegressor
 from .base import ExcursionModel
 from .utils import get_kernel
 import numpy as np
@@ -17,14 +16,8 @@ class SKLearnGP(ExcursionModel, sklearn.gaussian_process.GaussianProcessRegresso
             'random_state': 1234
             }
         super(SKLearnGP, self).__init__(kernel=kernel,  **self.gp_params)
-        self.epsilon = 0.0
-        # alpha = 10 ** -7
-        # self.gp = GaussianProcessRegressor(kernel=self.kernel, n_restarts_optimizer=10, alpha=10 ** -7, random_state=1234)
-        # self.train_targets = np.empty((0, ndim))
-        # self.train_inputs = np.empty((0,))
 
-        # y_list = [np.empty((0,)) for f in probelm_details.functions]
-        # self.train_targets = None
+        self.epsilon = 0.0
 
     def update_model(self, x, y):
         """

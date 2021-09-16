@@ -95,24 +95,21 @@ class Optimizer(_Optimizer):
     # Some helpers for the initializer. Handles error checking
     #
     def _check_and_set_device_dtype(self):
-        # allowed_devices = ['auto', 'cpu', 'cuda', 'skcpu']
         allowed_devices = ['skcpu']
-        if not isinstance(self.device, str):
-            raise TypeError("Expected device is type str, got %s" % type(self.device))
-        elif self.device.lower() not in allowed_devices:
-            raise ValueError("expected device_type to be in %s, got %s" % (",".join(allowed_devices), self.device))
-        # if self.device == 'auto':
-        #     self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        device = self.device_dtype['device']
+        if not isinstance(device, str):
+            raise TypeError("Expected device is type str, got %s" % type(device))
+        elif device.lower() not in allowed_devices:
+            raise ValueError("expected device_type to be in %s, got %s" % (",".join(allowed_devices), device))
+        self.device_dtype['device'] = device
 
         allowed_dtypes = ['float64']
-        if not isinstance(self.dtype, str):
-            raise TypeError("Expected dtype is type str, got %s" % type(self.device))
-        elif self.dtype.lower() not in allowed_dtypes:
-            raise ValueError("expected dtype to be in %s, got %s" % (",".join(allowed_devices), self.device))
-        # self.device = torch.device(self.device) if self.device != 'skcpu' else self.device
-        # self.dtype = torch.float64 if self.device != 'skcpu' else np.float64
-        self.device = self.device
-        self.dtype = np.float64
+        dtype = self.device_dtype['dtype']
+        if not isinstance(dtype, str):
+            raise TypeError("Expected dtype is type str, got %s" % type(dtype))
+        elif dtype not in allowed_dtypes:
+            raise ValueError("expected dtype to be in %s, got %s" % (",".join(allowed_dtypes), dtype))
+        self.device_dtype['dtype'] = np.float64
 
     # Another helper
     def _check_and_set_init_points(self):
@@ -125,32 +122,26 @@ class Optimizer(_Optimizer):
     def _check_and_set_search_space(self, details):
         _thresholds = [-np.inf] + details.thresholds + [np.inf]
         _X_pointsgrid = details.X_pointsgrid
-        if self.device != 'skcpu':
+        if self.device_dtype['device'] != 'skcpu':
             raise NotImplementedError("Only device type 'skcpu' is supported")
-            # _thresholds = torch.as_tensor(_thresholds).to(device=self.device, dtype=self.dtype)
-            # _X_pointsgrid = torch.as_tensor(_X_pointsgrid).to(device=self.device, dtype=self.dtype)
         self._search_space['thresholds'] = _thresholds
         self._search_space['X_pointsgrid'] = _X_pointsgrid
         self._search_space['ndim'] = details.ndim
 
     def __init__(self, problem_details: ExcursionProblem, device: str, dtype: str, n_funcs: int = None,
-                 base_model: str or ExcursionModel = "ExactGP", n_initial_points=None, initial_point_generator="random",
-                 acq_func: str = "MES", fit_optimizer=None, jump_start: bool = True, log: bool = True,
-                 fit_optimizer_kwargs=None, acq_func_kwargs=None, base_model_kwargs=None):
+                 base_model: str or ExcursionModel = "SKLearnGP", n_initial_points=None, initial_point_generator="random",
+                 acq_func: str = "PES", fit_optimizer=None, jump_start: bool = True, log: bool = True,
+                 fit_optimizer_kwargs={}, acq_func_kwargs={}, base_model_kwargs={}):
 
         # Currently only supports 1 func
         self.n_funcs = n_funcs if n_funcs else len(problem_details.functions)
         if self.n_funcs != 1:
             raise ValueError("Expected 'n_funcs' = 1, got %d" % self.n_funcs)
-            #     <= 0:
-            # raise ValueError("n_funcs must be greater than 0")
 
-        self.device = device
-        self.dtype = dtype
-        # Create the device and dtype, currently only supports strings and initializes torch.device and torch.dtype
-        # objects. It also will set the enviroment default behavior to create only the default datatype.
+
+        # Create the device and dtype, currently only supports string input args.
+        self.device_dtype = {'device': device, 'dtype': dtype}
         self._check_and_set_device_dtype()
-
 
         # This creates a dictionary that stores the dimension of search space (int), thresholds
         # (problem_details dtype) and the search space X_grid (as problem_details dtype). It will also assign
@@ -166,11 +157,7 @@ class Optimizer(_Optimizer):
         self._point_sampler = build_sampler(initial_point_generator)
         self._initial_samples = None
 
-        # May want to move this and only give the problem problem_details the init x when
-        # the model gets them
 
-        # if self.device != "skcpu":
-        #     self._initial_samples = torch.tensor(self._initial_samples, dtype=self.dtype, device=self.device)
 
         # These will store the result, but if the base_model was None, then this will also be None
         self.result = None
@@ -179,17 +166,9 @@ class Optimizer(_Optimizer):
         # Store acquisition function (must be a str originally, for now, if None,
         # then base_model was None, else use _point_sampler):
         self.acq_func = acq_func
-        # currently do not support any batches, or acq_func_kwargs. This is place holder
-        # design idea is that if it is a batch, then ask will find the batch, not tell. so acq_func
-        # should return acq(X) and not argmax(acq(X))
-        # if acq_func_kwargs is None:
-        #     acq_func_kwargs = dict()
-        # # Number of points to get per call to ask()
-        # self.npoints = acq_func_kwargs.get('batch_size')
-        # self.acq_func_kwargs = acq_func_kwargs
 
         self.fit_optimizer = fit_optimizer
-        if base_model_kwargs is None or not isinstance(base_model_kwargs, dict):
+        if not isinstance(base_model_kwargs, dict):
             raise TypeError("Expected type dict, got %s" % type(base_model_kwargs))
 
         # Store the model (might be a str)
@@ -197,13 +176,12 @@ class Optimizer(_Optimizer):
         self.base_model = base_model
         # If it was None, then tell will return a None result and behavior will be just asking for random points
         if self.base_model is not None:
-            base_model_kwargs['device'] = self.device
-            base_model_kwargs['dtype'] = self.dtype
+            base_model_kwargs.update(self.device_dtype)
             self._model = build_model(self.base_model, rangedef=problem_details.rangedef, **base_model_kwargs)
 
             # for now self.acq_func is a string, so this COULD add a string to the name of the graph of plotted result
-            self.result = build_result(problem_details, self.acq_func, device=self.device, dtype=self.dtype)
-            self.acq_func = build_acquisition_func(acq_function=self.acq_func, device=self.device, dtype=self.dtype)
+            self.result = build_result(problem_details, self.acq_func, **self.device_dtype)
+            self.acq_func = build_acquisition_func(self.acq_func)
 
             # If I want to add all init points in a batch
             if jump_start:
@@ -218,14 +196,6 @@ class Optimizer(_Optimizer):
             else:
                 self._initial_samples = self._point_sampler.generate(self.n_initial_points_,
                                                                      self._search_space['X_pointsgrid'])
-
-        # Initialize cache for `ask` method responses
-        # This ensures that multiple calls to `ask` with n_points set
-        # return same sets of points. Reset to {} at every call to `tell`.
-        # self.cache_ = {}
-        # self.rangedef = problem_details.rangedef
-        # self.invalid = problem_details.invalid_region
-
 
     def ask(self, n_points=None, batch_kwarg={}):
         """Query point or multiple points at which objective should be evaluated.
@@ -246,44 +216,8 @@ class Optimizer(_Optimizer):
             return self._ask()
 
         if not (isinstance(n_points, int) and n_points > 0):
-            raise ValueError(
-                "Expected 'n_points' is an int > 0, got %s with type %s" % (str(n_points), str(type(n_points)))
-            )
-        pass
-
-        X = []
-
-        # if 'batch_type' in batch_kwarg.keys():
-        #     supported_batch_types = ["kb", "naive"]
-        #     if not isinstance(batch_kwarg['batch_type'], str):
-        #         raise TypeError("Expected batch_type to be one of type str" +
-        #                         " got %s" % str(type(batch_kwarg['batch_type']))
-        #                         )
-        #     if batch_kwarg['batch_type'] not in supported_batch_types:
-        #         raise ValueError(
-        #             "Expected batch_type to be one of " +
-        #             str(supported_batch_types) + ", " + "got %s" % batch_kwarg['batch_type']
-        #         )
-        # else:
-        #     # Need to decide how to handle batches
-        #     X_new = [self.model_acq_funcs_[idx].acquire(model, thresholds) for idx, model in enumerate(self.models)]
-        #     X.append(X_new)
-        #     return X
-        #     # Caching the result with n_points not None. If some new parameters
-        #     # are provided to the ask, the cache_ is not used.
-        #     if (n_points, strategy) in self.cache_:
-        #         return self.cache_[(n_points, strategy)]
-        #
-        #     # Copy of the optimizer is made in order to manage the
-        #     # deletion of points with "lie" objective (the copy of oiptimizer is simply discarded)
-        #     opt = self.copy(random_state=self.rng.randint(0,np.iinfo(np.int32).max))
-        #
-        #     for i in range(n_points):
-        #         X_new = self.ask()
-        #         X.append(X_new)
-        #         self._tell(X_new, y_lie)
-
-        # self.cache_ = {(n_points, strategy): X}  # cache_ the result
+            raise ValueError("Expected 'n_points' is an int > 0, got %s with type %s" %
+                             (str(n_points), str(type(n_points))))
 
         return []
 
@@ -310,14 +244,10 @@ class Optimizer(_Optimizer):
             if not hasattr(self, '_next_x'):
                 self.update_next()  # Should only happen on the first call, after which _next_x should always be set.
 
+            # Currently being found in acquisition, however, should use _next_xs and find _next_x here
+            # in later refactor.
             next_x = self._next_x
 
-            # Currently being done in acquisition, however, may be better to do here in later refactor.
-            # min_delta_x = min([self.space.distance(next_x, xi)
-            #                    for xi in self.Xi])
-            # if abs(min_delta_x) <= 1e-8:
-            #     warnings.warn("The objective has been evaluated "
-            #                   "at this point before.")
 
             # return point computed from last call to tell()
             return next_x
@@ -347,9 +277,6 @@ class Optimizer(_Optimizer):
         # ADD THIS IN EVENTUALLY FOR SPACES WITH INVALID REGIONS
         # check_x_in_space(x, self.space)
         # self._check_y_is_valid(x, y)
-
-        # # optimizer learned something new - discard cache - NO CACHE SUPPORT YET. PLACEHOLDER
-        # self.cache_ = {}
 
         if self.base_model is not None:
             self._model.update_model(x, y)

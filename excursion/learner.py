@@ -2,8 +2,6 @@ from .optimizer import Optimizer
 from .excursion import ExcursionProblem
 from .plotting import plot
 
-# Remove the base class reduce line count
-
 
 class _Learner(object):
     def __init__(self, problem_details: ExcursionProblem = None, algorithm_options: dict = None):
@@ -50,6 +48,7 @@ class Learner(_Learner):
                                        initial_point_generator=self.options['init_type'],
                                        fit_optimizer=self.options['model']['fit_optimizer'],
                                        base_model_kwargs=self.options['likelihood'], dtype=self.options['dtype'])
+
     def ask(self, npoints: int = None):
         """
         Suggest a new point to evaluate.

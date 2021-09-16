@@ -3,7 +3,6 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-# # make it so that grid_step_size is just an int and the initializer does [grid_Step_size]*ndim
 class ExcursionProblem(object):
     def __init__(self, functions, thresholds=[0.5], ndim=1, bounding_box=None, grid_step_size=None, init_n_points=None):
         self.functions = functions
