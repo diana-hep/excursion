@@ -1,0 +1,58 @@
+#
+# ALGORITHM OPTS
+#
+
+example: 'Simple Learner Usage' #'1D2D3Dtoyanalysis'
+
+#number of initial points
+ninit: 3
+
+#number of iterations
+#nupdates: 100
+
+##Define the init training data type
+init_type: 'random'
+
+
+#likelihood
+likelihood:
+  # Options: None
+  likelihood_type: 'GaussianLikelihood'
+  # Must be of type float. Thus e.g. 0 is 0.0, .5 is 0.5, 1 is 1.0, etc
+  epsilon: 0.0
+
+#model
+model:
+  # Options: GridGP or ExactGP or SKLearnGP
+  type: 'SKLearnGP'
+  # Options: 'Adam' or 'LBFGS'. Method to use for fitting model hyperparameters to new training data. Default: 'None'
+  # will use the default method of the given ExcursionModel. (e.g. GPyTorchGP default is Adam)
+  fit_optimizer: 'Adam'
+#  kernel: 'RBF'
+#  prior: 'Constant'
+
+
+#acquisition function
+acq:
+  # Options: PES or MES
+  acq_type: pes
+#  batch: False
+#  batchtype: 'KB'
+#  batchsize: 12
+
+
+# # #                                                       # # #
+# # #  DO NOT CHANGE THE BELOW SETTING UNLESS ADVANCED USER # # #
+# # #                                                       # # #
+
+#Decide to add all initial samples then fit the model,
+#or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
+# Cannot plot first few iterations of 3d when this is true
+jump_start: true
+
+#Device type: 'cpu', 'cuda', 'auto', 'skcpu'
+# 'auto' will only select the gpytorch b/w gpytorch implementations
+device: 'skcpu'
+
+# dtype auto selects np or torch float64
+dtype: float64
