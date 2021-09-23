@@ -1,0 +1,49 @@
+#
+# GLOBAL INIT
+#
+example: 'parabola_nD'   # each given testcase has a name
+ninit: 7                   # number of initial points
+init_type: 'random'        # type of init training data
+
+#
+# LIKELIHOOD
+#
+likelihood:
+  likelihood_type: 'GaussianLikelihood'
+  epsilon: 0.0
+
+#
+# MODEL
+#
+model:
+  type: 'ExactGP'
+  fit_optimizer: 'Adam'
+#  kernel: 'RBF'
+#  prior: 'Constant' # Constant, Linear or Circular
+
+
+#
+# ACQUISTION FUNCTION
+#
+acq:
+  acq_type: MES
+#  batch: False
+#  batchtype: 'KB'
+#  batchsize: 2
+
+
+# # #                                                       # # #
+# # #  DO NOT CHANGE THE BELOW SETTING UNLESS ADVANCED USER # # #
+# # #                                                       # # #
+
+#Decide to add all initial samples then fit the model,
+#or if false add initial samples one by one fitting each time for ninit samples. Then calls the acquisition function
+# Cannot plot first few iterations of 3d when this is true
+jump_start: true
+
+#Device type: 'cpu', 'cuda', 'auto'
+# 'auto' will only select the gpytorch b/w gpytorch implementations
+device: 'auto'
+
+# dtype auto selects np or torch float64
+dtype: float64
